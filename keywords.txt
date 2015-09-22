@@ -18,6 +18,7 @@ addTask	KEYWORD2
 deleteTask	KEYWORD2
 disableAll	KEYWORD2
 enableAll	KEYWORD2
+currentTask	KEYWORD2
 execute	KEYWORD2
 allowSleep	KEYWORD2
 enable	KEYWORD2
