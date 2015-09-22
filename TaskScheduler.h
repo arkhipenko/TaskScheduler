@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.51
+// Cooperative multitasking library for Arduino version 1.6
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -20,6 +20,11 @@
 // v1.51:
 //	   2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations(). 
 //					Thanks to Hannes Morgenstern for catching this one
+// v1.6:
+//	   2015-09-22 - revert back to having all tasks disable on last iteration.
+//	   2015-09-22 - deprecated disableOnLastIteration method as a result
+//	   2015-09-22 - created a separate branch 'disable-on-last-iteration' for this
+
 
 
 /* ============================================
@@ -105,7 +110,6 @@ class Task {
 	void setIterations(long aIterations);
 	inline long getIterations() { return iIterations; }
 	inline void setCallback(void (*aCallback)()) { iCallback = aCallback; }
-	inline void disableOnLastIteration(bool aBool) { iDisableOnLastIteration = aBool; }  // default is false
 #ifdef _TASK_TIMECRITICAL
 	inline long getOverrun() { return iOverrun; }
 #endif
@@ -116,7 +120,6 @@ class Task {
 	void reset();
 
     volatile bool			iEnabled;
-	volatile bool			iDisableOnLastIteration;
     volatile unsigned long	iInterval;
 	volatile unsigned long	iPreviousMillis;
 #ifdef _TASK_TIMECRITICAL
