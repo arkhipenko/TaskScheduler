@@ -63,9 +63,9 @@ void Task::reset() {
  */
 void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)()) {
 	iInterval = aInterval;
+	if (iEnabled && iIterations == 0) enable();
 	iSetIterations = iIterations = aIterations;
 	iCallback = aCallback;
-	if (iEnabled) enable();
 }
 
 /** Sets number of iterations for the task
@@ -73,8 +73,8 @@ void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)()) {
  * @param aIterations - number of iterations, use -1 for no limit
  */
 void Task::setIterations(long aIterations) { 
+	if (iEnabled && iIterations == 0) enable();
 	iSetIterations = iIterations = aIterations; 
-	if (iEnabled) enable();
 }
 
 /** Enables the task 
