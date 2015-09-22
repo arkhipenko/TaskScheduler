@@ -11,7 +11,7 @@ dynamic change of the execution parameters for both tasks and execution schedule
 power saving via entering IDLE sleep mode if no tasks are scheduled to run
  
  
-IDEA:
+IDEA: 
 “Task” is a container concept that links together:
 Execution interval
 Number of execution iterations
