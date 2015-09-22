@@ -1,0 +1,44 @@
+#######################################
+# Syntax Coloring Map For TaskManager
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Task	KEYWORD1
+Scheduler	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+init	KEYWORD2
+addTask	KEYWORD2
+deleteTask	KEYWORD2
+disableAll	KEYWORD2
+enableAll	KEYWORD2
+execute	KEYWORD2
+allowSleep	KEYWORD2
+enable	KEYWORD2
+enableDelayed	KEYWORD2
+delay	KEYWORD2
+restart	KEYWORD2
+restartDelayed	KEYWORD2
+disable	KEYWORD2
+isEnabled	KEYWORD2
+set	KEYWORD2
+setInterval	KEYWORD2
+getInterval	KEYWORD2
+setIterations	KEYWORD2
+getIterations	KEYWORD2
+setCallback	KEYWORD2
+disableOnLastIteration	KEYWORD2
+getOverrun	KEYWORD2
+isFirstIteration	KEYWORD2
+isLastIteration	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
