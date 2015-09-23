@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.51: 2015-09-20
+Version 1.6: 2015-09-22
  
  
 REQUIREMENT:
@@ -47,4 +47,7 @@ v1.50:
 v1.51:
     2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations(). 
 		 		 Thanks to Hannes Morgenstern for catching this one
- 
+v1.6:
+    2015-09-22 - revert back to having all tasks disable on last iteration.
+    2015-09-22 - deprecated disableOnLastIteration method as a result
+
