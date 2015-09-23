@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.51
+// Cooperative multitasking library for Arduino version 1.6
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 
@@ -50,7 +50,6 @@ void Task::reset() {
 	iPrev = NULL;
 	iNext = NULL;
 	iScheduler = NULL;
-	iDisableOnLastIteration = false;
 #ifdef _TASK_TIMECRITICAL
 	iOverrun = 0;
 #endif
@@ -63,7 +62,6 @@ void Task::reset() {
  */
 void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)()) {
 	iInterval = aInterval;
-	if (iEnabled && iIterations == 0) enable();
 	iSetIterations = iIterations = aIterations;
 	iCallback = aCallback;
 }
@@ -73,7 +71,6 @@ void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)()) {
  * @param aIterations - number of iterations, use -1 for no limit
  */
 void Task::setIterations(long aIterations) { 
-	if (iEnabled && iIterations == 0) enable();
 	iSetIterations = iIterations = aIterations; 
 }
 
@@ -240,7 +237,7 @@ void Scheduler::execute() {
 		do {   		
 			if (iCurrent->iEnabled) {
 				if (iCurrent->iIterations == 0) {
-					if (iCurrent->iDisableOnLastIteration) iCurrent->disable();
+					iCurrent->disable();
 					break;
 				}
 				if (iCurrent->iInterval > 0) {
