@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.6
+// Cooperative multitasking library for Arduino version 1.6.0
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 

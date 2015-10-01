@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.6: 2015-09-22
+Version 1.6.0: 2015-09-22
  
  
 REQUIREMENT:
@@ -37,17 +37,18 @@ Changelog:
                  3. Delay is based on the min anticipated wait until next task _AND_ the runtime of execute function itself.
     2015-05-11 - added  restart() and restartDelayed() functions to restart tasks which are on hold after running all iterations
     2015-05-19 - completely removed  delay from the scheduler since there are no power saving there. using 1 ms sleep instead
-v1.41:
+v1.4.1:
     2015-09-15 - more careful placement of AVR-specific includes for sleep functions (compatibility with DUE)
                          sleep on idle run is no longer a default and should be explicitly compiled with _TASK_SLEEP_ON_IDLE_RUN defined
-v1.50:
+v1.5.0:
     2015-09-20 - access to currently executing task (for callback functions)
     2015-09-20 - pass scheduler as a parameter to the task constructor to append the task to the end of the chain
     2015-09-20 - option to create a task already enabled
-v1.51:
+v1.5.1:
     2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations(). 
 		 		 Thanks to Hannes Morgenstern for catching this one
-v1.6:
+v1.6.0:
     2015-09-22 - revert back to having all tasks disable on last iteration.
     2015-09-22 - deprecated disableOnLastIteration method as a result
+    2015-10-01 - made version numbers semver compliant (documentation only)
 
