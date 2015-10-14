@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.6.0
+// Cooperative multitasking library for Arduino version 1.7.0
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 
@@ -33,9 +33,11 @@ THE SOFTWARE.
 /** Constructor, uses default default values for the parameters
  * so could be called with no parameters.
  */
-Task::Task(unsigned long aInterval, long aIterations, void (*aCallback)(), Scheduler* aScheduler, boolean aEnable) {
+Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Scheduler* aScheduler, bool aEnable, bool (*aOnEnable)(), void (*aOnDisable)() ) {
 	reset();
 	set(aInterval, aIterations, aCallback);
+	setOnEnable(aOnEnable);
+	setOnDisable(aOnDisable);
 	if (aScheduler) aScheduler->addTask(*this);
 	if (aEnable) enable();
 }
@@ -50,6 +52,7 @@ void Task::reset() {
 	iPrev = NULL;
 	iNext = NULL;
 	iScheduler = NULL;
+	iRunCounter = 0;
 #ifdef _TASK_TIMECRITICAL
 	iOverrun = 0;
 #endif
@@ -59,11 +62,15 @@ void Task::reset() {
  * @param aInterval - execution interval in ms
  * @param aIterations - number of iterations, use -1 for no limit
  * @param aCallback - pointer to the callback function which executes the task actions
+ * @param aOnEnable - pointer to the callback function which is called on enable()
+ * @param aOnDisable - pointer to the callback function which is called on disable()
  */
-void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)()) {
+void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)(), void (*aOnDisable)()) {
 	iInterval = aInterval;
 	iSetIterations = iIterations = aIterations;
 	iCallback = aCallback;
+	iOnEnable = aOnEnable;
+	iOnDisable = aOnDisable;
 }
 
 /** Sets number of iterations for the task
@@ -75,18 +82,29 @@ void Task::setIterations(long aIterations) {
 }
 
 /** Enables the task 
- * and schedules it for execution as soon as possible
+ *  schedules it for execution as soon as possible,
+ *  and resets the RunCounter back to zero
  */
 void Task::enable() {
-	iEnabled = true;
+	iEnabled = iOnEnable ? (*iOnEnable)() : true;
+	iRunCounter = 0;
 	iPreviousMillis = millis() - iInterval;
+}
+
+/** Enables the task only if it was not enabled already
+ * Returns previous state (true if was already enabled, false if was not)
+ */
+bool Task::enableIfNot() {
+	bool previousEnabled = iEnabled;
+	if (!iEnabled) enable();
+	return (previousEnabled);
 }
 
 /** Enables the task 
  * and schedules it for execution after a delay = aInterval
  */
 void Task::enableDelayed(unsigned long aDelay) {
-	iEnabled = true;
+	enable();
 	delay(aDelay);
 }
 
@@ -97,6 +115,14 @@ void Task::enableDelayed(unsigned long aDelay) {
 void Task::delay(unsigned long aDelay) {
 	if (!aDelay) aDelay = iInterval;
 	iPreviousMillis = millis() - iInterval + aDelay;
+}
+
+/** Schedules next iteration of Task for execution immediately (if enabled)
+ * leaves task enabled or disabled
+ * Task's original schedule is shifted, and all subsequent iterations will continue from this point in time
+ */
+void Task::forceNextIteration() {
+	iPreviousMillis = millis() - iInterval;
 }
 
 /** Sets the execution interval.
@@ -110,10 +136,14 @@ void Task::setInterval (unsigned long aInterval) {
 }
 
 /** Disables task
- * Task will no loner be executed by the scheduler
+ * Task will no longer be executed by the scheduler
+ * Returns status of the task before disable was called (i.e., if the task was already disabled)
  */
-void Task::disable() {
+bool Task::disable() {
+	bool previousEnabled = iEnabled;
+	if (iEnabled && iOnDisable) (*iOnDisable)();
 	iEnabled = false;
+	return (previousEnabled);
 }
 
 /** Restarts task
@@ -244,6 +274,7 @@ void Scheduler::execute() {
 					unsigned long targetMillis = iCurrent->iPreviousMillis + iCurrent->iInterval;
 					if (targetMillis <= millis()) {
 						if (iCurrent->iIterations > 0) iCurrent->iIterations--;  // do not decrement (-1) being a signal of eternal task
+						iCurrent->iRunCounter++;
 						iCurrent->iPreviousMillis += iCurrent->iInterval;
 
 	#ifdef _TASK_TIMECRITICAL
@@ -263,6 +294,7 @@ void Scheduler::execute() {
 				}
 				else {
 					if (iCurrent->iIterations > 0) iCurrent->iIterations--;  // do not decrement (-1) being a signal of eternal task
+					iCurrent->iRunCounter++;
 					if (iCurrent->iCallback) {
 						(*(iCurrent->iCallback))();
 	#ifdef _TASK_SLEEP_ON_IDLE_RUN

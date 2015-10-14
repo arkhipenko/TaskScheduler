@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.6.0
+// Cooperative multitasking library for Arduino version 1.7.0
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -25,8 +25,13 @@
 //	   2015-09-22 - deprecated disableOnLastIteration method as a result
 //	   2015-09-22 - created a separate branch 'disable-on-last-iteration' for this
 //	   2015-10-01 - made version numbers semver compliant (documentation only)
-
-
+//
+// v1.7.0:
+//	  2015-10-08 - introduced callback run counter - callback functions can branch on the iteration number. 
+//	  2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled. 
+//	  2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
+//	  2015-10-11 - introduced callback functions "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
+//	  2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -63,7 +68,6 @@ THE SOFTWARE.
 //#define _TASK_TIMECRITICAL
 //#define _TASK_SLEEP_ON_IDLE_RUN
 
-
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 #include <avr/sleep.h>
 #include <avr/power.h>
@@ -96,25 +100,30 @@ class Scheduler {
 class Task {
     friend class Scheduler;
     public:
-	Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, boolean aEnable=false);
+	Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, boolean aEnable=false, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 
 	void enable();
+	bool enableIfNot();
 	void enableDelayed(unsigned long aDelay=0);
 	void delay(unsigned long aDelay=0);
+	void forceNextIteration(); 
 	void restart();
 	void restartDelayed(unsigned long aDelay=0);
-	void disable();
+	bool disable();
 	inline bool isEnabled() { return iEnabled; }
-	void set(unsigned long aInterval, long aIterations, void (*aCallback)());
+	void set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 	void setInterval(unsigned long aInterval);
 	inline unsigned long getInterval() { return iInterval; }
 	void setIterations(long aIterations);
 	inline long getIterations() { return iIterations; }
+	inline unsigned long getRunCounter() { return iRunCounter; }
 	inline void setCallback(void (*aCallback)()) { iCallback = aCallback; }
+	inline void setOnEnable(bool (*aCallback)()) { iOnEnable = aCallback; }
+	inline void setOnDisable(void (*aCallback)()) { iOnDisable = aCallback; }
 #ifdef _TASK_TIMECRITICAL
 	inline long getOverrun() { return iOverrun; }
 #endif
-	inline bool isFirstIteration() { return (iIterations >= iSetIterations-1); } 
+	inline bool isFirstIteration() { return (iRunCounter <= 1); } 
 	inline bool isLastIteration() { return (iIterations == 0); }
 
     private:
@@ -128,7 +137,10 @@ class Task {
 #endif
 	volatile long			iIterations;
 	long					iSetIterations; 
+	unsigned long			iRunCounter;
 	void					(*iCallback)();
+	bool					(*iOnEnable)();
+	void					(*iOnDisable)();
 	Task					*iPrev, *iNext;
 	Scheduler				*iScheduler;
 };

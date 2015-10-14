@@ -22,8 +22,10 @@ currentTask	KEYWORD2
 execute	KEYWORD2
 allowSleep	KEYWORD2
 enable	KEYWORD2
+enableIfNot	KEYWORD2
 enableDelayed	KEYWORD2
 delay	KEYWORD2
+forceNextIteration	KEYWORD2
 restart	KEYWORD2
 restartDelayed	KEYWORD2
 disable	KEYWORD2
@@ -33,7 +35,10 @@ setInterval	KEYWORD2
 getInterval	KEYWORD2
 setIterations	KEYWORD2
 getIterations	KEYWORD2
+getRunCounter	KEYWORD2
 setCallback	KEYWORD2
+setOnEnable	KEYWORD2
+setOnDisable	KEYWORD2
 disableOnLastIteration	KEYWORD2
 getOverrun	KEYWORD2
 isFirstIteration	KEYWORD2

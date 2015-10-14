@@ -1,33 +1,16 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.6.0: 2015-09-22
+Version 1.7.0: 2015-10-12
  
  
-REQUIREMENT:
-A lightweight implementation of the task scheduling supporting:
-execution period (n times per second)
-number of iterations (n times)
-execution of tasks in predefined sequence
-dynamic change of the execution parameters for both tasks and execution schedule
-power saving via entering IDLE sleep mode if no tasks are scheduled to run
+OVERVIEW:
+A lightweight implementation of cooperative multitasking (task scheduling) supporting:
+1. Periodic task execution (with dynamic execution period in milliseconds)
+2. Number of iterations (n times)
+3. Execution of tasks in predefined sequence
+4. Dynamic change of task execution parameters (frequency, number of iterations, callback function)
+5. Power saving via entering IDLE sleep mode between tasks are scheduled to run
  
  
-IDEA: 
-“Task” is a container concept that links together:
-Execution interval
-Number of execution iterations
-A piece of code performing the task activities (callback function)
- 
-Tasks are linked into execution chains, which are processed by the “Scheduler” in the order they are linked.
- 
-Tasks are responsible for supporting cooperative multitasking by being “good neighbors”, i.e., running their callback functions in a non-blocking way and releasing control as soon as possible.
- 
-“Scheduler” is executing Tasks' callback functions in the order the tasks were added to the chain, from first to last. Scheduler stops and exists after processing the chain once in order to allow other statements in the main code of loop() function to run.  This a “scheduling pass”.
- 
-If compiled with _TASK_SLEEP_ON_IDLE_RUN enabled, the scheduler will place processor into IDLE sleep mode (for approximately 1 ms, as the timer interrupt will wake it up), after what is determined to be an “idle” pass. An Idle Pass is a pass through the chain when no Tasks were scheduled to run their callback functions. This is done to avoid repetitive empty passes through the chain when no tasks need to be executed. If any of the tasks in the chain always requires immediate execution (aInterval = 0), then there will be no end-of-pass delay.
-
-Note: Task Scheduler uses millis() to determine if tasks are ready to be invoked. Therefore, if you put your device to any “deep” sleep mode disabling timer interrupts, the millis() count will be suspended, leading to effective suspension of scheduling. Upon wake up, active tasks need to be re-enabled, which will effectively reset their internal time scheduling variables to the new value of millis(). Time spent in deep sleep mode should be considered “frozen”, i.e., if a task was scheduled to run in 1 second from now, and device was put to sleep for 5 minutes, upon wake up, the task will still be scheduled 1 second from the time of wake up. Executing enable() function on this tasks will make it run as soon as possible. This is a concern only for tasks which are required to run in a truly periodical manner (in absolute time terms).
-
-
 Changelog:
     2015-02-24 - Initial release 
     2015-02-28 - added delay() and disableOnLastIteration() functions
@@ -52,3 +35,9 @@ v1.6.0:
     2015-09-22 - deprecated disableOnLastIteration method as a result
     2015-10-01 - made version numbers semver compliant (documentation only)
 
+v1.7.0:
+    2015-10-08 - introduced callback run counter - callback functions can branch on the iteration number. 
+    2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled. 
+    2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
+    2015-10-11 - introduced callback functions "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
+    2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
