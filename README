@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.7.0: 2015-10-12
+Version 1.8.0: 2015-10-15
  
  
 OVERVIEW:
@@ -9,9 +9,11 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 3. Execution of tasks in predefined sequence
 4. Dynamic change of task execution parameters (frequency, number of iterations, callback function)
 5. Power saving via entering IDLE sleep mode between tasks are scheduled to run
- 
- 
+6. Support for task invocation via Status Request object
+
+
 Changelog:
+v1.0.0:
     2015-02-24 - Initial release 
     2015-02-28 - added delay() and disableOnLastIteration() functions
     2015-03-25 - changed scheduler execute() function for a more precise delay calculation:
@@ -20,16 +22,20 @@ Changelog:
                  3. Delay is based on the min anticipated wait until next task _AND_ the runtime of execute function itself.
     2015-05-11 - added  restart() and restartDelayed() functions to restart tasks which are on hold after running all iterations
     2015-05-19 - completely removed  delay from the scheduler since there are no power saving there. using 1 ms sleep instead
+	
 v1.4.1:
     2015-09-15 - more careful placement of AVR-specific includes for sleep functions (compatibility with DUE)
                          sleep on idle run is no longer a default and should be explicitly compiled with _TASK_SLEEP_ON_IDLE_RUN defined
+						 
 v1.5.0:
     2015-09-20 - access to currently executing task (for callback functions)
     2015-09-20 - pass scheduler as a parameter to the task constructor to append the task to the end of the chain
     2015-09-20 - option to create a task already enabled
+	
 v1.5.1:
     2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations(). 
 		 		 Thanks to Hannes Morgenstern for catching this one
+				 
 v1.6.0:
     2015-09-22 - revert back to having all tasks disable on last iteration.
     2015-09-22 - deprecated disableOnLastIteration method as a result
@@ -41,3 +47,8 @@ v1.7.0:
     2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
     2015-10-11 - introduced callback functions "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
     2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
+
+v1.8.0:
+	2015-10-13 - support for status request objects allowing tasks waiting on requests
+	2015-10-13 - moved to a single header file to allow compilation control via #defines from the main sketch
+	

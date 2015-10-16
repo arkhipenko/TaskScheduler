@@ -8,6 +8,7 @@
 
 Task	KEYWORD1
 Scheduler	KEYWORD1
+StatusRequest	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -43,6 +44,14 @@ disableOnLastIteration	KEYWORD2
 getOverrun	KEYWORD2
 isFirstIteration	KEYWORD2
 isLastIteration	KEYWORD2
+setWaiting	KEYWORD2
+signal	KEYWORD2
+signalComplete	KEYWORD2
+pending	KEYWORD2
+completed	KEYWORD2
+getStatus	KEYWORD2
+waitFor	KEYWORD2
+getStatusRequest	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="CREATED" CONTENT="20150206;16300000">
 	<META NAME="CHANGEDBY" CONTENT="Anatoli Arkhipenko">
-	<META NAME="CHANGED" CONTENT="20151012;23280000">
+	<META NAME="CHANGED" CONTENT="20151015;23250000">
 	<META NAME="Info 1" CONTENT="">
 	<META NAME="Info 2" CONTENT="">
 	<META NAME="Info 3" CONTENT="">
@@ -24,8 +24,8 @@
 <BODY LANG="en-US" TEXT="#000000" BGCOLOR="#ffffff" DIR="LTR">
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Task Scheduler –
 cooperative multitasking for Arduino microcontrollers</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Version 1.7.0:
-2015-10-12</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Version 1.8.0:
+2015-10-15</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -44,6 +44,8 @@ supporting:</P>
 	function)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Power saving via
 	entering IDLE sleep mode between tasks are scheduled to run</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for task
+	invocation via Status Request object</P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -52,6 +54,8 @@ supporting:</P>
 container concept that links together:</P>
 <OL>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Execution interval</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Execution event
+	(Status Request)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Number of
 	execution iterations</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Piece of code
@@ -104,7 +108,7 @@ tasks in the chain always requires immediate execution (aInterval =
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>Below is the flowchart of a Task lifecycle:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=769 BORDER=0></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=747 BORDER=0></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Task
@@ -122,6 +126,28 @@ Executing <B>enable() </B>function on this tasks will make it run as
 soon as possible. This is a concern only for tasks which are required
 to run in a truly periodical manner (in absolute time terms). 
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">In addition to
+time-only invocation, tasks can be scheduled to wait on an event
+employing StatusRequest objects (more about Status Requests later).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Consider a scenario
+when one task (t1) is performing a function which affects execution
+of many tasks (t2, t3). In this case the task t1 will “signal”
+completion of its function via Status Request object. Tasks t2 and t3
+are “waiting” on the same Status Request object. As soon as
+status request completes, t2 and t3 are activated.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Alternative scenario is
+the ne task (t1) and waiting for the completion of a number of tasks
+(t2, t3). When done, t2 and t3 signal completion of their functions,
+t1 is invoked. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Please see the examples
+at the end of this document.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>COMPILE PARAMETERS:</B></P>
@@ -163,6 +189,15 @@ conserve power.  Device in SLEEP_MODE_IDLE wakes up to all hardware
 and timer interrupts, so scheduling is kept current.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in">#define
+<B>_TASK_STATUS_REQUEST</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">…will compile
+TaskScheduler with support for StatusRequest object. Status Requests
+are objects allowing tasks to wait on an event, and signal event
+completion to each other. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"> 
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: above
 parameters are DISABLED by default, and need to be explicitly
 enabled.</B></P>
@@ -175,7 +210,8 @@ enabled.</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>API DOCUMENTATION:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>TASKS:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>TASKS:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">CREATION:</P>
@@ -197,7 +233,7 @@ tasks are created <B>disabled</B> by default.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>Task(unsigned long aInterval, long aIterations, void
 (*aCallback)(), Scheduler* aScheduler, bool aEnable, bool
-(*aOnEnable)(), void (*aOnDisable)(),);</B></P>
+(*aOnEnable)(), void (*aOnDisable)())</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Constructor
@@ -247,6 +283,18 @@ You have to explicitly enable the task for execution.</P>
 task is scheduled for execution immediately. Enable tasks with delay
 (standard execution interval or specific execution interval) in order
 to defer first run of the task.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>Task(void (*aCallback)(), Scheduler* aScheduler, bool
+(*aOnEnable)(), void (*aOnDisable)())</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for Status Request objects, this constructor
+creates a Task for activation on event (since such tasks must run
+<B>waitFor() </B>method, their <I>interval</I>, <I>iteration</I> and
+<I>enabled</I> status will be set by that method.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>INFORMATION</B></P>
@@ -329,7 +377,8 @@ current pass is the last iteration.
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>CONTROL:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>void enable();</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -496,15 +545,48 @@ ran through all their allocated iterations are disabled.
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void waitFor(StatusRequest* aStatusRequest);</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for Status Requests, this method makes task
+wait for the completion of <B>aStatusRequest</B> event. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>waitFor()
+</B>sets tasks interval to <B>0 (zero)</B> for immediate execution
+when event happens, and also sets the number of <B>iterations to 1</B>.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
+aStatusRequest</B> should be “activated” by calling <B>setWaiting()
+</B>method before making a task wait on it. Otherwise, the task will
+execute immediately. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>TASK SCHEDULER:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>CREATION:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>StatusRequest*
+getStatusRequest()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+a StatusReqeust object this Task was waiting on. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>TASK SCHEDULER:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>CREATION:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Scheduler()</B><BR><BR>
 </P>
@@ -609,6 +691,97 @@ one scheduling pass, including end-of-pass sleep. This function
 typically placed inside the <B>loop()</B> function of the sketch.
 Since <B>execute</B> exits after every pass, you can put additional
 statements after <B>execute</B> inside the <B>loop()</B> 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>STATUS REQUEST:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>CREATION:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>StatusRequest()</B><BR><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Default
+constructor. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Takes
+no parameters. Creates Status Request object, which is assigned a
+status of “completed” on creation. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>void
+setWaiting(unsigned int aCount)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Activates
+Status Request object. By default each object is set to wait on one
+event only, however, if <B>aCount</B> is supplied, Status Request can
+wait on multiple events. For instance, <B>setWaiting(3)</B> will wait
+on three signals. An example could be waiting for completion of
+measurements from 3 sensors. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool signal(int
+aStatus)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Signals
+completion of the event to the Status Request object, and passes a
+completion code, which could be interrogated later. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
+</B> passing a <B>negative</B> status code to the status request
+object is considered reporting an error condition, and will complete
+the status request regardless of how many outstanding signals it is
+still waiting for. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note</B>:
+only the latest status code is kept.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool signalComplete
+(int aStatus)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Signals
+completion of <B>ALL</B> events to the Status Request object, and
+passes a completion code, which could be interrogated later. The
+status request completes regardless of how many events it is still
+waiting on. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool pending() </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+<B>true</B> if status request is still waiting for event or events to
+happen.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool completed () </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+<B>true</B> if status has completed.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>int getStatus()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+the status code passed to the status request object by the <B>signal()
+</B>and <B>signalComplete() </B>methods. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Any
+<B>positive</B> number is considered a successful completion status.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">A
+0 (zero) is considered a default successful completion status.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Any
+<B>negative</B> number is considered an error code and unsuccessful
+completion of a request.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -971,12 +1144,26 @@ is the implementation using TaskScheduler </FONT>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><BR>#include
-&lt;TaskScheduler.h&gt;<BR><BR>#define  LEDPIN		13<BR><BR><BR>Scheduler
-ts;<BR></FONT></FONT><BR>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><BR></FONT></FONT><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#define
+_TASK_SLEEP_ON_IDLE_RUN</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#include
+&lt;TaskScheduler.h&gt;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#define
+ LEDPIN    13</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler
+ts;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tWrapper(30000L, -1, &amp;WrapperCallback, &amp;ts, true);</FONT></FONT></P>
+tWrapper(30000, -1, &amp;WrapperCallback, &amp;ts, true);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
 tBlink(5000, 1, NULL, &amp;ts, false, &amp;BlinkOnEnable,
 &amp;BlinkOnDisable);</FONT></FONT></P>
@@ -986,12 +1173,16 @@ tLED(0, -1, NULL, &amp;ts, false, NULL, &amp;LEDOff);</FONT></FONT></P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
 WrapperCallback() {</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tBlink.restartDelayed();
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;In
+WrapperCallback&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tBlink.restartDelayed();
   // LED blinking  is initiated </FONT></FONT>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
-<FONT FACE="Courier New, monospace"><FONT SIZE=2>					   //every 30
-seconds for 5 seconds</FONT></FONT></P>
+            <FONT FACE="Courier New, monospace"><FONT SIZE=2>//every
+30 seconds for 5 seconds</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -1005,15 +1196,22 @@ and enable LED blinking task, which actually controls</FONT></FONT></P>
 the hardware (LED in this example)</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>bool
 BlinkOnEnable() {</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLED.setInterval(
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;In
+BlinkOnEnable&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tLED.setInterval(
 500 + random(501) );</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLED.setCallback(
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tLED.setCallback(
 &amp;LEDOn);</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLED.enable();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tLED.enable();</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	return
-true;  // Task should be enabled</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>return true;  //
+Task should be enabled</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -1033,24 +1231,38 @@ thus executing its OnDisable method below.</FONT></FONT></P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
 BlinkOnDisable() {</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLED.disable();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;In
+BlinkOnDisable&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tLED.disable();</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
 LEDOn () {</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	digitalWrite(LEDPIN,
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;In
+LEDOn&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>digitalWrite(LEDPIN,
 HIGH);</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLED.setCallback(
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tLED.setCallback(
 &amp;LEDOff);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
 LEDOff () {</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	digitalWrite(LEDPIN,
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;In
+LEDOff&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>digitalWrite(LEDPIN,
 LOW);</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLED.setCallback(
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tLED.setCallback(
 &amp;LEDOn);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
@@ -1064,12 +1276,412 @@ task finishes (or disabled ahead of time)</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
-setup() {<BR>  // put your setup code here, to run once:<BR>}<BR><BR>void
-loop() {<BR>  // put your main code here, to run repeatedly:<BR> 
-ts.execute();<BR>}</FONT></FONT></P>
+setup() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.begin(115200);
+</FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>pinMode(LEDPIN,
+OUTPUT); </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+loop() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>// put your main
+code here, to run repeatedly:</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>ts.execute();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<OL START=3>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>USING
+	STATUS REQUEST OBJECTS  </B></FONT>
+	</P>
+</OL>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">This
+test emulates querying 3 sensors once every 10 seconds, each could
+respond with a different delay (ultrasonic sensors for instance) and
+printing a min value of the three when all three have reported their
+values.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">The
+overall timeout of 1 second is setup as well.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">An
+error message needs to be printed if a timeout occurred instead of a
+value.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#define
+_TASK_SLEEP_ON_IDLE_RUN</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#define
+_TASK_STATUS_REQUEST</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#include
+&lt;TaskScheduler.h&gt;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>StatusRequest
+measure;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler
+ts; </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tCycle(10000, -1, &amp;CycleCallback, &amp;ts, true);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tMeasure(1000, 1, &amp;MeasureCallback, &amp;ts, false,
+&amp;MeasureEnable, &amp;MeasureDisable);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tCalculate(&amp;CalcCallback, &amp;ts);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tSensor1(0, 1, &amp;S1Callback, &amp;ts, false, &amp;S1Enable);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tSensor2(0, 1, &amp;S2Callback, &amp;ts, false, &amp;S2Enable);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tSensor3(0, 1, &amp;S3Callback, &amp;ts, false, &amp;S3Enable);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>long
+distance, d1, d2, d3;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+CycleCallback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;CycleCallback:
+Initiating measurement cycle every 10 seconds&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tMeasure.restartDelayed();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>bool
+MeasureEnable() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;MeasureEnable:
+Activating sensors&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>distance = 0;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>measure.setWaiting(3);
+// Set the StatusRequest to wait for 3 signals. </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tCalculate.waitFor(&amp;measure);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor1.restart();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor2.restart();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor3.restart();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>return true;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+MeasureCallback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;MeasureCallback:
+Invoked by calculate task or one second later&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>if
+(measure.pending()) {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>tCalculate.disable();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>measure.signalComplete(-1);
+ // signal error</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;MeasureCallback:
+Timeout!&quot;);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>else {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;MeasureCallback:
+Min distance=&quot;);Serial.println(distance);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+MeasureDisable() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;MeasureDisable:
+Cleaning up&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor1.disable();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor2.disable();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor3.disable();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+CalcCallback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;CalcCallback:
+calculating&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>distance = -1;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>if (
+measure.getStatus() &gt;= 0) {  // only calculate if statusrequest
+ended successfully</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>distance = d1 &lt;
+d2 ? d1 : d2;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>distance = d3 &lt;
+distance ? d3 : distance;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="Courier New, monospace"><FONT SIZE=2>tMeasure.forceNextIteration();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>/**
+Simulation code for sensor 1</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> <FONT FACE="Courier New, monospace"><FONT SIZE=2>*
+ ----------------------------</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>*/</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>bool
+S1Enable() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;S1Enable:
+Triggering sensor1. Delay=&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor1.setInterval(
+random(1200) );  // Simulating sensor delay, which could go over 1
+second and cause timeout</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>d1 = 0;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(
+tSensor1.getInterval() );</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>return true;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+S1Callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;S1Callback:
+Emulating measurement. d1=&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>d1 = random(501); //
+pick a value from 0 to 500 &quot;centimeters&quot; simulating a
+measurement </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>measure.signal();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(d1); </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>/**
+Simulation code for sensor 2</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> <FONT FACE="Courier New, monospace"><FONT SIZE=2>*
+ ----------------------------</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>*/</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>bool
+S2Enable() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;S2Enable:
+Triggering sensor2. Delay=&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor2.setInterval(
+random(1200) );  // Simulating sensor delay, which could go over 1
+second and cause timeout</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>d2 = 0;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(
+tSensor2.getInterval() );</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>return true;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+S2Callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;S2Callback:
+Emulating measurement. d2=&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>d2 = random(501); //
+pick a value from 0 to 500 &quot;centimeters&quot; simulating a
+measurement</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>measure.signal();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(d2); 
+</FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>/**
+Simulation code for sensor 3</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> <FONT FACE="Courier New, monospace"><FONT SIZE=2>*
+ ----------------------------</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>*/</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>bool
+S3Enable() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;S3Enable:
+Triggering sensor3. Delay=&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>tSensor3.setInterval(
+random(1200) );  // Simulating sensor delay, which could go over 1
+second and cause timeout</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>d3 = 0;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(
+tSensor3.getInterval() );</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>return true;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+S3Callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.print(&quot;S3Callback:
+Emulating measurement. d3=&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>d3 = random(501); //
+pick a value from 0 to 500 &quot;centimeters&quot; simulating a
+measurement</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>measure.signal();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(d3); </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>/**
+Main Arduino code</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> <FONT FACE="Courier New, monospace"><FONT SIZE=2>*
+ Not much is left here - everything is taken care of by the framework</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>*/</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+setup() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.begin(115200);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Serial.println(&quot;TaskScheduler
+StatusRequest Sensor Emulation Test. Complex Test.&quot;);  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>randomSeed(analogRead(A1)+millis());</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+loop() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>ts.execute();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 </BODY>
 </HTML>
