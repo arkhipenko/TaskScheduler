@@ -52,6 +52,10 @@ completed	KEYWORD2
 getStatus	KEYWORD2
 waitFor	KEYWORD2
 getStatusRequest	KEYWORD2
+setId	KEYWORD2
+getId	KEYWORD2
+setControlPoint	KEYWORD2
+getControlPoint	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

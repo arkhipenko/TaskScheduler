@@ -1,21 +1,22 @@
+/** 
+ *  TaskScheduler Test
+ *
+ *  Initially only tasks 1 and 2 are enabled
+ *  Task1 runs every 2 seconds 10 times and then stops
+ *  Task2 runs every 3 seconds indefinitely
+ *  Task1 enables Task3 at its first run
+ *  Task3 run every 5 seconds
+ *  Task1 disables Task3 on its last iteration and changed Task2 to run every 1/2 seconds
+ *  At the end Task2 is the only task running every 1/2 seconds
+ */
+ 
+ 
 #include <TaskScheduler.h>
 
 Task t4();
 Task t1(2000, 10, &t1Callback);
 Task t2(3000, -1, &t2Callback);
 Task t3(5000, -1, &t3Callback);
-
-// Test
-// Initially only tasks 1 and 2 are enabled
-// Task1 runs every 2 seconds 10 times and then stops
-// Task2 runs every 3 seconds indefinitely
-// Task1 enables Task3 at its first run
-// Task3 run every 5 seconds
-// loop() runs every 1 second (a default scheduler delay, if no shorter tasks' interval is detected)
-// Task1 disables Task3 on its last iteration and changed Task2 to run every 1/2 seconds
-// Because Task2 interval is shorter than Scheduler default tick, loop() executes ecery 1/2 seconds now
-// At the end Task2 is the only task running every 1/2 seconds
-
 
 Scheduler runner;
 
@@ -74,9 +75,5 @@ void setup () {
 
 
 void loop () {
-  
   runner.execute();
-  
-  Serial.println("Loop ticks at: ");
-  Serial.println(millis());
 }

@@ -7,7 +7,6 @@
  
 #define _TASK_SLEEP_ON_IDLE_RUN
 #define _TASK_STATUS_REQUEST
-
 #include <TaskScheduler.h>
 
 StatusRequest st;
@@ -67,7 +66,7 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("TaskScheduler: Status Request Test 1. Simple Test.");  
-  // put your setup code here, to run once:
+
   PrepareStatus();
   t3.waitFor(&st);
 
@@ -75,7 +74,7 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
   ts.execute();
 
 }

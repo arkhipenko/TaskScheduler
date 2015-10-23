@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.8.0
+// Cooperative multitasking library for Arduino version 1.8.1
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -41,7 +41,9 @@
 // v1.8.0:
 //	  2015-10-13 - support for status request objects allowing tasks waiting on requests
 //	  2015-10-13 - moved to a single header file to allow compilation control via #defines from the main sketch
-
+//
+// v1.8.1:
+//	  2015-10-22 - implement Task id and control points to support identification of failure points for watchdog timer logging
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -81,6 +83,7 @@ THE SOFTWARE.
  *	#define _TASK_TIMECRITICAL		// Enable monitoring scheduling overruns
  *	#define _TASK_SLEEP_ON_IDLE_RUN	// Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback functions were invoked during the pass 
  *	#define _TASK_STATUS_REQUEST	// Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
+ *	#define _TASK_WDT_IDS		// Compile with support of wdt control points and task ids
  */
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -165,6 +168,12 @@ class Task {
 	void waitFor(StatusRequest* aStatusRequest);
 	inline StatusRequest* getStatusRequest() {return iStatusRequest; }
 #endif
+#ifdef _TASK_WDT_IDS
+	inline void setId(unsigned int aID) { iTaskID = aID; }
+	inline unsigned int getId() { return iTaskID; }
+	inline void setControlPoint(unsigned int aPoint) { iControlPoint = aPoint; }
+	inline unsigned int getControlPoint() { return iControlPoint; }
+#endif
 	
 	
     private:
@@ -187,11 +196,17 @@ class Task {
 #ifdef _TASK_STATUS_REQUEST
 	StatusRequest			*iStatusRequest;
 #endif
+#ifdef _TASK_WDT_IDS
+	unsigned int			iTaskID;
+	unsigned int			iControlPoint;
+#endif
 };
 
 
 // ------------------ TaskScheduler implementation --------------------
-
+#ifdef _TASK_WDT_IDS
+	static unsigned int __task_id_counter = 0;
+#endif
 /** Constructor, uses default values for the parameters
  * so could be called with no parameters.
  */
@@ -202,6 +217,9 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
 	if (aEnable) enable();
 #ifdef _TASK_STATUS_REQUEST
 	iStatusRequest = NULL;
+#endif
+#ifdef _TASK_WDT_IDS
+	iTaskID = ++__task_id_counter;
 #endif
 }
 
@@ -216,6 +234,9 @@ Task::Task( void (*aCallback)(), Scheduler* aScheduler, bool (*aOnEnable)(), voi
 	set(0, 1, aCallback, aOnEnable, aOnDisable);
 	if (aScheduler) aScheduler->addTask(*this);
 	iStatusRequest = NULL;
+#ifdef _TASK_WDT_IDS
+	iTaskID = ++__task_id_counter;
+#endif
 }
 
 /** Signals completion of the StatusRequest by one of the participating events
@@ -265,6 +286,9 @@ void Task::reset() {
 	iRunCounter = 0;
 #ifdef _TASK_TIMECRITICAL
 	iOverrun = 0;
+#endif
+#ifdef _TASK_WDT_IDS
+	iControlPoint = 0;
 #endif
 }
 
@@ -476,6 +500,10 @@ void Scheduler::execute() {
 	while (iCurrent) { 
 		do {   		
 			if (iCurrent->iEnabled) {
+	#ifdef _TASK_WDT_IDS
+	// For each task the control points are initialized to avoid confusion because of carry-over
+				iCurrent->iControlPoint = 0;
+	#endif
 				if (iCurrent->iIterations == 0) {
 					iCurrent->disable();
 					break;

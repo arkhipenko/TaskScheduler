@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.8.0: 2015-10-15
+Version 1.8.1: 2015-10-22
  
  
 OVERVIEW:
@@ -10,6 +10,7 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 4. Dynamic change of task execution parameters (frequency, number of iterations, callback function)
 5. Power saving via entering IDLE sleep mode between tasks are scheduled to run
 6. Support for task invocation via Status Request object
+7. Support for task IDs and Control Points for error handling and watchdog timer
 
 
 Changelog:
@@ -49,6 +50,9 @@ v1.7.0:
     2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
 
 v1.8.0:
-	2015-10-13 - support for status request objects allowing tasks waiting on requests
-	2015-10-13 - moved to a single header file to allow compilation control via #defines from the main sketch
+    2015-10-13 - support for status request objects allowing tasks waiting on requests
+    2015-10-13 - moved to a single header file to allow compilation control via #defines from the main sketch
+
+v1.8.1:
+    2015-10-22 - implement Task id and control points to support identification of failure points for watchdog timer logging
 	

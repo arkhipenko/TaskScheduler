@@ -1,3 +1,12 @@
+/**
+ * TaskScheduler Test of OnEnable and OnDisable methods and illustration of using wrapper tasks for timout purposes
+ *
+ * 	A wrapper task runs every 30 seconds and initiates the test case
+ * 	Another task is run once for 5 seconds, and serves as a LED blinking timeout - 5 seconds
+ * 	Finally, a dedicated task which controls LED is running periodically until stopped, and makes the LED blink with 0.5 to 1 second interval. 
+ *
+ */
+
 #define _TASK_SLEEP_ON_IDLE_RUN
 #include <TaskScheduler.h>
 

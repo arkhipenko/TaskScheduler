@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="CREATED" CONTENT="20150206;16300000">
 	<META NAME="CHANGEDBY" CONTENT="Anatoli Arkhipenko">
-	<META NAME="CHANGED" CONTENT="20151015;23250000">
+	<META NAME="CHANGED" CONTENT="20151022;23060000">
 	<META NAME="Info 1" CONTENT="">
 	<META NAME="Info 2" CONTENT="">
 	<META NAME="Info 3" CONTENT="">
@@ -18,14 +18,15 @@
 		P.western { font-family: "Liberation Serif", "MS PMincho", serif; font-size: 12pt; so-language: en-US }
 		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt; so-language: zh-CN }
 		P.ctl { font-family: "Lohit Hindi", "MS Mincho"; font-size: 12pt; so-language: hi-IN }
+		A:link { color: #0000ff }
 	-->
 	</STYLE>
 </HEAD>
-<BODY LANG="en-US" TEXT="#000000" BGCOLOR="#ffffff" DIR="LTR">
+<BODY LANG="en-US" TEXT="#000000" LINK="#0000ff" BGCOLOR="#ffffff" DIR="LTR">
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Task Scheduler –
 cooperative multitasking for Arduino microcontrollers</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Version 1.8.0:
-2015-10-15</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Version 1.8.1:
+2015-10-21</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -46,6 +47,8 @@ supporting:</P>
 	entering IDLE sleep mode between tasks are scheduled to run</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for task
 	invocation via Status Request object</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for task
+	IDs and Control Points for error handling and watchdog timer</P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -196,7 +199,37 @@ TaskScheduler with support for StatusRequest object. Status Requests
 are objects allowing tasks to wait on an event, and signal event
 completion to each other. 
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">#define <B>_TASK_WDT_IDS</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">…will compile
+TaskScheduler with support for Task Ids and Control Points. Each task
+can be (and is by default) assigned an ID, which could be used to
+identify the task in case there is a problem with it. Furthermore
+within the task, Control Points could be defined to further help with
+pinpointing potential problem areas. For instance, the tasks which
+deal with external resources (sensors, serial communications,
+anything hardware dependent) can be blocked (or hung), by failed
+hardware. In this case, a watchdog timer could be employed to trap
+such a failed task, and identify which one (by task id) and where in
+the task (by a control point) the problem is likely located.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"> 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>by
+default, talk IDs are assigned sequentially (1, 2, 3, …) to the
+tasks as they are being created. Programmer can assign a specific
+task id. <B>Task ids are unsigned integers.</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Control points provide
+a way to identify potential problem points within a task. Control
+points are <B>unsigned integers </B>as well. Please note that there
+is only one control point per task, and it is set to zero when the
+task’s callback function is invoked (this is done to prevent
+“stray” control point from previous task(s) confusing the
+matters.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Example #7 contains a
+test of task ID and control points functionality.  
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: above
 parameters are DISABLED by default, and need to be explicitly
@@ -207,11 +240,12 @@ enabled.</B></P>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>API DOCUMENTATION:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><FONT SIZE=4><B>API
+DOCUMENTATION:</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
-<B>TASKS:</B></P>
+<FONT SIZE=4><B>TASKS:</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">CREATION:</P>
@@ -545,6 +579,11 @@ ran through all their allocated iterations are disabled.
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>STATUS REQUEST
+METHODS:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>void waitFor(StatusRequest* aStatusRequest);</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
@@ -575,17 +614,73 @@ a StatusReqeust object this Task was waiting on.
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>TASK ID, CONTROL
+POINTS METHODS:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void setId(unsigned int aID);</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for Task IDs, this method will set the task ID
+explicitly. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Calling
+this method is not necessary as task IDs are assigned automatically
+during task creation: 1, 2, 3, …</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>unsigned int getId();</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for Task IDs, this method return current task’s
+ID.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void setControlPoint (unsigned int aPoint);</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for Task IDs, this method will set a control
+point in the task’s code. Control points are similar to “try…catch”
+blocks, with control point ID specifying where in the code the “try”
+part started, and a mechanism like watchdog timer providing the
+“catch” functionality.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
-<B>TASK SCHEDULER:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<B>unsigned int getControlPoint()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+If compiled with support for Task IDs, this method will return
+currently set control point for this task.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-inside: avoid; page-break-after: avoid">
+<FONT SIZE=4><B>TASK SCHEDULER:</B></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-inside: avoid; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-inside: avoid; page-break-after: avoid">
 <B>CREATION:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-inside: avoid; page-break-after: avoid">
 <BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Scheduler()</B><BR><BR>
@@ -1325,8 +1420,6 @@ overall timeout of 1 second is setup as well.</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">An
 error message needs to be printed if a timeout occurred instead of a
 value.</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
-</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
@@ -1683,5 +1776,31 @@ loop() {</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<OL START=3>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>FUTHER
+	INFROMATION</B></FONT></P>
+</OL>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Please
+refer to examples, provided with TaskScheduler package for further
+information and implementation options.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Real
+time examples of TaskScheduler are available here:</FONT></FONT></P>
+<OL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/">http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/</A></U></FONT></FONT></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/">http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/</A></U></FONT></FONT></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider">http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider</A></U></FONT></FONT></FONT></P>
+</OL>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
 </BODY>
 </HTML>
