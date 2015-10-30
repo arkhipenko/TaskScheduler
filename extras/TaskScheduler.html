@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="CREATED" CONTENT="20150206;16300000">
 	<META NAME="CHANGEDBY" CONTENT="Anatoli Arkhipenko">
-	<META NAME="CHANGED" CONTENT="20151022;23060000">
+	<META NAME="CHANGED" CONTENT="20151029;23230000">
 	<META NAME="Info 1" CONTENT="">
 	<META NAME="Info 2" CONTENT="">
 	<META NAME="Info 3" CONTENT="">
@@ -16,17 +16,19 @@
 		@page { margin: 0.79in }
 		P { margin-bottom: 0.08in; direction: ltr; color: #000000; widows: 0; orphans: 0 }
 		P.western { font-family: "Liberation Serif", "MS PMincho", serif; font-size: 12pt; so-language: en-US }
-		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt; so-language: zh-CN }
+		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt }
 		P.ctl { font-family: "Lohit Hindi", "MS Mincho"; font-size: 12pt; so-language: hi-IN }
 		A:link { color: #0000ff }
 	-->
 	</STYLE>
 </HEAD>
 <BODY LANG="en-US" TEXT="#000000" LINK="#0000ff" BGCOLOR="#ffffff" DIR="LTR">
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Task Scheduler –
-cooperative multitasking for Arduino microcontrollers</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Version 1.8.1:
-2015-10-21</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><FONT SIZE=4 STYLE="font-size: 15pt"><B>Task
+Scheduler</B></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
+multitasking for Arduino microcontrollers</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.2: 2015-10-27</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -35,20 +37,24 @@ implementation of cooperative multitasking (task scheduling)
 supporting:</P>
 <OL>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Periodic task
-	execution (with dynamic execution period in milliseconds)</P>
+	execution (with dynamic execution period in milliseconds –
+	frequency of execution)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Number of
-	iterations (n times)</P>
+	iterations (limited or infinite number of iterations)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Execution of tasks
 	in predefined sequence</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Dynamic change of
 	task execution parameters (frequency, number of iterations, callback
-	function)</P>
+	methods)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Power saving via
-	entering IDLE sleep mode between tasks are scheduled to run</P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for task
-	invocation via Status Request object</P>
+	entering IDLE sleep mode when tasks are not scheduled to run</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for
+	event-driven task invocation via Status Request object</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for task
 	IDs and Control Points for error handling and watchdog timer</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for Local
+	Task Storage pointer (allowing use of same callback code for
+	multiple tasks)</P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -56,45 +62,75 @@ supporting:</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">“Task” is a
 container concept that links together:</P>
 <OL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Program code
+	performing specific task activities (callback methods)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Execution interval</P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Execution event
-	(Status Request)</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Number of
 	execution iterations</P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Piece of code
-	performing task activities (callback functions)</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">(Optionally)
+	Execution event (Status Request)</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">(Optionally)
+	Pointer to a Local Task Storage area</P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Tasks</B> are linked
-into execution <B>chains</B>, which are processed by the “Scheduler”
-in the order they are linked.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Tasks</B> perform
+certain functions, which could require periodic or one-time
+execution, update of specific variables, or waiting for specific
+events. Tasks also could be controlling specific hardware, or
+triggered by hardware interrupts. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">For execution purposes
+<B>Tasks</B> are linked into execution <B>chains</B>, which are
+processed by the <B>Scheduler</B> in the order they were added
+(linked together).</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Each task performs its
-function via callback function. Scheduler calls Task’s callback
-function periodically until task is disabled or task runs out of
-iterations. In addition to “regular” callback, two methods could
-be enabled for each task: a callback function invoked once when task
-is enabled, and a callback function invoked once when the task is
-disabled. Those two special methods allows task to properly initiate
-themselves for execution and clean-up after execution is over. 
+function via a callback method. Scheduler calls Task’s callback
+method periodically until task is disabled or runs out of iterations.
+In addition to “regular” callback method, two additional methods
+could be utilized for each task: a callback method invoked every time
+the task is enabled, and a callback method invoked once when the task
+is disabled. Those two special methods allow tasks to properly
+initiate themselves for execution, and clean-up after execution is
+over (E.g., setup pin modes on enable, and always bring pin level to
+LOW at the end). 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Tasks are responsible
 for supporting <B>cooperative</B> <B>multitasking</B> by being “good
-neighbors”, i.e., running their callback functions quickly in a
-non-blocking way and releasing control as soon as possible. 
+neighbors”, i.e., running their callback methods quickly in a
+non-blocking way, and releasing control back to scheduler as soon as
+possible. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in">“Scheduler” is
-executing Tasks' callback functions in the order the tasks were added
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Scheduler</B> is
+executing Tasks' callback methods in the order the tasks were added
 to the chain, from first to last. Scheduler stops and exists after
 processing the chain once in order to allow other statements in the
-main code of <B>loop()</B> function to run.  This <B>a “scheduling
-pass”.</B></P>
+main code of <B>loop()</B> method to run.  This is referred to as a
+<B>“scheduling pass”.</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">(Normally, there is no
+need to have any other statements in the <B>loop</B>() method other
+than the Scheduler's <B>execute</B>() method).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>Below is the flowchart of a Task lifecycle:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=690 BORDER=0></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>TaskScheduler</B>
+library maybe compiled with different compilation controls
+enabled/disabled. This is a way to limit TaskScheduler functionality
+(and size) for specific purpose (sketch). This is achieved by
+defining specific #<B>define</B> paramenters <I>before</I>
+TaskScheduler.h header file. Specifically:</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">If compiled with
@@ -103,15 +139,11 @@ enabled, the scheduler will place processor into IDLE sleep mode (for
 approximately 1 ms, as the timer interrupt will wake it up), after
 what is determined to be an “idle” pass. An Idle Pass is a pass
 through the task chain when no Tasks were scheduled to run their
-callback functions. This is done to avoid repetitive empty passes
+callback methods. This is done to avoid repetitive idle passes
 through the chain when no tasks need to be executed. If any of the
 tasks in the chain always requires immediate execution (aInterval =
-0), then there will be no IDLE sleep between task callback execution.</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
-<B>Below is the flowchart of a Task lifecycle:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=747 BORDER=0></P>
+0), then there will be no IDLE sleep between task's callback method
+execution.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Task
@@ -125,15 +157,16 @@ their internal time scheduling variables to the new value of
 “frozen”, i.e., if a task was scheduled to run in 1 second from
 now, and device was put to sleep for 5 minutes, upon wake up, the
 task will still be scheduled 1 second from the time of wake up.
-Executing <B>enable() </B>function on this tasks will make it run as
+Executing <B>enable() </B>method on this tasks will make it run as
 soon as possible. This is a concern only for tasks which are required
 to run in a truly periodical manner (in absolute time terms). 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">In addition to
-time-only invocation, tasks can be scheduled to wait on an event
-employing StatusRequest objects (more about Status Requests later).</P>
+time-only (<B>millis</B>() only)  invocation, tasks can be scheduled
+to wait on an event employing StatusRequest objects (more about
+Status Requests later).</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Consider a scenario
 when one task (t1) is performing a function which affects execution
 of many tasks (t2, t3). In this case the task t1 will “signal”
@@ -149,17 +182,17 @@ t1 is invoked.
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in">Please see the examples
-at the end of this document.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Please see the code
+examples at the end of this document, and included with the library
+package for details.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>COMPILE PARAMETERS:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in">This library could be
-compiled with several options. 
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in">These parameters must
-be defined before inclusion of the library header file into the
-sketch.</P>
+compiled in several configurations.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Parameters (<B>#define</B>s)
+defining what functionality should or should not be included need be
+defined before the library header file in the body of arduino sketch.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">#define
@@ -168,15 +201,15 @@ sketch.</P>
 library with time critical tracking option enabled.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Time critical option
 keeps track where next execution time of the task falls, and makes it
-available via API through Task::<B> getOverrun() </B>function. If
+available via API through <B>Task::getOverrun()</B> method. If
 <B>getOverrun </B>returns a negative value, this Task’s next
-execution time is in the past, and task is behind schedule. This most
-probably means that either task’s callback function runtime is too
-long, or the execution interval is too short (then schedule is too
-aggressive).</P>
+execution time point is <I>already</I> in the past, and task is
+behind schedule. This most probably means that either task’s
+callback method's runtime is too long, or the execution interval is
+too short (and therefore schedule is too aggressive).</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">A positive value
-indicates that task is on schedule, and callback functions have
-enough time to finish before the next scheduled pass. 
+indicates that task is on schedule, and callback methods have enough
+time to finish before the next scheduled pass. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -186,14 +219,15 @@ enough time to finish before the next scheduled pass.
 library with the <B>sleep</B> option enabled (AVR boards only).</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">When enabled, scheduler
 will put the microcontroller into <B>SLEEP_MODE_IDLE</B> state if
-none of the tasks’ callback functions were activated during pass.
-<B>IDLE</B> state is interrupted by timers once every 1 ms. Helps
-conserve power.  Device in SLEEP_MODE_IDLE wakes up to all hardware
-and timer interrupts, so scheduling is kept current.</P>
+none of the tasks’ callback methods were activated during execution
+pass. <B>IDLE</B> state is interrupted by timers once every 1 ms.
+Putting microcontroller to IDLE state helps conserve power.  Device
+in SLEEP_MODE_IDLE wakes up to all hardware and timer interrupts, so
+scheduling is kept current.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in">#define
-<B>_TASK_STATUS_REQUEST</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+#define <B>_TASK_STATUS_REQUEST</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in">…will compile
 TaskScheduler with support for StatusRequest object. Status Requests
 are objects allowing tasks to wait on an event, and signal event
@@ -203,7 +237,7 @@ completion to each other.
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">#define <B>_TASK_WDT_IDS</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in">…will compile
-TaskScheduler with support for Task Ids and Control Points. Each task
+TaskScheduler with support for Task IDs and Control Points. Each task
 can be (and is by default) assigned an ID, which could be used to
 identify the task in case there is a problem with it. Furthermore
 within the task, Control Points could be defined to further help with
@@ -223,30 +257,44 @@ task id. <B>Task ids are unsigned integers.</B></P>
 a way to identify potential problem points within a task. Control
 points are <B>unsigned integers </B>as well. Please note that there
 is only one control point per task, and it is set to zero when the
-task’s callback function is invoked (this is done to prevent
-“stray” control point from previous task(s) confusing the
-matters.</P>
+task’s callback method is invoked (this is done to prevent “stray”
+control point from previous task(s) confusing the matters.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Example #7 contains a
 test of task ID and control points functionality.  
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: above
-parameters are DISABLED by default, and need to be explicitly
-enabled.</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">#define
+<B>_TASK_LTS_POINTER</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">…will compile
+TaskScheduler with support for Local Task Storage pointer (LTS). LTS
+is a generic (void*) pointer which could be set to reference a
+variable or a structure specific to a particular task. A callback
+method can get access to specific variables by getting reference to a
+currently running task from the scheduler, and then casting (void*)
+LTS pointer to the appropriate pointer type. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: </B>above
+parameters are<B> DISABLED </B>by default, and need to be explicitly
+enabled by placing appropriate #define statements in front of the
+#include statement for the TaskScheduler header file.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><FONT SIZE=4><B>API
-DOCUMENTATION:</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<FONT SIZE=4><B>API DOCUMENTATION:</B></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <FONT SIZE=4><B>TASKS:</B></FONT></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">CREATION:</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Task();</B></P>
@@ -258,7 +306,7 @@ constructor.
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Takes
 no parameters and creates a task that could be scheduled to run at
 every scheduling pass indefinitely, but does not have a callback
-function defined, so no execution will actually take place. 
+method defined, so no code execution will actually take place. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">All
 tasks are created <B>disabled</B> by default.</P>
@@ -268,14 +316,14 @@ tasks are created <B>disabled</B> by default.</P>
 <B>Task(unsigned long aInterval, long aIterations, void
 (*aCallback)(), Scheduler* aScheduler, bool aEnable, bool
 (*aOnEnable)(), void (*aOnDisable)())</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Constructor
 with parameters. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Creates
 a task that is scheduled to run every &lt;aInterval&gt; milliseconds,
-&lt;aIterations&gt; times, executing &lt;aCallback&gt; function on
+&lt;aIterations&gt; times, executing &lt;aCallback&gt; method on
 every pass. 
 </P>
 <OL>
@@ -290,7 +338,7 @@ every pass.
 	all their iterations remain active. 
 	</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">aCallback is a
-	pointer to a void callback function without parameters (<B>default =
+	pointer to a void callback method without parameters (<B>default =
 	NULL)</B></P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">aScheduler –
 	<B>optional</B> reference to existing scheduler. If supplied (not
@@ -300,23 +348,37 @@ every pass.
 	<B>optional</B>. Value of <B>true </B>will create task enabled.
 	(<B>default = false)</B></P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">aOnEnable is a
-	pointer to a bool callback function without parameters, invoked when
-	task is enabled. If OnEnable function returns <B>true</B>, task is
-	enabled. If <B>OnEnable</B> function return <B>false</B>, task
-	remains disabled (<B>default = NULL)</B></P>
+	pointer to a bool callback method without parameters, invoked when
+	task is enabled. If OnEnable method returns <B>true</B>, task is
+	enabled. If <B>OnEnable</B> method return <B>false</B>, task remains
+	disabled (<B>default = NULL)</B></P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">aOnDisable is a
-	pointer to a void callback function without parameters, invoked when
+	pointer to a void callback method without parameters, invoked when
 	task is disabled (<B>default = NULL)</B></P>
 </OL>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">All
-tasks are created <B>disabled</B> by default (unless aEnable = true).
-You have to explicitly enable the task for execution.</P>
+tasks are created <B>disabled</B> by default (unless <B>aEnable</B> =
+true). You have to explicitly enable the task for execution.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
+</B>OnEnable callback method is called immediately when task is
+enabled, which could be well ahead of the scheduled execution time of
+the task. Please bear that in mind – other tasks, hardware, serial
+interface may not even be initialized yet. It is always advisable to
+explicitly enable tasks with OnEnable methods after all
+initialization methods completed (e.g., at the end of <B>setup</B>()
+method) 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Enabled
-task is scheduled for execution immediately. Enable tasks with delay
-(standard execution interval or specific execution interval) in order
-to defer first run of the task.</P>
+task is scheduled for execution as soon as the Scheduler's <B>execute</B>()
+methods gets control. In order to delay first run of the task, use
+<B>enableDelayed</B> or <B>delay</B> method (for enabled tasks)
+method.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
@@ -328,12 +390,13 @@ to defer first run of the task.</P>
 compiled with support for Status Request objects, this constructor
 creates a Task for activation on event (since such tasks must run
 <B>waitFor() </B>method, their <I>interval</I>, <I>iteration</I> and
-<I>enabled</I> status will be set by that method.</P>
+<I>enabled</I> status will be set by that method (<I>to 0, 1 and
+false</I> respectively).</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>INFORMATION</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">The
-following 3 “getter” functions return task status
+following 3 “getter” methods return task status
 (enabled/disabled), execution interval in milliseconds, number of
 <I><B>remaining</B></I> iterations. 
 </P>
@@ -354,10 +417,10 @@ getIterations() </B>
 library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
 enabled, tasks are monitored for “long running” scenario. A “long
 running” task is a task that does not finish processing its
-callback functions quickly, and thus creates a situation for itself
-and other tasks where they don't run on a scheduled interval, but
-rather “catch up” and are behind.  When task scheduler sets the
-next execution target time, it adds Task's execution interval to the
+callback methods quickly, and thus creates a situation for itself and
+other tasks where they don't run on a scheduled interval, but rather
+“catch up” and are behind.  When task scheduler sets the next
+execution target time, it adds Task's execution interval to the
 previously scheduled execution time:</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">	<B>next
 execution time = previous execution time + task execution interval</B></P>
@@ -366,10 +429,10 @@ execution time = previous execution time + task execution interval</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
 <B>next execution time</B> happens to be already in the past (<B>next
 execution time</B> &lt; <B>millis()</B>), then task is considered
-<I><B>overrun</B></I>. <B>GetOverrun</B> function returns number of
+<I><B>overrun</B></I>. <B>GetOverrun</B> method returns number of
 milliseconds between next execution time and current time. If the
-<B>value is negative</B>, the task is overrun by that many
-milliseconds. 
+<B>value is negative</B>, the task has overrun (cut into the) next
+execution interval by that many milliseconds. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Positive
 value indicate number of milliseconds of slack this task has for
@@ -381,13 +444,13 @@ execution purposes.
 getRunCounter()</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
 the number of the current run. “Current run” is the number of
-times a callback function has been invoked since the last time a task
+times a callback method has been invoked since the last time a task
 was enabled. <BR><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
 </B>The <B>runCounter</B> value is incremented <I>before</I> callback
-function is invoked. If a task is checking the <B>runCounter</B>
-value within its callback function, then the first run value is 1. 
+method is invoked. If a task is checking the <B>runCounter</B> value
+within its callback method, then the first run value is 1. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
 task T1 is checking the <B>runCounter</B> value of another task (T2)
@@ -399,13 +462,13 @@ value = 1 indicates that T2 has run once.
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>bool
 isFirstIteration()</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Indicates
-whether current pass is a first iteration of the task. 
+whether current pass is (or will be) a first iteration of the task. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>bool
 isLastIteration()</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">For
-tasks with a limited number of iterations only, indicates whether
-current pass is the last iteration. 
+tasks with a l<I>imited number of iterations only</I>, indicates
+whether current pass is the last iteration. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -426,12 +489,20 @@ is a task which was enabled and requires execution.
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
-</B>enable() invokes task’s <B>OnEnable</B> method (if not NULL),
-which can prepare task for execution. <B>OnEnable</B> must return a
-value of <B>true</B> for task to be enabled. If <B>OnEnable</B>
-returns <B>false</B>, task remains disabled.  <B>OnEnable</B> is
-invoked every time <B>enable</B> is called, regardless if task is
-already enabled or not. 
+</B>enable() invokes task’s <B>OnEnable</B> method (if not NULL)
+<B>immediately</B>, which can prepare task for execution. <B>OnEnable</B>
+must return a value of <B>true</B> for task to be enabled. If
+<B>OnEnable</B> returns <B>false</B>, task remains disabled. 
+<B>OnEnable</B> is invoked every time <B>enable</B> is called,
+regardless if task is already enabled or not. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:</B>
+in the event enable() method is called inside the OnEnable callback
+method (thus basically creating indefinte loop), TaskScheduler will
+only call OnEnable once (thus protecting the Task against OnEnable
+infinite loop). 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -441,7 +512,10 @@ already enabled or not.
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Enables
 the task only if it was previously disabled. Returns previous enable
 state: <B>true</B> if task was already enabled, and <B>false</B> if
-task was disabled.</P>
+task was disabled. Since <B>enable() </B>schedules Task for execution
+immediately, this method provides a way to activate tasks and
+schedule them for immediate execution only if they are not active
+already.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>void delay();</B></P>
@@ -453,7 +527,7 @@ the enabled/disabled status of the task.
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
 </B>a delay of 0 (zero) will delay task for current execution
 interval. Use <B>forceNextIteration() </B>method to force execution
 of the task’s callback during immediate next scheduling pass. 
@@ -480,7 +554,8 @@ enableDelayed();</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Enables
-the task, and schedules it for execution after a delay (aInterval). 
+the task, and schedules it for execution after task's current
+scheduling interval (aInterval). 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -498,10 +573,9 @@ the task, and schedules it for execution after a specific delay
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">For
-tasks with limited number of iterations only, <B>restart</B> function
-will re-enable the task, set the number of iterations back to when
-the task was created and and schedule the task for execution as soon
-as possible.</P>
+tasks with limited number of iterations only, <B>restart</B> method
+will re-enable the task, set the number of iterations back to last
+set value, and schedule task for execution as soon as possible.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>void restartDelayed
@@ -509,8 +583,8 @@ as possible.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Same
-as <B>restart() </B>function, with the only difference being that
-Task is scheduled to run first iteration after a delay = <B>aDelay</B>
+as <B>restart()</B> method, with the only difference being that Task
+is scheduled to run first iteration after a delay = <B>aDelay</B>
 milliseconds.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -519,15 +593,17 @@ milliseconds.</P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Disables
 the task. Scheduler will not execute this task any longer, even if it
-remains in the chain.  Task can be later re-enabled for execution. 
+remains in the chain.  Task <B>can</B> be later re-enabled for
+execution. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Return
 previous enabled state: <B>true</B> if task was enabled prior to
 calling disable, and <B>false</B> otherwise.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
-not NULL, task’s <B>OnDisable</B> method is invoked. <B>OnDisable</B>
-is invoked only if task was enabled.  Calling <B>disable</B> 3 times
-for instance will invoke <B>OnDisable</B> only once.</P>
+not NULL, task’s <B>OnDisable</B> method is invoked <B>immediately</B>.
+<B>OnDisable</B> is invoked only if task was in enabled state. 
+Calling <B>disable</B> 3 times for instance will invoke <B>OnDisable</B>
+only once.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>void set(unsigned
@@ -536,17 +612,18 @@ long aInterval, long aIterations, void (*aCallback)() , bool
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Allows
-dynamic control of task execution parameters in one function call. 
+dynamic control of task execution parameters in one method call. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note</B><B>:
 </B>OnEnable and OnDisable parameters can be omitted. In that case
-they will be assigned to NULL and not called. 
+they will be assigned to NULL and respective methods will no longer
+be called. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in">Next five “setter”
-functions allow changes of individual task execution control
-parameters. 
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+Next five “setter” methods allow changes of individual task
+execution control parameters. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>void
 setInterval (unsigned long aInterval) </B>
@@ -567,9 +644,9 @@ setOnDisable (void (*aCallback)()) </B>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Next
 execution time calculation takes place <B>after</B> the callback
-function is called, so new interval will be used immediately by the
+method is called, so new interval will be used immediately by the
 scheduler. For the situations when one task is changing the interval
-parameter for the other, <B>setInterval</B> function calls <B>delay
+parameter for the other, <B>setInterval</B> method calls <B>delay
 </B>explicitly to guarantee schedule change, however it <B>does not
 </B>enable the task if task is disabled.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Tasks that
@@ -601,6 +678,18 @@ aStatusRequest</B> should be “activated” by calling <B>setWaiting()
 </B>method before making a task wait on it. Otherwise, the task will
 execute immediately. 
 </P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">The
+sequence of events to use Status Request object is as follows:</P>
+<OL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Create a status
+	request object</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Activate status
+	request object (calling its <B>setWaiting</B>() method)</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Set up tasks to
+	wait of the event completion</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Signal completion
+	of event(s)</P>
+</OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -670,6 +759,38 @@ currently set control point for this task.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>LOCAL TASK STORAGE
+METHODS:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void setLtsPointer(void *aPtr);</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for LTS, this method will set the task's local
+storage pointer.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void *getLtsPointer();</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+compiled with support for LTS, this method will return reference to
+the task's local storage.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
+</B>the value returned has type (void *), and needs to be re-cast
+into appropriate pointer type. Please refer to example sketches for
+implementation options. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
 </P>
@@ -703,7 +824,7 @@ constructor, so don't need to be explicitly called after creation.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
 </B>be default (if compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
 enabled) scheduler is allowed to put processor to IDLE sleep mode. If
-this behavior was changed via <B>allowSleep() </B>function, <B>inti()
+this behavior was changed via <B>allowSleep()</B> method, <B>inti()
 </B>will <B>NOT</B> reset allow sleep particular parameter. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>void
@@ -742,7 +863,7 @@ scheduling pass by deleting it, since it is not even considered for
 execution. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">An
-example of proper use of this function would be running some sort of
+example of proper use of this method would be running some sort of
 <B>initialize</B> task in the chain, and then deleting it from the
 chain since it only needs to run once. 
 </P>
@@ -771,20 +892,39 @@ and disables (respectively) all tasks in the chain. Convenient if
 your need to enable/disable majority of the tasks (i.e. disable all
 and then enable one). 
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>Task&amp;
-currentTask()<BR></B><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR><B>Task&amp; currentTask()<BR></B><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
-reference to the task, currently executing via <B>execute()</B> loop.
-Could be used by callback functions to identify which of the Tasks
-invoked callback function.</P>
+reference to the task, currently executing via <B>execute()</B> loop
+<B>OR </B>for OnEnable and OnDisable methods, reference to the task
+being enabled or disabled. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">This
+distinction is important because one task can activate the other, and
+OnEnable should be referring to the task being enabled, not being
+executed. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Could
+be used by callback methods to identify which Task actually invoked
+this callback method.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void* currentLts()<BR></B><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+pointer to Local Task Storage of the task, currently executing via
+<B>execute()</B> loop <B>OR </B>for OnEnable and OnDisable methods,
+task being enabled or disabled. 
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>void execute()</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Executes
-one scheduling pass, including end-of-pass sleep. This function
-typically placed inside the <B>loop()</B> function of the sketch.
-Since <B>execute</B> exits after every pass, you can put additional
+one scheduling pass, including end-of-pass sleep. This method is
+typically placed inside the <B>loop()</B> method of the sketch. Since
+<B>execute</B> exits after every pass, you can put additional
 statements after <B>execute</B> inside the <B>loop()</B> 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
@@ -929,7 +1069,7 @@ to run once for every time the pump is turned on:</P>
 &amp;waterOffCallback);</FONT><BR><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Example of the callback
-function:</P>
+method:</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
@@ -962,18 +1102,19 @@ met. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">	</FONT><FONT FACE="Courier New, monospace">setup()</FONT></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace">	
- ...</FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><FONT SIZE=2><FONT FACE="Times New Roman, serif">	void
+</FONT><FONT FACE="Courier New, monospace">setup()</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	
+ ...</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
-<FONT FACE="Courier New, monospace">tWater.setIterations(parameters.retries);<BR>
+<FONT SIZE=2><FONT FACE="Courier New, monospace">tWater.setIterations(parameters.retries);<BR>
  tWaterOff.setInterval(parameters.watertime * SECOND);<BR><BR><BR> 
 taskManager.init();<BR>  taskManager.addTask(tMeasure);<BR> 
 taskManager.addTask(tDisplay);<BR>  taskManager.addTask(tWater);<BR> 
 taskManager.addTask(tWaterOff);<BR>  <BR>  tMeasure.enable();<BR> 
 tDisplay.enable();<BR><BR>  currentHumidity =
 measureHumidity();<BR>}<BR><BR><BR>void loop ()<BR>{<BR> 
-taskManager.execute();<BR>}</FONT><FONT FACE="Times New Roman, serif"><BR></FONT><BR>
+taskManager.execute();<BR>}</FONT><FONT FACE="Times New Roman, serif"><BR></FONT></FONT><BR>
 </P>
 <OL START=2>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">“<FONT FACE="Times New Roman, serif"><B>NATIVE”
@@ -982,18 +1123,19 @@ taskManager.execute();<BR>}</FONT><FONT FACE="Times New Roman, serif"><BR></FONT
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">Define
-“states” as callback function or functions. Each callback
-function executes activities specific to a “state” and then
-“transitions” to the next state by assigning next callback
-function to the task. </FONT>
+“states” as callback method or methods. Each callback method
+executes activities specific to a “state” and then “transitions”
+to the next state by assigning next callback method to the task. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">Transition
 from one state to the next is achieved by setting next callback
-function at the end of preceding one. </FONT>
+method at the end of preceding one. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>Note:
-</B>do not call the next callback function. Let the schedule take
-care of that during the next pass. (Thus letting other tasks run). </FONT>
+</B>do not call the next callback method explicitly. Yield to the
+scheduler, and let the scheduler take care of next iteration during
+the next pass. (Thus giving other tasks change to run their callback
+methods). </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -1001,39 +1143,35 @@ care of that during the next pass. (Thus letting other tasks run). </FONT>
 Blinking LED 2 times a second could be achieved this way</FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">Task
-tLedBlinker (500, -1, &amp;ledOnCallback);</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">Scheduler
-taskManager;</FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler
+ts;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+tLedBlinker (500, -1, &amp;ledOnCallback, &amp;ts, true);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">void
- ledOnCallback() {</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	turnLedOn();</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	tLedBlinker.setCallback(&amp;ledOffCallback);</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">}</FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+ ledOnCallback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	turnLedOn();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLedBlinker.setCallback(&amp;ledOffCallback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">void
- ledOffCallback() {</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	turnLedOff();</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	tLedBlinker.setCallback(&amp;ledOnCallback);</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">}</FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+ ledOffCallback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	turnLedOff();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tLedBlinker.setCallback(&amp;ledOnCallback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">setup()
-{</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	taskManager.init();<BR>
- 	taskManager.addTask(tLedBlinker);</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	tLedBlinker.enable();</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">}</FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>setup()
+{</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">loop
-() {</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">	taskManager.execute();</FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace">}</FONT><FONT FACE="Times New Roman, serif"><BR></FONT><BR>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>loop
+() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	ts.execute();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT><FONT FACE="Times New Roman, serif"><BR></FONT><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">Obviously
 the example is simple, but gives the idea of how the tasks could be
@@ -1051,17 +1189,17 @@ used to go through states.</FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">There
-may be a need to select an option for callback function based on
+may be a need to select an option for callback method based on
 certain criteria, or randomly. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">You
-can achieve that by defining an array of callback function pointers
-and selecting one based on the criteria you need. </FONT>
+can achieve that by defining an array of callback method pointers and
+selecting one based on the criteria you need. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">Example:
 when a robot detects an obstacle, it may go left, right backwards,
 etc. Each of the “directions” or “behaviors” are represented
-by a different callback function. </FONT>
+by a different callback methods. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -1084,7 +1222,7 @@ this case, define a tasks with two callbacks:</FONT></P>
 do your initializationstuff here</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	//
-finally assigne the main callback function </FONT></FONT>
+finally assigne the main callback method </FONT></FONT>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tWork.setCallback(&amp;workCallback);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
@@ -1093,7 +1231,7 @@ finally assigne the main callback function </FONT></FONT>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
 workCallback() {</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	//
-main callback function</FONT></FONT></P>
+main callback method</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	…</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -1112,7 +1250,7 @@ after initialization first pass, change the above code like this:</FONT></P>
 do your initializationstuff here</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	//
-finally assigne the main callback function </FONT></FONT>
+finally assigne the main callback method </FONT></FONT>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tWork.setCallback(&amp;workCallback);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	tWork.enable();</FONT></FONT></P>
@@ -1136,7 +1274,7 @@ pass. </FONT>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">In
 case of interrupt-driven program flow, tasks could be scheduled to
 run once to request asynchronous execution (request), and then
-re-enabled (restarted) again with a different callback function to
+re-enabled (restarted) again with a different callback method to
 process the results. </FONT>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -1311,7 +1449,7 @@ Task should be enabled</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
-tBlink does not really need a callback function</FONT></FONT></P>
+tBlink does not really need a callback method</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
 since it just waits for 5 seconds for the first </FONT></FONT>
 </P>
@@ -1769,16 +1907,129 @@ StatusRequest Sensor Emulation Test. Complex Test.&quot;);  </FONT></FONT>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
 loop() {</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
-</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"> 
 <FONT FACE="Courier New, monospace"><FONT SIZE=2>ts.execute();</FONT></FONT></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<OL START=3>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>USING
+	LOCAL TASK STORAGE POINTER  </B></FONT>
+	</P>
+</OL>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Tasks
+can store a pointer to specific variable, structure or array, which
+represents variables specific for a particular task. This may be
+needed if you plan to use same callback method for multiple tasks.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Consider
+a scenario where you have several sensors of the same type. The
+actual process of triggering measurement and collecting information
+is identical. The only difference is the sensor address and a
+variable for storing the results.  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">In
+this case each of the tasks, which performs measurement will utilize
+the same callback methods. The only difference will be the variables
+(specific for each of the sensor). </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Let's
+define a sensor data structure and declare a couple of variables (for
+2 sensors for instance)</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>typedef struct {</FONT></FONT></P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>	unsigned int
+	address;</FONT></FONT></P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>	unsigned
+long	distance;</FONT></FONT></P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>} sensor_data;</FONT></FONT></P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<BR>
+</P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>sensor_data s1, s2; </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Two
+separate tasks are running to collect sensor data.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">(Note
+that both tasks refer to the same callback methods)</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler ts;</FONT></FONT></P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Task t1(100, -1,
+&amp;Measure, &amp;ts, false, &amp;MeasureOn); </FONT></FONT>
+</P>
+<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>Task t2(100, -1,
+&amp;Measure, &amp;ts, false, &amp;MeasureOn); </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Assign
+pointers to the respective variables in the <B>setup</B>() method:</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+setup() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 1.48in; margin-bottom: 0in">…</P>
+<P CLASS="western" STYLE="margin-left: 1.48in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>t1.setLtsPointer(&amp;s1);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 1.48in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>t2.setLtsPointer(&amp;s2);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 1.48in; margin-bottom: 0in">…</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Obtain
+reference to specific <B>sensor_data</B> structure inside the common
+callback method:</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+Measure() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	Task&amp;
+T = ts.currentTask(); </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	Sensor_data&amp;
+V = *((sensor_data*) T.getLtsPointer());</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
+For t1, V will be pointing at s1</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
+For t2, V will be pointing at s2</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
+Alternatively use the Scheduler method:</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	Sensor_data&amp;
+V1 = *((sensor_data*) ts.currentLts());</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; text-indent: 0.49in; margin-bottom: 0in">
+…</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>	V.distance
+= &lt;calculate your values here&gt;;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -1796,9 +2047,9 @@ information and implementation options.</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Real
 time examples of TaskScheduler are available here:</FONT></FONT></P>
 <OL>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/">http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/</A></U></FONT></FONT></FONT></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/">http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/</A></U></FONT></FONT></FONT></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider">http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider</A></U></FONT></FONT></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/"><FONT FACE="Courier New, monospace"><FONT SIZE=2>http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/</FONT></FONT></A></U></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/"><FONT FACE="Courier New, monospace"><FONT SIZE=2>http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/</FONT></FONT></A></U></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider"><FONT FACE="Courier New, monospace"><FONT SIZE=2>http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider</FONT></FONT></A></U></FONT></P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>

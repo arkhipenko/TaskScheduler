@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.8.1: 2015-10-22
+Version 1.8.2: 2015-10-29
  
  
 OVERVIEW:
@@ -11,7 +11,7 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 5. Power saving via entering IDLE sleep mode between tasks are scheduled to run
 6. Support for task invocation via Status Request object
 7. Support for task IDs and Control Points for error handling and watchdog timer
-
+8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)
 
 Changelog:
 v1.0.0:
@@ -55,4 +55,10 @@ v1.8.0:
 
 v1.8.1:
     2015-10-22 - implement Task id and control points to support identification of failure points for watchdog timer logging
+	
+v1.8.2:
+    2015-10-27 - implement Local Task Storage Pointer (allow use of same callback code for different tasks)
+    2015-10-27 - bug: currentTask() method returns incorrect Task reference if called within OnEnable and OnDisable methods
+    2015-10-27 - protection against infinite loop in OnEnable (if enable() methods are called within OnEnable)
+    2015-10-29 - new currentLts() method in the scheduler class returns current task's LTS pointer in one call
 	

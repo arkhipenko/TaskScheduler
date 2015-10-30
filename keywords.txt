@@ -20,6 +20,7 @@ deleteTask	KEYWORD2
 disableAll	KEYWORD2
 enableAll	KEYWORD2
 currentTask	KEYWORD2
+currentLts	KEYWORD2
 execute	KEYWORD2
 allowSleep	KEYWORD2
 enable	KEYWORD2
@@ -56,6 +57,8 @@ setId	KEYWORD2
 getId	KEYWORD2
 setControlPoint	KEYWORD2
 getControlPoint	KEYWORD2
+setLtsPointer	KEYWORD2
+getLtsPointer	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

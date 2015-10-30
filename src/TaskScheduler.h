@@ -1,23 +1,23 @@
-// Cooperative multitasking library for Arduino version 1.8.1
+// Cooperative multitasking library for Arduino version 1.8.2
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
 // v1.0.0:
 //     2015-02-24 - Initial release 
-//     2015-02-28 - added delay() and disableOnLastIteration() functions
-//     2015-03-25 - changed scheduler execute() function for a more precise delay calculation:
+//     2015-02-28 - added delay() and disableOnLastIteration() methods
+//     2015-03-25 - changed scheduler execute() method for a more precise delay calculation:
 //                  1. Do not delay if any of the tasks ran (making request for immediate execution redundant)
 //                  2. Delay is invoked only if none of the tasks ran 
-//                  3. Delay is based on the min anticipated wait until next task _AND_ the runtime of execute function itself.
-//     2015-05-11 - added  restart() and restartDelayed() functions to restart tasks which are on hold after running all iterations
+//                  3. Delay is based on the min anticipated wait until next task _AND_ the runtime of execute method itself.
+//     2015-05-11 - added  restart() and restartDelayed() methods to restart tasks which are on hold after running all iterations
 //     2015-05-19 - completely removed  delay from the scheduler since there are no power saving there. using 1 ms sleep instead
 //
 // v1.4.1:
-//     2015-09-15 - more careful placement of AVR-specific includes for sleep functions (compatibility with DUE)
+//     2015-09-15 - more careful placement of AVR-specific includes for sleep method (compatibility with DUE)
 //                          sleep on idle run is no longer a default and should be explicitly compiled with _TASK_SLEEP_ON_IDLE_RUN defined
 //
 // v1.5.0:
-//	   2015-09-20 - access to currently executing task (for callback functions)
+//	   2015-09-20 - access to currently executing task (for callback methods)
 //	   2015-09-20 - pass scheduler as a parameter to the task constructor to append the task to the end of the chain
 //     2015-09-20 - option to create a task already enabled
 //
@@ -32,10 +32,10 @@
 //	   2015-10-01 - made version numbers semver compliant (documentation only)
 //
 // v1.7.0:
-//	  2015-10-08 - introduced callback run counter - callback functions can branch on the iteration number. 
+//	  2015-10-08 - introduced callback run counter - callback methods can branch on the iteration number. 
 //	  2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled. 
 //	  2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
-//	  2015-10-11 - introduced callback functions "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
+//	  2015-10-11 - introduced callback methods "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
 //	  2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
 //
 // v1.8.0:
@@ -44,6 +44,13 @@
 //
 // v1.8.1:
 //	  2015-10-22 - implement Task id and control points to support identification of failure points for watchdog timer logging
+//
+// v1.8.2:
+//    2015-10-27 - implement Local Task Storage Pointer (allow use of same callback code for different tasks)
+//    2015-10-27 - bug: currentTask() method returns incorrect Task reference if called within OnEnable and OnDisable methods
+//    2015-10-27 - protection against infinite loop in OnEnable (if enable() methods are called within OnEnable)
+//    2015-10-29 - new currentLts() method in the scheduler class returns current task's LTS pointer in one call
+
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -80,10 +87,11 @@ THE SOFTWARE.
  * The following "defines" control library functionality at compile time,
  * and should be used in the main sketch depending on the functionality required
  * 
- *	#define _TASK_TIMECRITICAL		// Enable monitoring scheduling overruns
- *	#define _TASK_SLEEP_ON_IDLE_RUN	// Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback functions were invoked during the pass 
- *	#define _TASK_STATUS_REQUEST	// Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
- *	#define _TASK_WDT_IDS		// Compile with support of wdt control points and task ids
+ *	#define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
+ *	#define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback methods were invoked during the pass 
+ *	#define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
+ *	#define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
+ *  #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
  */
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -104,34 +112,13 @@ class StatusRequest {
 		inline int getStatus() { return iStatus; }
 		
 	private:
-		unsigned int	iCount;
+		unsigned int	iCount;  // waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
 		int			iStatus;  // negative = error;  zero = OK; >positive = OK with a specific status
 };
 #endif
 
 
-class Task; 
-
-class Scheduler {
-	public:
-		Scheduler();
-		inline void init() { iFirst = NULL; iLast = NULL; iCurrent = NULL; }
-		void addTask(Task& aTask);
-		void deleteTask(Task& aTask);
-		void disableAll();
-		void enableAll();
-		void execute();
-		inline Task& currentTask() {return *iCurrent; }
-#ifdef _TASK_SLEEP_ON_IDLE_RUN
-		void allowSleep(bool aState = true) { iAllowSleep = aState; }
-#endif
-
-	private:
-		Task			*iFirst, *iLast, *iCurrent;
-#ifdef _TASK_SLEEP_ON_IDLE_RUN
-		bool	iAllowSleep;
-#endif
-};
+class Scheduler; 
 
 class Task {
     friend class Scheduler;
@@ -174,12 +161,16 @@ class Task {
 	inline void setControlPoint(unsigned int aPoint) { iControlPoint = aPoint; }
 	inline unsigned int getControlPoint() { return iControlPoint; }
 #endif
-	
+#ifdef _TASK_LTS_POINTER
+	inline void	setLtsPointer(void *aPtr) { iLTS = aPtr; }
+	inline void* getLtsPointer() { return iLTS; }
+#endif
 	
     private:
 	void reset();
 
     volatile bool			iEnabled;
+	bool					iInOnEnable;
     volatile unsigned long	iInterval;
 	volatile unsigned long	iPreviousMillis;
 #ifdef _TASK_TIMECRITICAL
@@ -200,6 +191,34 @@ class Task {
 	unsigned int			iTaskID;
 	unsigned int			iControlPoint;
 #endif
+#ifdef _TASK_LTS_POINTER
+	void					*iLTS;
+#endif
+};
+
+class Scheduler {
+	friend class Task;
+	public:
+		Scheduler();
+		inline void init() { iFirst = NULL; iLast = NULL; iCurrent = NULL; }
+		void addTask(Task& aTask);
+		void deleteTask(Task& aTask);
+		void disableAll();
+		void enableAll();
+		void execute();
+		inline Task& currentTask() {return *iCurrent; }
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+		void allowSleep(bool aState = true) { iAllowSleep = aState; }
+#endif
+#ifdef _TASK_LTS_POINTER
+		inline void* currentLts() {return iCurrent->iLTS; }
+#endif
+
+	private:
+		Task	*iFirst, *iLast, *iCurrent;
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+		bool	iAllowSleep;
+#endif
 };
 
 
@@ -214,13 +233,13 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
 	reset();
 	set(aInterval, aIterations, aCallback, aOnEnable, aOnDisable);
 	if (aScheduler) aScheduler->addTask(*this);
-	if (aEnable) enable();
 #ifdef _TASK_STATUS_REQUEST
 	iStatusRequest = NULL;
 #endif
 #ifdef _TASK_WDT_IDS
 	iTaskID = ++__task_id_counter;
 #endif
+	if (aEnable) enable();
 }
 
 
@@ -278,7 +297,7 @@ void Task::waitFor(StatusRequest* aStatusRequest) {
  * out of the execution chain as a result
  */
 void Task::reset() {
-	iEnabled = false;
+	iEnabled = iInOnEnable = false;
 	iPreviousMillis = 0;
 	iPrev = NULL;
 	iNext = NULL;
@@ -290,14 +309,17 @@ void Task::reset() {
 #ifdef _TASK_WDT_IDS
 	iControlPoint = 0;
 #endif
+#ifdef _TASK_LTS_POINTER
+	iLTS = NULL;
+#endif
 }
 
 /** Explicitly set Task execution parameters
  * @param aInterval - execution interval in ms
  * @param aIterations - number of iterations, use -1 for no limit
- * @param aCallback - pointer to the callback function which executes the task actions
- * @param aOnEnable - pointer to the callback function which is called on enable()
- * @param aOnDisable - pointer to the callback function which is called on disable()
+ * @param aCallback - pointer to the callback method which executes the task actions
+ * @param aOnEnable - pointer to the callback method which is called on enable()
+ * @param aOnDisable - pointer to the callback method which is called on disable()
  */
 void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)(), void (*aOnDisable)()) {
 	iInterval = aInterval;
@@ -320,9 +342,21 @@ void Task::setIterations(long aIterations) {
  *  and resets the RunCounter back to zero
  */
 void Task::enable() {
-	iRunCounter = 0;
-	iPreviousMillis = millis() - iInterval;
-	iEnabled = iOnEnable ? (*iOnEnable)() : true;
+	if (iScheduler) { // activation without active scheduler does not make sense
+		iRunCounter = 0;
+		iPreviousMillis = millis() - iInterval;
+		if (iOnEnable && !iInOnEnable) {
+			Task *current = iScheduler->iCurrent;
+			iScheduler->iCurrent = this;
+			iInOnEnable = true;			// Protection against potential infinite loop
+			iEnabled = (*iOnEnable)();
+			iInOnEnable = false;		// Protection against potential infinite loop
+			iScheduler->iCurrent = current;
+		}
+		else {
+			iEnabled = true;
+		}
+	}
 }
 
 /** Enables the task only if it was not enabled already
@@ -375,8 +409,13 @@ void Task::setInterval (unsigned long aInterval) {
  */
 bool Task::disable() {
 	bool previousEnabled = iEnabled;
-	iEnabled = false;
-	if (previousEnabled && iOnDisable) (*iOnDisable)();
+	iEnabled = iInOnEnable = false;
+	if (previousEnabled && iOnDisable) {
+		Task *current = iScheduler->iCurrent;
+		iScheduler->iCurrent = this;
+		(*iOnDisable)();
+		iScheduler->iCurrent = current;
+	}
 	return (previousEnabled);
 }
 
