@@ -7,22 +7,29 @@
 
 #define _TASK_SLEEP_ON_IDLE_RUN
 #define _TASK_STATUS_REQUEST
-
 #include <TaskScheduler.h>
-
-
-
 
 StatusRequest measure;
 
 Scheduler ts; 
 
-Task tCycle(10000, -1, &CycleCallback, &ts, true);
-Task tMeasure(1000, 1, &MeasureCallback, &ts, false, &MeasureEnable, &MeasureDisable);
+// Callback methods prototypes
+void CycleCallback();
+void MeasureCallback(); 
+bool MeasureEnable();
+void MeasureDisable();
+void CalcCallback();
+void S1Callback(); bool S1Enable();
+void S2Callback(); bool S2Enable();
+void S3Callback(); bool S3Enable();
+
+// Tasks
+Task tCycle(10000, TASK_FOREVER, &CycleCallback, &ts, true);
+Task tMeasure(1000, TASK_ONCE, &MeasureCallback, &ts, false, &MeasureEnable, &MeasureDisable);
 Task tCalculate(&CalcCallback, &ts);
-Task tSensor1(0, 1, &S1Callback, &ts, false, &S1Enable);
-Task tSensor2(0, 1, &S2Callback, &ts, false, &S2Enable);
-Task tSensor3(0, 1, &S3Callback, &ts, false, &S3Enable);
+Task tSensor1(0, TASK_ONCE, &S1Callback, &ts, false, &S1Enable);
+Task tSensor2(0, TASK_ONCE, &S2Callback, &ts, false, &S2Enable);
+Task tSensor3(0, TASK_ONCE, &S3Callback, &ts, false, &S3Enable);
 
 
 long distance, d1, d2, d3;

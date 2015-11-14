@@ -13,10 +13,16 @@
  
 #include <TaskScheduler.h>
 
+// Callback methods prototypes
+void t1Callback();
+void t2Callback();
+void t3Callback();
+
+//Tasks
 Task t4();
 Task t1(2000, 10, &t1Callback);
-Task t2(3000, -1, &t2Callback);
-Task t3(5000, -1, &t3Callback);
+Task t2(3000, TASK_FOREVER, &t2Callback);
+Task t3(5000, TASK_FOREVER, &t3Callback);
 
 Scheduler runner;
 
@@ -26,8 +32,8 @@ void t1Callback() {
     Serial.println(millis());
     
     if (t1.isFirstIteration()) {
-       t3.enable();
-       runner.addTask(t3);
+      runner.addTask(t3);
+      t3.enable();
       Serial.println("t1: enabled t3 and added to the chain");
     }
     
@@ -55,12 +61,6 @@ void setup () {
   Serial.begin(115200);
   Serial.println("Scheduler TEST");
   
-  
-  t1.enable();
-  Serial.println("Enabled t1");
-  t2.enable();
-  Serial.println("Enabled t2");
-  
   runner.init();
   Serial.println("Initialized scheduler");
   
@@ -69,8 +69,13 @@ void setup () {
   
   runner.addTask(t2);
   Serial.println("added t2");
-  
+
   delay(5000);
+  
+  t1.enable();
+  Serial.println("Enabled t1");
+  t2.enable();
+  Serial.println("Enabled t2");
 }
 
 

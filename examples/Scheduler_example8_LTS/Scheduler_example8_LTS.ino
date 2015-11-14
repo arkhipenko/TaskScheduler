@@ -23,16 +23,21 @@
 
 Scheduler ts;
 
+// Callback methods prototypes
+void Calculate(); bool CalcOn();
+bool WrapperOn(); void WrapperOff(); 
+
+// Tasks
 // Calculator tasks.
 // Note that all three tasks use the same callback methods
 // They will be updating specific variables based on the
 // Locat Task Storage pointers 
-Task t1(1000, -1, &Calculate, &ts, false, &CalcOn); 
-Task t2(1000, -1, &Calculate, &ts, false, &CalcOn); 
-Task t3(1000, -1, &Calculate, &ts, false, &CalcOn);
+Task t1(TASK_SECOND, TASK_FOREVER, &Calculate, &ts, false, &CalcOn); 
+Task t2(TASK_SECOND, TASK_FOREVER, &Calculate, &ts, false, &CalcOn); 
+Task t3(TASK_SECOND, TASK_FOREVER, &Calculate, &ts, false, &CalcOn);
 // add more calc tasks here if necessary
 
-Task tWrapper(5000, 1, NULL, &ts, false, &WrapperOn, &WrapperOff); 
+Task tWrapper(5*TASK_SECOND, TASK_ONCE, NULL, &ts, false, &WrapperOn, &WrapperOff); 
 
 // The below structure is an object referenced by LTS pointer
 typedef struct {

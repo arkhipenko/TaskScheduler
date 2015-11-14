@@ -1,7 +1,7 @@
 /**
  * TaskScheduler Test of OnEnable and OnDisable methods and illustration of using wrapper tasks for timout purposes
  *
- * 	A wrapper task runs every 30 seconds and initiates the test case
+ * 	A wrapper task runs every 10 seconds and initiates the test case
  * 	Another task is run once for 5 seconds, and serves as a LED blinking timeout - 5 seconds
  * 	Finally, a dedicated task which controls LED is running periodically until stopped, and makes the LED blink with 0.5 to 1 second interval. 
  *
@@ -14,9 +14,17 @@
 
 Scheduler ts;
 
-Task tWrapper(30000L, -1, &WrapperCallback, &ts, true);
-Task tBlink(5000, 1, NULL, &ts, false, &BlinkOnEnable, &BlinkOnDisable);
-Task tLED(0, -1, NULL, &ts, false, NULL, &LEDOff);
+// Callback methods prototypes
+void WrapperCallback();
+bool BlinkOnEnable();
+void BlinkOnDisable();
+void LEDOn();
+void LEDOff();
+
+// Tasks
+Task tWrapper(10000L, TASK_FOREVER, &WrapperCallback, &ts, true);
+Task tBlink(5000, TASK_ONCE, NULL, &ts, false, &BlinkOnEnable, &BlinkOnDisable);
+Task tLED(0, TASK_FOREVER, NULL, &ts, false, NULL, &LEDOff);
 
 void WrapperCallback() {
 	tBlink.restartDelayed(); // LED blinking is initiated
@@ -61,6 +69,7 @@ void LEDOff () {
 
 void setup() {
 // put your setup code here, to run once:
+  pinMode(LEDPIN, OUTPUT);
 }
 
 void loop() {

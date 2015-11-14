@@ -2,11 +2,16 @@
 #include <TaskScheduler.h>
 
 Scheduler runner;
+// Callback methods prototypes
+void t1Callback();
+void t2Callback();
+void t3Callback(); 
 
+// Tasks
 Task t4();
 Task t1(2000, 10, &t1Callback, &runner, true);  //adding task to the chain on creation
-Task t2(3000, -1, &t2Callback, &runner, true);  //adding task to the chain on creation
-Task t3(5000, -1, &t3Callback);
+Task t2(3000, TASK_FOREVER, &t2Callback, &runner, true);  //adding task to the chain on creation
+Task t3(5000, TASK_FOREVER, &t3Callback);
 
 // Test
 // Initially only tasks 1 and 2 are enabled
@@ -18,6 +23,8 @@ Task t3(5000, -1, &t3Callback);
 // Task1 disables Task3 on its last iteration and changed Task2 to run every 1/2 seconds
 // Because Task2 interval is shorter than Scheduler default tick, loop() executes ecery 1/2 seconds now
 // At the end Task2 is the only task running every 1/2 seconds
+//
+// NOTE that t1 and t2 are affected by the delay() function in the setup() method and are scheduled immediately twice to "catch up" with millis().
 
 
 
@@ -28,8 +35,8 @@ void t1Callback() {
     Serial.println(millis());
     
     if (t1.isFirstIteration()) {
-       t3.enable();
-       runner.addTask(t3);
+      runner.addTask(t3);
+      t3.enable();
       Serial.println("t1: enabled t3 and added to the chain");
     }
     
@@ -65,6 +72,6 @@ void loop () {
   
   runner.execute();
   
-  Serial.println("Loop ticks at: ");
-  Serial.println(millis());
+//  Serial.println("Loop ticks at: ");
+//  Serial.println(millis());
 }

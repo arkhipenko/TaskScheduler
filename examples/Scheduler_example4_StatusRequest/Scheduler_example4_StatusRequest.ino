@@ -13,7 +13,15 @@ StatusRequest st;
 
 Scheduler ts; 
 
-Task t1(5000, 1, &Callback1, &ts, true, NULL, &Disable1);
+// Callback methods prototypes
+void Callback1();
+void Disable1();
+void Callback2();
+void Callback3();
+void PrepareStatus();
+
+// Tasks
+Task t1(5000, TASK_ONCE, &Callback1, &ts, true, NULL, &Disable1);
 Task t2(&Callback2, &ts);
 Task t3(&Callback3, &ts);
 

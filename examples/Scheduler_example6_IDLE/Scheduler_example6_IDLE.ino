@@ -38,8 +38,13 @@ C1 is scenario 2) is much higher than in scenario 1) because processor is put to
 
 Scheduler ts;
 
-Task c(10, -1, &Count, &ts);
-Task t(10000, 1, NULL, &ts, true, &tOn, &tOff);
+// Callback methods prototypes
+void Count();
+bool tOn(); void tOff();
+
+// Tasks
+Task c(10, TASK_FOREVER, &Count, &ts);
+Task t(10000, TASK_ONCE, NULL, &ts, true, &tOn, &tOff);
 
 
 volatile unsigned long c1, c2;

@@ -18,14 +18,18 @@
 
 Scheduler ts;
 
+// Callback methods prototypes
+void TaskCB(); 
+void HB(); bool HBOn(); void HBOff();
+
 // Three tasks emulating accidental infinite loop
-Task tTask1(1000, -1, &TaskCB, &ts, true);
-Task tTask2(1000, -1, &TaskCB, &ts, true);
-Task tTask3(1000, -1, &TaskCB, &ts, true);
+Task tTask1(TASK_SECOND, TASK_FOREVER, &TaskCB, &ts, true);
+Task tTask2(TASK_SECOND, TASK_FOREVER, &TaskCB, &ts, true);
+Task tTask3(TASK_SECOND, TASK_FOREVER, &TaskCB, &ts, true);
 
 // Heartbeat task - resetting the watchdog timer periodically
 // Initiates WDT on enable, and deactivates it on disable
-Task tHB(500, -1, &HB, &ts, false, &HBOn, &HBOff);
+Task tHB(500, TASK_FOREVER, &HB, &ts, false, &HBOn, &HBOff);
 
 /**
  * Emulating task callback function

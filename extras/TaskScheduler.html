@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="CREATED" CONTENT="20150206;16300000">
 	<META NAME="CHANGEDBY" CONTENT="Anatoli Arkhipenko">
-	<META NAME="CHANGED" CONTENT="20151029;23230000">
+	<META NAME="CHANGED" CONTENT="20151105;22050000">
 	<META NAME="Info 1" CONTENT="">
 	<META NAME="Info 2" CONTENT="">
 	<META NAME="Info 3" CONTENT="">
@@ -15,8 +15,8 @@
 	<!--
 		@page { margin: 0.79in }
 		P { margin-bottom: 0.08in; direction: ltr; color: #000000; widows: 0; orphans: 0 }
-		P.western { font-family: "Liberation Serif", "MS PMincho", serif; font-size: 12pt; so-language: en-US }
-		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt }
+		P.western { font-family: "Liberation Serif", "Times New Roman", serif; font-size: 12pt; so-language: en-US }
+		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt; so-language: zh-CN }
 		P.ctl { font-family: "Lohit Hindi", "MS Mincho"; font-size: 12pt; so-language: hi-IN }
 		A:link { color: #0000ff }
 	-->
@@ -28,7 +28,7 @@ Scheduler</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
 multitasking for Arduino microcontrollers</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.2: 2015-10-27</B></FONT></P>
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.3: 2015-11-05</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -122,7 +122,7 @@ than the Scheduler's <B>execute</B>() method).</P>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>Below is the flowchart of a Task lifecycle:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=690 BORDER=0></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html_m68472eb8.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=655 BORDER=0></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>TaskScheduler</B>
@@ -273,6 +273,19 @@ variable or a structure specific to a particular task. A callback
 method can get access to specific variables by getting reference to a
 currently running task from the scheduler, and then casting (void*)
 LTS pointer to the appropriate pointer type. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">#define
+<B>_TASK_ROLLOVER_FIX</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">…will compile
+TaskScheduler with support for millis() rollover approximately every
+47 days. Only required if you plan for your sketch to run for
+extended amount of time (over 47 days).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">The problem here is
+when scheduler calculates next execution time for a task, a rollover
+may place next execution time “in the past” and cause task to be
+invoked incorrectly once every 47 days. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -488,7 +501,13 @@ is a task which was enabled and requires execution.
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
+</B><SPAN STYLE="font-weight: normal">if task</SPAN> being enabled is
+not assigned to a scheduler and is not part of execution chain, then
+task <B>will not</B> be enabled.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
 </B>enable() invokes task’s <B>OnEnable</B> method (if not NULL)
 <B>immediately</B>, which can prepare task for execution. <B>OnEnable</B>
 must return a value of <B>true</B> for task to be enabled. If
@@ -662,17 +681,38 @@ METHODS:</B></P>
 <BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
-<B>void waitFor(StatusRequest* aStatusRequest);</B></P>
+<B>void waitFor(StatusRequest* aStatusRequest, unsigned long
+aInterval = 0, long aIterations = 1)</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>void waitForDelayed(StatusRequest* aStatusRequest, unsigned long
+aInterval = 0, long aIterations = 1)</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
-compiled with support for Status Requests, this method makes task
+compiled with support for Status Requests, these methods make task
 wait for the completion of <B>aStatusRequest</B> event. 
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>waitFor()
-</B>sets tasks interval to <B>0 (zero)</B> for immediate execution
-when event happens, and also sets the number of <B>iterations to 1</B>.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">By
+default <B>waitFor() </B>sets tasks interval to <B>0 (zero)</B> for
+immediate execution when event happens, and also sets the number of
+<B>iterations to 1</B>. However, you can specify different interval
+and number of iterations. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">By
+default <B>waitForDelayed() </B>sets tasks interval to a supplied
+value or (if omitted or zero) keeps the current interval, so delayed
+execution will take place when the event happens.  It also sets the
+number of <B>iterations to 1</B><SPAN STYLE="font-weight: normal"> by
+default if not supplied</SPAN>.  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">When
+Status Request object completes, all tasks waiting on it are executed
+during next scheduling pass. Tasks waiting via <B>waitFor</B>()
+method are executed immediately. Tasks waiting via <B>waitForDelayed</B>()
+method are activated, but executed after current or supplied interval
+delay. 
+</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
 aStatusRequest</B> should be “activated” by calling <B>setWaiting()
 </B>method before making a task wait on it. Otherwise, the task will
@@ -703,8 +743,8 @@ a StatusReqeust object this Task was waiting on.
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>TASK ID, CONTROL
-POINTS METHODS:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>TASK ID, CONTROL POINTS METHODS:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
 </P>
@@ -929,6 +969,13 @@ statements after <B>execute</B> inside the <B>loop()</B>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool isOverrun()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
+enabled, this method returns <B>true</B><SPAN STYLE="font-weight: normal">
+if currently invoked task has overrun its scheduled start time when
+it was invoked. Returns </SPAN><B>false</B><SPAN STYLE="font-weight: normal">
+if task has been invoked according to schedule.</SPAN></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
@@ -955,7 +1002,7 @@ status of “completed” on creation.
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>void
-setWaiting(unsigned int aCount)</B></P>
+setWaiting(unsigned int aCount = 1)</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Activates
 Status Request object. By default each object is set to wait on one
 event only, however, if <B>aCount</B> is supplied, Status Request can
@@ -1023,6 +1070,46 @@ completion of a request.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>CONSTANTS:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<B>TASK_SECOND	(1000)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">Task
+interval of 1 second</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<B>TASK_MINUTE	(60000)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">Task
+interval of 1 minute</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<B>TASK_HOUR		(3600000)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">Task
+interval of 1 hour</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<B>TASK_FOREVER	(-1)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">Task
+number of iterations for infinite number of iterations</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<B>TASK_ONCE		(1)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">Task
+single iteration</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<B>TASK_IMMEDIATE	(0)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">Task
+interval for immediate execution</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-before: always; page-break-after: avoid">
 <B>IMPLEMENTATION SCENARIOS AND IDEAS:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -1048,11 +1135,11 @@ becomes a task:</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-<B>tMeasure</B> (TMEASURE_INTERVAL*SECOND, -1,
+<B>tMeasure</B> (TMEASURE_INTERVAL*SECOND, TASK_FOREVER,
 &amp;measureCallback);<BR>Task <B>tWater</B>  
 (TWATER_INTERVAL*SECOND, RETRIES, &amp;waterCallback);<BR>Task
-<B>tDisplay</B> (TDISPLAY_INTERVAL*SECOND, -1, &amp;displayCallback);
-<BR></FONT></FONT><BR>
+<B>tDisplay</B> (TDISPLAY_INTERVAL*SECOND, TASK_FOREVER,
+&amp;displayCallback); <BR></FONT></FONT><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler
 </FONT></FONT><FONT FACE="Courier New, monospace"><FONT SIZE=2><B>taskManager</B></FONT></FONT><FONT FACE="Courier New, monospace"><FONT SIZE=2>;</FONT></FONT><BR><BR>
@@ -1065,7 +1152,7 @@ to run once for every time the pump is turned on:</P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
 </FONT></FONT><FONT FACE="Courier New, monospace"><FONT SIZE=2><B>tWaterOff</B></FONT></FONT><FONT FACE="Courier New, monospace"><FONT SIZE=2>
-(WATERTIME*SECOND, 1,</FONT></FONT><FONT FACE="Courier New, monospace">
+(WATERTIME*SECOND, TASK_ONCE,</FONT></FONT><FONT FACE="Courier New, monospace">
 &amp;waterOffCallback);</FONT><BR><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Example of the callback
@@ -1084,9 +1171,9 @@ tWater.enableDelayed();<BR>}</FONT></FONT></P>
 waterCallback() {<BR>    if (tWater.getIterations()) {</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
 If this is not the last iteration = turn the pump on<BR>     
-motorOn();<BR>      tWaterOff.set(parameters.watertime * SECOND, 1,
-&amp;waterOffCallback);<BR>      tWaterOff.enableDelayed();<BR>     
-return;<BR>    }</FONT></FONT></P>
+motorOn();<BR>      tWaterOff.set(parameters.watertime * TASK_SECOND,
+TASK_ONCE, &amp;waterOffCallback);<BR>     
+tWaterOff.enableDelayed();<BR>      return;<BR>    }</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
 We could not reach target humidity – something is wrong<BR>   
 motorOff;<BR>    taskManager.disableAll();<BR>    tError.enable();<BR>}</FONT></FONT></P>
@@ -1146,7 +1233,7 @@ Blinking LED 2 times a second could be achieved this way</FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler
 ts;</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tLedBlinker (500, -1, &amp;ledOnCallback, &amp;ts, true);</FONT></FONT></P>
+tLedBlinker (500, TASK_FOREVER, &amp;ledOnCallback, &amp;ts, true);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
@@ -1212,7 +1299,7 @@ this case, define a tasks with two callbacks:</FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-<B>tWork</B> (T_INTERVAL, -1, &amp;workCallbackInit);</FONT></FONT></P>
+<B>tWork</B> (T_INTERVAL, TASK_FOREVER, &amp;workCallbackInit);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">…</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -1290,16 +1377,17 @@ determine the length of ultrasonic pulse.</FONT></P>
 &lt;PinChangeInt.h&gt;<BR><BR><BR>#define  TRIGGERPIN 5<BR>#define 
 ECHOPIN    6<BR><BR>Output&lt;TRIGGERPIN&gt; 
 pTrigger;<BR>Input&lt;ECHOPIN&gt;      pEcho;<BR><BR>Scheduler
-r;<BR><BR>Task  tMeasure(1000, -1, &amp;measureCallback, &amp;r,
-true);<BR>Task  tDisplay(1000, -1, &amp;displayCallback, &amp;r,
-true);<BR>Task  tPing(0, 1, &amp;pingCalcCallback, &amp;r,
-false);<BR><BR><BR>volatile bool pulseBusy = false;<BR>volatile bool
-pulseTimeout = false;<BR>volatile unsigned long pulseStart =
-0;<BR>volatile unsigned long pulseStop = 0;<BR>volatile unsigned long
-pingDistance = 0;<BR><BR><BR>void pingTrigger(unsigned long aTimeout)
-{<BR>  if (pulseBusy) return;  // do not trigger if in the middle of
-a pulse<BR>  if (pEcho == HIGH) return; // do not trigger if ECHO pin
-is high<BR>  <BR>  pulseBusy = true;<BR>  pulseTimeout = false;</FONT></FONT></P>
+r;<BR><BR>Task  tMeasure(TASK_SECOND, TASK_FOREVER, &amp;measureCallback,
+&amp;r, true);<BR>Task  tDisplay(TASK_SECOND, TASK_FOREVER,
+&amp;displayCallback, &amp;r, true);<BR>Task  tPing(TASK_IMMEDIATE,
+TASK_ONCE, &amp;pingCalcCallback, &amp;r, false);<BR><BR><BR>volatile
+bool pulseBusy = false;<BR>volatile bool pulseTimeout =
+false;<BR>volatile unsigned long pulseStart = 0;<BR>volatile unsigned
+long pulseStop = 0;<BR>volatile unsigned long pingDistance =
+0;<BR><BR><BR>void pingTrigger(unsigned long aTimeout) {<BR>  if
+(pulseBusy) return;  // do not trigger if in the middle of a pulse<BR>
+ if (pEcho == HIGH) return; // do not trigger if ECHO pin is high<BR>
+ <BR>  pulseBusy = true;<BR>  pulseTimeout = false;</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><BR>
  pTrigger = LOW;<BR>  delayMicroseconds(4);<BR>  pTrigger = HIGH;<BR><BR>
  tPing.setInterval (aTimeout);<BR><BR>  delayMicroseconds(10);<BR> 
@@ -1396,12 +1484,13 @@ ts;</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tWrapper(30000, -1, &amp;WrapperCallback, &amp;ts, true);</FONT></FONT></P>
+tWrapper(30000, TASK_FOREVER, &amp;WrapperCallback, &amp;ts, true);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tBlink(5000, 1, NULL, &amp;ts, false, &amp;BlinkOnEnable,
+tBlink(5000, TASK_ONCE, NULL, &amp;ts, false, &amp;BlinkOnEnable,
 &amp;BlinkOnDisable);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tLED(0, -1, NULL, &amp;ts, false, NULL, &amp;LEDOff);</FONT></FONT></P>
+tLED(TASK_IMMEDIATE, TASK_FOREVER, NULL, &amp;ts, false, NULL,
+&amp;LEDOff);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
@@ -1582,18 +1671,21 @@ ts; </FONT></FONT>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tCycle(10000, -1, &amp;CycleCallback, &amp;ts, true);</FONT></FONT></P>
+tCycle(10000, TASK_FOREVER, &amp;CycleCallback, &amp;ts, true);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tMeasure(1000, 1, &amp;MeasureCallback, &amp;ts, false,
-&amp;MeasureEnable, &amp;MeasureDisable);</FONT></FONT></P>
+tMeasure(TASK_SECOND, TASK_ONCE, &amp;MeasureCallback, &amp;ts,
+false, &amp;MeasureEnable, &amp;MeasureDisable);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
 tCalculate(&amp;CalcCallback, &amp;ts);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tSensor1(0, 1, &amp;S1Callback, &amp;ts, false, &amp;S1Enable);</FONT></FONT></P>
+tSensor1(TASK_IMMEDIATE, TASK_ONCE, &amp;S1Callback, &amp;ts, false,
+&amp;S1Enable);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tSensor2(0, 1, &amp;S2Callback, &amp;ts, false, &amp;S2Enable);</FONT></FONT></P>
+tSensor2(TASK_IMMEDIATE, TASK_ONCE, &amp;S2Callback, &amp;ts, false,
+&amp;S2Enable);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
-tSensor3(0, 1, &amp;S3Callback, &amp;ts, false, &amp;S3Enable);</FONT></FONT></P>
+tSensor3(TASK_IMMEDIATE, TASK_ONCE, &amp;S3Callback, &amp;ts, false,
+&amp;S3Enable);</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
@@ -1973,13 +2065,13 @@ that both tasks refer to the same callback methods)</FONT></FONT></P>
 </P>
 <P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
 <FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler ts;</FONT></FONT></P>
-<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
-<FONT FACE="Courier New, monospace"><FONT SIZE=2>Task t1(100, -1,
-&amp;Measure, &amp;ts, false, &amp;MeasureOn); </FONT></FONT>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><SPAN LANG="">Task
+t1(100, </SPAN>TASK_FOREVER<SPAN LANG="">, &amp;Measure, &amp;ts,
+false, &amp;MeasureOn); </SPAN></FONT></FONT>
 </P>
-<P LANG="" CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">
-<FONT FACE="Courier New, monospace"><FONT SIZE=2>Task t2(100, -1,
-&amp;Measure, &amp;ts, false, &amp;MeasureOn); </FONT></FONT>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2><SPAN LANG="">Task
+t2(100, </SPAN>TASK_FOREVER<SPAN LANG="">, &amp;Measure, &amp;ts,
+false, &amp;MeasureOn); </SPAN></FONT></FONT>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
 </P>
@@ -2047,9 +2139,9 @@ information and implementation options.</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Real
 time examples of TaskScheduler are available here:</FONT></FONT></P>
 <OL>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/"><FONT FACE="Courier New, monospace"><FONT SIZE=2>http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/</FONT></FONT></A></U></FONT></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/"><FONT FACE="Courier New, monospace"><FONT SIZE=2>http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/</FONT></FONT></A></U></FONT></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider"><FONT FACE="Courier New, monospace"><FONT SIZE=2>http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider</FONT></FONT></A></U></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/"><FONT FACE="Courier New, monospace">http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/</FONT></A></U></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/"><FONT FACE="Courier New, monospace">http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/</FONT></A></U></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT COLOR="#0000ff"><U><A HREF="http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider"><FONT FACE="Courier New, monospace">http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider</FONT></A></U></FONT></P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
