@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="CREATED" CONTENT="20150206;16300000">
 	<META NAME="CHANGEDBY" CONTENT="Anatoli Arkhipenko">
-	<META NAME="CHANGED" CONTENT="20151105;22050000">
+	<META NAME="CHANGED" CONTENT="20151115;15470000">
 	<META NAME="Info 1" CONTENT="">
 	<META NAME="Info 2" CONTENT="">
 	<META NAME="Info 3" CONTENT="">
@@ -28,7 +28,7 @@ Scheduler</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
 multitasking for Arduino microcontrollers</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.3: 2015-11-05</B></FONT></P>
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.4: 2015-11-17</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -122,7 +122,7 @@ than the Scheduler's <B>execute</B>() method).</P>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>Below is the flowchart of a Task lifecycle:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html_m68472eb8.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=655 BORDER=0></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=616 BORDER=0></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>TaskScheduler</B>
@@ -293,6 +293,611 @@ invoked incorrectly once every 47 days.
 parameters are<B> DISABLED </B>by default, and need to be explicitly
 enabled by placing appropriate #define statements in front of the
 #include statement for the TaskScheduler header file.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>TASK PRIORITY AND
+COOPERATIVE MULTITASKING:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">TaskScheduler <B>does
+not support</B> task priority functionality. I have been thinking a
+lot about it (especially since Symbian's Active Objects, which
+TaskScheduler is inspired by, support it), but decided against it.  
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">This is why:</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">1. Execution chains are
+simple and efficient. The main idea is to minimize scheduling
+overhead by Scheduler going through the chain. Implementing true
+priority would require looking ahead through the entire chain,
+ranking and aging tasks by priorities. It would slow the <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">execute()
+</FONT></FONT>loop significantly.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">2. TaskScheduler is <B>NOT</B>
+a pre-emptive multi-tasking library. Nor is it a Real-Time OS. There
+is no way to break execution of one task in favor of another.
+Therefore callback methods require careful programming for
+cooperative behavior.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">This has, however,
+significant benefits: you don't need to worry about concurrency
+inside the callback method, since only one callback method runs at a
+time, and could not be interrupted. All resources are yours for that
+period of time, noone can switch the value of variables (except
+interrupt functions of course...), etc. It is a stable and
+predictable environment, and it helps a lot with writing stable code.
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">A number of things
+could be done instead of priorities:</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">1. Schedule your
+critical tasks to run more frequently than the other tasks</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">. <BR>(Since you can
+control the interval, you could also change the task to run more or
+less frequently as the situation demands).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">2. If one particular
+callback routine is critical, create a couple of tasks referring to
+the same callback and &quot;sprinkle&quot; them around the chain:</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">    <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Scheduler
+ts;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">    <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t1(20, TASK_FOREVER, &amp;callback1, &amp;ts);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">    <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t2(1000, TASK_FOREVER, &amp;callback2, &amp;ts);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">    <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t3(20, TASK_FOREVER, &amp;callback1, &amp;ts);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">    <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t4(1000, TASK_FOREVER, &amp;callback4, &amp;ts);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">    <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t3.delay(10);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Note that t1 and t3
+call the same callback method, and are shifted in time by 10 millis.
+So effectively callback1 will be called every 10 millis, but would be
+&quot;sandwiched&quot; between t2 and t4. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">3. Use short efficient
+callback methods written for cooperative multitasking.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">What that means is:</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">a)
+<B>DO NOT</B> use Arduino's  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">delay()</FONT></FONT><FONT FACE="Andale Mono">
+</FONT>function. It is blocking and will hold the entire chain.
+Instead break the callback method into two, switch the callback
+method of the task where delay is necessary and delay the task by
+that number of millis. You get your delay, and other tasks get a
+chance to run:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">instead
+of:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">delay(1000);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+more stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">do
+this:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback1() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback2);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.delay(1000);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback2() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+more stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback1);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">b)
+Same goes to <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">pulseIn()</FONT></FONT>
+function. If you have to use it, set the timeout parameter such that
+it is not a default 1 second. PulseIn functionality could be achieved
+via pin interrupts, and that solution is non-blocking.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">c)
+Do don run long loops (for or do/while) in you callback methods. Make
+the main arduino loop be the loop driver for you:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">instead
+of:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">for(int
+i=0; i&lt;1000; i++) {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+     <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+stuff // one loop action</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">do
+this:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t1(TASK_IMMEDIATE, 1000, &amp;callback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">int
+i = t1.getRunCounter() -1;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+stuff // one loop action</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">or
+this:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t1(TASK_IMMEDIATE, 1000, &amp;callback, true, &amp;t1On);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">int
+i;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">bool
+t1On() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">i
+= 0;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">return
+true;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+stuff // one loop action</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">i++;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<B>REMEMBER: you are already inside the loop - take advantage of it. </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">d)
+Break long running callback methods into several shorter ones, and
+pass control from one to the other via <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">setCallback()
+</FONT></FONT>method:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t1(TASK_IMMEDIATE, TASK_FAREVER, &amp;callback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+do some stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback_step2);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback_step2() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+do more stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback_step3);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback_step3() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+do last part of the stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.delay(1000);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">This
+will execute all  parts of the callback function in three successive
+steps, sheduled immediately, but allowing other tasks in the cahin to
+run. Notince that task is scheduled to run immediately, and 1 second
+period is achieved by delaying the task for 1000 millis at the last
+step. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Alternatively
+you could schedule the task to run every 1000 millis and use
+<FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">forceNextIteration()</FONT></FONT>
+method in steps 1 and 2 (but not 3!)</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">Task
+t1(1000, TASK_FOREVER, &amp;callback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+do some stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback_step2);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.forceNextIteration();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback_step2() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+do more stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback_step3);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.forceNextIteration();</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">void
+callback_step3() {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">...
+do last part of the stuff</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+   <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">t1.setCallback(&amp;callback);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">  
+ <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">e)
+Compile the library with <FONT FACE="FreeMono, monospace"><FONT SIZE=2 STYLE="font-size: 10pt"><B>_TASK_TIMECRITICAL</B></FONT></FONT>
+enabled and check if your tasks are falling behind schedule. If they
+are - you need to optimize your code further (or maybe re-evaluate
+your schedule). If they are not - all is well and you don't need to
+do anything. E.g., I have a spider robot which needs to measure
+distance, control motors, and keep track of the angle via querying
+gyroscope and accelerometer every 10 ms. The idea was to flash
+onboard LED if any of the tasks fall behind. At 10 ms interval for
+the gyro the LED does not flash, which means none of the tasks are
+blocking the others from starting on time. 
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -502,9 +1107,8 @@ is a task which was enabled and requires execution.
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
-</B><SPAN STYLE="font-weight: normal">if task</SPAN> being enabled is
-not assigned to a scheduler and is not part of execution chain, then
-task <B>will not</B> be enabled.</P>
+</B>if task being enabled is not assigned to a scheduler and is not
+part of execution chain, then task <B>will not</B> be enabled.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
@@ -513,8 +1117,9 @@ task <B>will not</B> be enabled.</P>
 must return a value of <B>true</B> for task to be enabled. If
 <B>OnEnable</B> returns <B>false</B>, task remains disabled. 
 <B>OnEnable</B> is invoked every time <B>enable</B> is called,
-regardless if task is already enabled or not. 
-</P>
+regardless if task is already enabled or not. Alignment to current
+millis() is performed after <B>OnEnable</B> exits, so any changes to
+the interval inside <B>OnEnable</B> is taken into consideration.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:</B>
@@ -703,8 +1308,7 @@ and number of iterations.
 default <B>waitForDelayed() </B>sets tasks interval to a supplied
 value or (if omitted or zero) keeps the current interval, so delayed
 execution will take place when the event happens.  It also sets the
-number of <B>iterations to 1</B><SPAN STYLE="font-weight: normal"> by
-default if not supplied</SPAN>.  
+number of <B>iterations to 1</B> by default if not supplied.  
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">When
 Status Request object completes, all tasks waiting on it are executed
@@ -972,10 +1576,9 @@ statements after <B>execute</B> inside the <B>loop()</B>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>bool isOverrun()</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
 library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
-enabled, this method returns <B>true</B><SPAN STYLE="font-weight: normal">
-if currently invoked task has overrun its scheduled start time when
-it was invoked. Returns </SPAN><B>false</B><SPAN STYLE="font-weight: normal">
-if task has been invoked according to schedule.</SPAN></P>
+enabled, this method returns <B>true</B> if currently invoked task
+has overrun its scheduled start time when it was invoked. Returns
+<B>false</B> if task has been invoked according to schedule.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
@@ -2145,5 +2748,8 @@ time examples of TaskScheduler are available here:</FONT></FONT></P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
+<DIV TYPE=FOOTER>
+	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>5</SDFIELD></P>
+</DIV>
 </BODY>
 </HTML>

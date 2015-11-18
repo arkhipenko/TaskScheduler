@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.8.2
+// Cooperative multitasking library for Arduino version 1.8.4
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -57,6 +57,10 @@
 //    2015-11-09 - added callback methods prototypes to all examples for Arduino IDE 1.6.6 compatibility
 //    2015-11-14 - added several constants to be used as task parameters for readability (e.g, TASK_FOREVER, TASK_SECOND, etc.)
 //    2015-11-14 - significant optimization of the scheduler's execute loop, including millis() rollover fix option
+//
+// v1.8.4:
+//    2015-11-15 - bug fix: Task alignment with millis() for scheduling purposes should be done after OnEnable, not before. Especially since OnEnable method can change the interval
+//    2015-11-16 - further optimizations of the task scheduler execute loop
 
 
 /* ============================================
@@ -379,7 +383,6 @@ void Task::setIterations(long aIterations) {
 void Task::enable() {
 	if (iScheduler) { // activation without active scheduler does not make sense
 		iRunCounter = 0;
-		iPreviousMillis = millis() - iInterval;
 		if (iOnEnable && !iInOnEnable) {
 			Task *current = iScheduler->iCurrent;
 			iScheduler->iCurrent = this;
@@ -391,6 +394,7 @@ void Task::enable() {
 		else {
 			iEnabled = true;
 		}
+		iPreviousMillis = millis() - iInterval;
 	}
 }
 
@@ -569,6 +573,7 @@ void Scheduler::execute() {
 	bool		idleRun = true;
 #endif
 	unsigned long targetMillis;
+	register unsigned long m, i, p;
 	
 	iCurrent = iFirst;
 
@@ -585,13 +590,16 @@ void Scheduler::execute() {
 					iCurrent->disable();
 					break;
 				}
-	#ifdef  _TASK_STATUS_REQUEST
+				m = millis();
+				p = iCurrent->iPreviousMillis;
+				i = iCurrent->iInterval;
+				#ifdef  _TASK_STATUS_REQUEST
 	// If StatusRequest object was provided, and still pending, and task is waiting, this task should not run
 	// Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to 
 	// how they were placed into waiting state (waitFor or waitForDelayed)
 				if ( iCurrent->iWaiting ) {
 					if ( (iCurrent->iStatusRequest)->pending() ) break;
-					iCurrent->iPreviousMillis = (iCurrent->iWaiting == _TASK_SR_NODELAY) ? millis()-iCurrent->iInterval : millis();
+					iCurrent->iPreviousMillis = (iCurrent->iWaiting == _TASK_SR_NODELAY) ? m - i : m;
 					iCurrent->iWaiting = 0;
 				}
 	#endif
@@ -607,20 +615,19 @@ void Scheduler::execute() {
 	//  since targetMillis (65) < iPreviousMillis (65000), rollover fix kicks in:
 	//  iPreviousMillis(65000) > millis(65500) - iInterval(600) = 64900 - task will not be scheduled
 	
-				targetMillis = iCurrent->iPreviousMillis + iCurrent->iInterval;
+				targetMillis = p + i;
 	#ifdef _TASK_ROLLOVER_FIX
-				if ( targetMillis < iCurrent->iPreviousMillis ) {  // targetMillis rolled over!
-					if ( iCurrent->iPreviousMillis > ( millis() - iCurrent->iInterval) )  break;
+				if ( targetMillis < p ) {  // targetMillis rolled over!
+					if ( p > ( m - i) )  break;
 				}
 				else
 	#endif
-					if ( targetMillis > millis() ) break;
+					if ( targetMillis > m ) break;
 	
-				iCurrent->iPreviousMillis = targetMillis;
 	#ifdef _TASK_TIMECRITICAL
 	// Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero. 
 	// If negative - the task is behind (next execution time is already in the past) 
-				iCurrent->iOverrun = (long) (iCurrent->iPreviousMillis + iCurrent->iInterval - millis());
+				iCurrent->iOverrun = (long) ( targetMillis - m + i );
 	#endif
 				if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
 				iCurrent->iRunCounter++;
@@ -630,6 +637,7 @@ void Scheduler::execute() {
 					idleRun = false;
 	#endif
 				}
+				iCurrent->iPreviousMillis = targetMillis;
 			}
 		} while (0); //guaranteed single run - allows use of "break" to exit 
 		iCurrent = iCurrent->iNext;
