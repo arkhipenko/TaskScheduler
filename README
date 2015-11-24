@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.8.4: 2015-11-17
+Version 1.8.5: 2015-11-23
   
 OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:
@@ -13,6 +13,10 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)
 
 Changelog:
+v1.8.5:
+    2015-11-23 - bug fix: incorrect calculation of next task invocation in case callback changed the interval
+    2015-11-23 - bug fix: Task::set() method calls setInterval() explicitly, therefore delaying the task in the same manner
+	
 v1.8.4:
     2015-11-15 - bug fix: Task alignment with millis() for scheduling purposes should be done after OnEnable, not before. Especially since OnEnable method can change the interval
 

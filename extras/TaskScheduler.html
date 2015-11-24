@@ -28,7 +28,7 @@ Scheduler</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
 multitasking for Arduino microcontrollers</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.4: 2015-11-17</B></FONT></P>
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.5: 2015-11-23</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -1120,18 +1120,40 @@ must return a value of <B>true</B> for task to be enabled. If
 regardless if task is already enabled or not. Alignment to current
 millis() is performed after <B>OnEnable</B> exits, so any changes to
 the interval inside <B>OnEnable</B> is taken into consideration.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">TaskScheduler
+allows tasks to be added to the a Scheduler and enabled at the time
+of creation. <B>Be very careful</B><SPAN STYLE="font-weight: normal">
+with such tasks – the </SPAN><B>OnEnable </B><SPAN STYLE="font-weight: normal">method
+will be executed immediately, while certain objects (i.e., other
+Tasks, libraries) are not yet ready (e.g., </SPAN><B>Wire.begin()</B><SPAN STYLE="font-weight: normal">
+was not yet called), or hardware not yet activated (pins not set to
+INPUT or OUTPUT). </SPAN>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><SPAN STYLE="font-weight: normal">It
+is very much recommended to to enable all tasks at the end of </SPAN><B>setup()</B><SPAN STYLE="font-weight: normal">
+method after all initializations are done. </SPAN>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><SPAN STYLE="font-weight: normal">If
+you require immediate execution of already enabled task, use
+</SPAN><B>forceNextIteratoin</B><SPAN STYLE="font-weight: normal">()
+method instead of </SPAN><B>enable</B><SPAN STYLE="font-weight: normal">():
+it achieves the result, but does not call </SPAN><B>OnEnable</B><SPAN STYLE="font-weight: normal">
+method. </SPAN>
+</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:</B>
-in the event enable() method is called inside the OnEnable callback
-method (thus basically creating indefinte loop), TaskScheduler will
-only call OnEnable once (thus protecting the Task against OnEnable
-infinite loop). 
+in the event <B>enable</B>() method is called inside the <B>OnEnable</B>
+callback method (thus basically creating indefinte loop),
+TaskScheduler will only call <B>OnEnable</B> once (thus protecting
+the Task against <B>OnEnable</B> infinite loop). 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool enableIfNot();</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-before: auto; page-break-after: avoid">
+<B>bool enableIfNot();</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Enables
 the task only if it was previously disabled. Returns previous enable
@@ -1164,6 +1186,9 @@ forceNextIteration();</B></P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Schedules
 the task for execution during immediate next scheduling pass.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">The
+Task must be already <I>enabled</I> prior to this method. 
+</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
@@ -1240,8 +1265,10 @@ dynamic control of task execution parameters in one method call.
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note</B><B>:
 </B>OnEnable and OnDisable parameters can be omitted. In that case
-they will be assigned to NULL and respective methods will no longer
-be called. 
+they will be assigned to <B>NULL</B> and respective methods will no
+longer be called. Therefore it is advisable to use either all five
+parameters explicitly, or employ individual “setter” methods
+below instead. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -1266,17 +1293,23 @@ setOnDisable (void (*aCallback)()) </B>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Next
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: </B>Next
 execution time calculation takes place <B>after</B> the callback
 method is called, so new interval will be used immediately by the
 scheduler. For the situations when one task is changing the interval
 parameter for the other, <B>setInterval</B> method calls <B>delay
 </B>explicitly to guarantee schedule change, however it <B>does not
 </B>enable the task if task is disabled.</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Tasks that
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: </B>Tasks that
 ran through all their allocated iterations are disabled.
 <B>SetIterations()</B> method <B>DOES NOT</B> enable the task. Either
 <B>enable</B> explicitly, or use <B>restart</B> methods. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Please note that as a
+result execution of the taks is <B>delayed</B><SPAN STYLE="font-weight: normal">
+by the provided interval. If immediate invocation is required, call
+</SPAN><B>forceNextIteration</B><SPAN STYLE="font-weight: normal">()
+method after setting a new interval. </SPAN>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -1569,8 +1602,36 @@ task being enabled or disabled.
 one scheduling pass, including end-of-pass sleep. This method is
 typically placed inside the <B>loop()</B> method of the sketch. Since
 <B>execute</B> exits after every pass, you can put additional
-statements after <B>execute</B> inside the <B>loop()</B> 
+statements after <B>execute</B> inside the <B>loop().</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Generally,
+execute will perform the following steps:</SPAN></P>
+<OL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Ignore
+	task completely if it is disabled.</SPAN></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Disable
+	task if it ran out of iterations (calling OnDesable, if necessary).</SPAN></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Check
+	if task is waiting on a StatusRequest object, and make appropriate
+	scheduling arrangements</SPAN></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Perform
+	necessary timing calculations (including millis() rollover fix, if
+	requested)</SPAN></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Invoke
+	task's callback method, if it is time to do so, and one is provided.
+	</SPAN>
+	</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Put
+	microcontroller to sleep (if requested and supported) if none of the
+	tasks were invoked. </SPAN>
+	</P>
+</OL>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Please
+NOTE:</B><SPAN STYLE="font-weight: normal"> schedule-related
+calculations are performed prior to task's callback method
+invocation. This allows tasks to manipulate their runtime parameters
+(like execution interval) directly.</SPAN></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>bool isOverrun()</B></P>
@@ -2749,7 +2810,7 @@ time examples of TaskScheduler are available here:</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <DIV TYPE=FOOTER>
-	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>5</SDFIELD></P>
+	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>31</SDFIELD></P>
 </DIV>
 </BODY>
 </HTML>
