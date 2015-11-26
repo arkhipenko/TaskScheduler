@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 1.8.4
+// Cooperative multitasking library for Arduino version 1.9.0
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -65,6 +65,9 @@
 // v1.8.5:
 //    2015-11-23 - bug fix: incorrect calculation of next task invocation in case callback changed the interval
 //    2015-11-23 - bug fix: Task::set() method calls setInterval() explicitly, therefore delaying the task in the same manner
+//
+// v1.9.0:
+//    2015-11-24 - packed three byte-long status variables into bit array structure data type - saving 2 bytes per each task instance
 
 
 /* ============================================
@@ -122,6 +125,7 @@ THE SOFTWARE.
 #define TASK_FOREVER		 (-1)
 #define TASK_ONCE				1
 
+
 #ifdef _TASK_STATUS_REQUEST
 
 #define	_TASK_SR_NODELAY 	1
@@ -139,10 +143,18 @@ class StatusRequest {
 		
 	private:
 		unsigned int	iCount;  					// number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
-		int				iStatus;  				// status of the last completed request. negative = error;  zero = OK; >positive = OK with a specific status
+		int			iStatus;  					// status of the last completed request. negative = error;  zero = OK; >positive = OK with a specific status
 };
 #endif
 
+
+typedef struct  {
+	bool enabled : 1;							// indicates that task is enabled or not.
+	bool inonenable : 1;						// indicates that task execution is inside OnEnable method (preventing infinite loops)
+#ifdef _TASK_STATUS_REQUEST
+	byte	waiting : 2;							// indication if task is waiting on the status request
+#endif
+} __task_status;
 
 class Scheduler; 
 
@@ -162,7 +174,7 @@ class Task {
 		void restart();
 		void restartDelayed(unsigned long aDelay=0);
 		bool disable();
-		inline bool isEnabled() { return iEnabled; }
+		inline bool isEnabled() { return iStatus.enabled; }
 		void set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 		void setInterval(unsigned long aInterval);
 		inline unsigned long getInterval() { return iInterval; }
@@ -196,8 +208,7 @@ class Task {
     private:
 		void reset();
 
-		volatile bool			iEnabled;			// indicates that task is enabled or not. @todo: combine iEnabled, iInOnEnable and iWaiting into one byte since those are bits really.
-		volatile bool			iInOnEnable;		// indicates that task execution is inside OnEnable method (preventing infinite loops)
+		volatile __task_status	iStatus;
 		volatile unsigned long	iInterval;			// execution interval in milliseconds. 0 - immediate
 		volatile unsigned long	iPreviousMillis;		// previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up" 
 #ifdef _TASK_TIMECRITICAL
@@ -205,7 +216,7 @@ class Task {
 #endif
 		volatile long			iIterations;		// number of iterations left. 0 - last iteration. -1 - infinite iterations
 		long					iSetIterations; 		// number of iterations originally requested (for restarts)
-		unsigned long			iRunCounter;	// current number of iteration (starting with 1). Resets on enable. 
+		unsigned long		iRunCounter;		// current number of iteration (starting with 1). Resets on enable. 
 		void					(*iCallback)();		// pointer to the void callback method
 		bool					(*iOnEnable)();	// pointer to the bolol OnEnable callback method
 		void					(*iOnDisable)();	// pointer to the void OnDisable method
@@ -213,7 +224,6 @@ class Task {
 		Scheduler				*iScheduler;		// pointer to the current scheduler
 #ifdef _TASK_STATUS_REQUEST
 		StatusRequest			*iStatusRequest;	// pointer to the status request task is or was waiting on
-		byte					iWaiting;			// indication if task is waiting on the status request
 #endif
 #ifdef _TASK_WDT_IDS
 		unsigned int			iTaskID;			// task ID (for debugging and watchdog identification)
@@ -257,6 +267,7 @@ class Scheduler {
 #ifdef _TASK_WDT_IDS
 	static unsigned int __task_id_counter = 0;		// global task ID counter for assiging task IDs automatically. 
 #endif
+
 /** Constructor, uses default values for the parameters
  * so could be called with no parameters.
  */
@@ -281,7 +292,7 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
  */
 Task::Task( void (*aCallback)(), Scheduler* aScheduler, bool (*aOnEnable)(), void (*aOnDisable)() ) {
 	reset();
-	set(0, 1, aCallback, aOnEnable, aOnDisable);
+	set(TASK_IMMEDIATE, TASK_ONCE, aCallback, aOnEnable, aOnDisable);
 	if (aScheduler) aScheduler->addTask(*this);
 	iStatusRequest = NULL;
 #ifdef _TASK_WDT_IDS
@@ -317,7 +328,7 @@ void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long 
 	if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
 		setIterations(aIterations);
 		setInterval(aInterval); 
-		iWaiting = _TASK_SR_NODELAY;  // no delay
+		iStatus.waiting = _TASK_SR_NODELAY;  // no delay
 		enable();
 	}
 }
@@ -326,7 +337,7 @@ void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
 	if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
 		setIterations(aIterations);
 		if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
-		iWaiting = _TASK_SR_DELAY;  // with delay equal to the current interval
+		iStatus.waiting = _TASK_SR_DELAY;  // with delay equal to the current interval
 		enable();
 	}
 }
@@ -337,7 +348,8 @@ void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
  * out of the execution chain as a result
  */
 void Task::reset() {
-	iEnabled = iInOnEnable = false;
+	iStatus.enabled = false;
+	iStatus.inonenable = false;
 	iPreviousMillis = 0;
 	iPrev = NULL;
 	iNext = NULL;
@@ -353,7 +365,7 @@ void Task::reset() {
 	iLTS = NULL;
 #endif
 #ifdef _TASK_STATUS_REQUEST
-	iWaiting = 0;
+	iStatus.waiting = 0;
 #endif
 }
 
@@ -387,16 +399,16 @@ void Task::setIterations(long aIterations) {
 void Task::enable() {
 	if (iScheduler) { // activation without active scheduler does not make sense
 		iRunCounter = 0;
-		if (iOnEnable && !iInOnEnable) {
+		if ( iOnEnable && !iStatus.inonenable ) {
 			Task *current = iScheduler->iCurrent;
 			iScheduler->iCurrent = this;
-			iInOnEnable = true;			// Protection against potential infinite loop
-			iEnabled = (*iOnEnable)();
-			iInOnEnable = false;		// Protection against potential infinite loop
+			iStatus.inonenable = true;		// Protection against potential infinite loop
+			iStatus.enabled = (*iOnEnable)();
+			iStatus.inonenable = false;	  	// Protection against potential infinite loop
 			iScheduler->iCurrent = current;
 		}
 		else {
-			iEnabled = true;
+			iStatus.enabled = true;
 		}
 		iPreviousMillis = millis() - iInterval;
 	}
@@ -406,8 +418,8 @@ void Task::enable() {
  * Returns previous state (true if was already enabled, false if was not)
  */
 bool Task::enableIfNot() {
-	bool previousEnabled = iEnabled;
-	if (!iEnabled) enable();
+	bool previousEnabled = iStatus.enabled;
+	if ( !previousEnabled ) enable();
 	return (previousEnabled);
 }
 
@@ -451,8 +463,9 @@ void Task::setInterval (unsigned long aInterval) {
  * Returns status of the task before disable was called (i.e., if the task was already disabled)
  */
 bool Task::disable() {
-	bool previousEnabled = iEnabled;
-	iEnabled = iInOnEnable = false;
+	bool previousEnabled = iStatus.enabled;
+	iStatus.enabled = false;
+	iStatus.inonenable = false; 
 	if (previousEnabled && iOnDisable) {
 		Task *current = iScheduler->iCurrent;
 		iScheduler->iCurrent = this;
@@ -583,7 +596,7 @@ void Scheduler::execute() {
 
 	while (iCurrent) { 
 		do {   		
-			if (iCurrent->iEnabled) {
+			if ( iCurrent->iStatus.enabled ) {
 	#ifdef _TASK_WDT_IDS
 	// For each task the control points are initialized to avoid confusion because of carry-over:
 				iCurrent->iControlPoint = 0;
@@ -600,10 +613,10 @@ void Scheduler::execute() {
 	// If StatusRequest object was provided, and still pending, and task is waiting, this task should not run
 	// Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to 
 	// how they were placed into waiting state (waitFor or waitForDelayed)
-				if ( iCurrent->iWaiting ) {
+				if ( iCurrent->iStatus.waiting ) {
 					if ( (iCurrent->iStatusRequest)->pending() ) break;
-					iCurrent->iPreviousMillis = (iCurrent->iWaiting == _TASK_SR_NODELAY) ? m - i : m;
-					iCurrent->iWaiting = 0;
+					iCurrent->iPreviousMillis = (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) ? m - i : m;
+					iCurrent->iStatus.waiting = 0;
 				}
 	#endif
 				p = iCurrent->iPreviousMillis;
@@ -644,7 +657,7 @@ void Scheduler::execute() {
 	#endif
 				}
 			}
-		} while (0); //guaranteed single run - allows use of "break" to exit 
+		} while (0); 	//guaranteed single run - allows use of "break" to exit 
 		iCurrent = iCurrent->iNext;
 	}
 

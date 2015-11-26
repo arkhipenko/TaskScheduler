@@ -49,9 +49,9 @@ bool MeasureEnable() {
   measure.setWaiting(3); // Set the StatusRequest to wait for 3 signals. 
   tCalculate.waitFor(&measure);
 
-  tSensor1.restart();
-  tSensor2.restart();
-  tSensor3.restart();
+  tSensor1.restartDelayed();
+  tSensor2.restartDelayed();
+  tSensor3.restartDelayed();
 
   return true;
 }

@@ -3,7 +3,7 @@
  *  Test case: 
  *    Watchdog timer is set to 2 seconds (interrupt + reset)
  *    A hearbeat task (resetting the watchdog timer) is scheduled with 500 ms interval
- *    A number of tasks are running every 1 second and "rolling the dice" 0..9.  If 5, task is made to enter infinite loop
+ *    A number of tasks are running every 1 second and "rolling the dice" 0..19.  If 5, task is made to enter infinite loop
  *    Device should reset in 2 seconds after a task enters infinite loop
  *    A task id and a control point number are saved to EEPROM prior to device reset, and are displayed after reboot.
  *    In real life, device might chose to NOT activate certain tasks which failed previously (failed sensors for instance)
@@ -45,13 +45,13 @@ void TaskCB() {
   Serial.print(" current iteration = "); 
   Serial.println(T.getRunCounter());
 
-// Hang if random number between 0 and 9 is 5 (10% probability)
+// Hang if random number between 0 and 19 is 5 (5% probability)
   T.setControlPoint(10);
-  if (random(10) == 5) for(;;);
+  if (random(20) == 5) for(;;);
   
-// Hang if random number between 0 and 99 is more that 85 (15% probability)
-  T.setControlPoint(85);
-  if (random(100) > 84) for(;;);
+// Hang if random number between 0 and 99 is more that 95 (5% probability)
+  T.setControlPoint(95);
+  if (random(100) > 94) for(;;);
 }
 
 /**

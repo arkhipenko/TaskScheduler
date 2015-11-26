@@ -28,7 +28,7 @@ Scheduler</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
 multitasking for Arduino microcontrollers</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.8.5: 2015-11-23</B></FONT></P>
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.9.0: 2015-11-24</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -1150,7 +1150,7 @@ the Task against <B>OnEnable</B> infinite loop).
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in; page-break-before: auto; page-break-after: avoid">
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>bool enableIfNot();</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
@@ -1603,26 +1603,27 @@ one scheduling pass, including end-of-pass sleep. This method is
 typically placed inside the <B>loop()</B> method of the sketch. Since
 <B>execute</B> exits after every pass, you can put additional
 statements after <B>execute</B> inside the <B>loop().</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Generally,
-execute will perform the following steps:</SPAN></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; font-weight: normal">
+Generally, execute will perform the following steps:</P>
 <OL>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Ignore
-	task completely if it is disabled.</SPAN></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Disable
-	task if it ran out of iterations (calling OnDesable, if necessary).</SPAN></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Check
-	if task is waiting on a StatusRequest object, and make appropriate
-	scheduling arrangements</SPAN></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Perform
-	necessary timing calculations (including millis() rollover fix, if
-	requested)</SPAN></P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Invoke
-	task's callback method, if it is time to do so, and one is provided.
-	</SPAN>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal">
+	Ignore task completely if it is disabled.</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal">
+	Disable task if it ran out of iterations (calling OnDesable, if
+	necessary).</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal">
+	Check if task is waiting on a StatusRequest object, and make
+	appropriate scheduling arrangements</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal">
+	Perform necessary timing calculations (including millis() rollover
+	fix, if requested)</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal">
+	Invoke task's callback method, if it is time to do so, and one is
+	provided. 
 	</P>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><SPAN STYLE="font-weight: normal">Put
-	microcontroller to sleep (if requested and supported) if none of the
-	tasks were invoked. </SPAN>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal">
+	Put microcontroller to sleep (if requested and supported) if none of
+	the tasks were invoked. 
 	</P>
 </OL>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
