@@ -620,27 +620,9 @@ void Scheduler::execute() {
 				}
 	#endif
 				p = iCurrent->iPreviousMillis;
-
-	// Determine when current task is supposed to run
-	// Once every 47 days there is a rollover execution which will occur due to millis and targetMillis rollovers
-	// That is why there is an option to compile with rollover fix
-	// Example
-	//	iPreviousMillis = 65000
-	//	iInterval = 600
-	//	millis() = 65500
-	//  targetMillis = 65000 + 600 = (should be 65600) 65 (due to rollover)
-	//	so 65 < 65500. should be 65600 > 65500. - task will be scheduled incorrectly
-	//  since targetMillis (65) < iPreviousMillis (65000), rollover fix kicks in:
-	//  iPreviousMillis(65000) > millis(65500) - iInterval(600) = 64900 - task will not be scheduled
-	
+				
 				targetMillis = p + i;
-	#ifdef _TASK_ROLLOVER_FIX
-				if ( targetMillis < p ) {  // targetMillis rolled over!
-					if ( p > ( m - i) )  break;
-				}
-				else
-	#endif
-					if ( targetMillis > m ) break;
+				if ( m - p < i ) break;
 	
 	#ifdef _TASK_TIMECRITICAL
 	// Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero. 
