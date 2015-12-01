@@ -68,7 +68,9 @@
 //
 // v1.9.0:
 //    2015-11-24 - packed three byte-long status variables into bit array structure data type - saving 2 bytes per each task instance
-
+//
+// v1.9.1:
+//    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -110,7 +112,6 @@ THE SOFTWARE.
  *  #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
  *  #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
  *  #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
- *  #define _TASK_ROLLOVER_FIX		// Compensate for millis() rollover once every 47 days
  */
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -589,7 +590,7 @@ void Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 	bool		idleRun = true;
 #endif
-	unsigned long targetMillis;
+//	unsigned long targetMillis;
 	register unsigned long m, i, p;
 	
 	iCurrent = iFirst;
@@ -621,17 +622,17 @@ void Scheduler::execute() {
 	#endif
 				p = iCurrent->iPreviousMillis;
 				
-				targetMillis = p + i;
+	//			targetMillis = p + i;
 				if ( m - p < i ) break;
 	
 	#ifdef _TASK_TIMECRITICAL
 	// Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero. 
 	// If negative - the task is behind (next execution time is already in the past) 
-				iCurrent->iOverrun = (long) ( targetMillis - m + i );
+				iCurrent->iOverrun = (long) ( p - m + (i<<1) );
 	#endif
 				if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
 				iCurrent->iRunCounter++;
-				iCurrent->iPreviousMillis = targetMillis; //p + i
+				iCurrent->iPreviousMillis = p + i;
 				if ( iCurrent->iCallback ) {
 					( *(iCurrent->iCallback) )();
 	#ifdef _TASK_SLEEP_ON_IDLE_RUN
