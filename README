@@ -1,7 +1,7 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
 Version 1.9.0: 2015-11-24
 
-Please note, that version 1.9.1 contained a bug affecting all delayed functions.
+Please note, that version 1.9.1 contained an issue affecting all delayed methods.
 The decision was made to revert back to 1.9.0 until a solution is found.
   
 OVERVIEW:
