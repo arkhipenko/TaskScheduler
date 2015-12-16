@@ -1,8 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.9.0: 2015-11-24
-
-Please note, that version 1.9.1 contained an issue affecting all delayed methods.
-The decision was made to revert back to 1.9.0 until a solution is found.
+Version 1.9.1: 2015-11-28
   
 OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:
@@ -16,6 +13,9 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)
 
 Changelog:
+v1.9.1:
+    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
+	
 v1.9.0:
     2015-11-24 - packed three byte-long status variables into one byte-long bit array structure data type - saving 2 bytes per each task instance
 

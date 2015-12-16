@@ -68,7 +68,9 @@
 //
 // v1.9.0:
 //    2015-11-24 - packed three byte-long status variables into bit array structure data type - saving 2 bytes per each task instance
-
+//
+// v1.9.1:
+//    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -110,7 +112,6 @@ THE SOFTWARE.
  *  #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
  *  #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
  *  #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
- *  #define _TASK_ROLLOVER_FIX		// Compensate for millis() rollover once every 47 days
  */
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -210,13 +211,14 @@ class Task {
 
 		volatile __task_status	iStatus;
 		volatile unsigned long	iInterval;			// execution interval in milliseconds. 0 - immediate
-		volatile unsigned long	iPreviousMillis;		// previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up" 
+		volatile unsigned long	iDelay; 			// actual delay until next execution (usually equal iInterval)
+		volatile unsigned long	iPreviousMillis;	// previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up" 
 #ifdef _TASK_TIMECRITICAL
 		volatile long			iOverrun; 		// negative if task is "catching up" to it's schedule (next invocation time is already in the past)
 #endif
 		volatile long			iIterations;		// number of iterations left. 0 - last iteration. -1 - infinite iterations
 		long					iSetIterations; 		// number of iterations originally requested (for restarts)
-		unsigned long		iRunCounter;		// current number of iteration (starting with 1). Resets on enable. 
+		unsigned long			iRunCounter;		// current number of iteration (starting with 1). Resets on enable. 
 		void					(*iCallback)();		// pointer to the void callback method
 		bool					(*iOnEnable)();	// pointer to the bolol OnEnable callback method
 		void					(*iOnDisable)();	// pointer to the void OnDisable method
@@ -351,6 +353,7 @@ void Task::reset() {
 	iStatus.enabled = false;
 	iStatus.inonenable = false;
 	iPreviousMillis = 0;
+	iInterval = iDelay = 0;
 	iPrev = NULL;
 	iNext = NULL;
 	iScheduler = NULL;
@@ -410,7 +413,7 @@ void Task::enable() {
 		else {
 			iStatus.enabled = true;
 		}
-		iPreviousMillis = millis() - iInterval;
+		iPreviousMillis = millis() - (iDelay = iInterval);
 	}
 }
 
@@ -436,8 +439,9 @@ void Task::enableDelayed(unsigned long aDelay) {
  * if aDelay is zero, delays for the original scheduling interval from now
  */
 void Task::delay(unsigned long aDelay) {
-	if (!aDelay) aDelay = iInterval;
-	iPreviousMillis = millis() - iInterval + aDelay;
+//	if (!aDelay) aDelay = iInterval;
+	iDelay = aDelay ? aDelay : iInterval;
+	iPreviousMillis = millis(); // - iInterval + aDelay;
 }
 
 /** Schedules next iteration of Task for execution immediately (if enabled)
@@ -445,7 +449,7 @@ void Task::delay(unsigned long aDelay) {
  * Task's original schedule is shifted, and all subsequent iterations will continue from this point in time
  */
 void Task::forceNextIteration() {
-	iPreviousMillis = millis() - iInterval;
+	iPreviousMillis = millis() - (iDelay = iInterval);
 }
 
 /** Sets the execution interval.
@@ -455,7 +459,7 @@ void Task::forceNextIteration() {
  */
 void Task::setInterval (unsigned long aInterval) {
  	iInterval = aInterval; 
-	delay();
+	delay(); // iDelay will be updated by the delay() function
 }
 
 /** Disables task
@@ -589,8 +593,8 @@ void Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 	bool		idleRun = true;
 #endif
-	unsigned long targetMillis;
-	register unsigned long m, i, p;
+//	unsigned long targetMillis;
+	register unsigned long m, p, i; //, d;
 	
 	iCurrent = iFirst;
 
@@ -609,47 +613,37 @@ void Scheduler::execute() {
 				}
 				m = millis();
 				i = iCurrent->iInterval;
+//				d = iCurrent->iDelay;
 	#ifdef  _TASK_STATUS_REQUEST
 	// If StatusRequest object was provided, and still pending, and task is waiting, this task should not run
 	// Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to 
 	// how they were placed into waiting state (waitFor or waitForDelayed)
 				if ( iCurrent->iStatus.waiting ) {
 					if ( (iCurrent->iStatusRequest)->pending() ) break;
-					iCurrent->iPreviousMillis = (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) ? m - i : m;
+					if (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) {
+						iCurrent->iPreviousMillis = m - (iCurrent->iDelay = i);
+					}
+					else {
+						iCurrent->iPreviousMillis = m;
+					}
 					iCurrent->iStatus.waiting = 0;
 				}
 	#endif
 				p = iCurrent->iPreviousMillis;
-
-	// Determine when current task is supposed to run
-	// Once every 47 days there is a rollover execution which will occur due to millis and targetMillis rollovers
-	// That is why there is an option to compile with rollover fix
-	// Example
-	//	iPreviousMillis = 65000
-	//	iInterval = 600
-	//	millis() = 65500
-	//  targetMillis = 65000 + 600 = (should be 65600) 65 (due to rollover)
-	//	so 65 < 65500. should be 65600 > 65500. - task will be scheduled incorrectly
-	//  since targetMillis (65) < iPreviousMillis (65000), rollover fix kicks in:
-	//  iPreviousMillis(65000) > millis(65500) - iInterval(600) = 64900 - task will not be scheduled
-	
-				targetMillis = p + i;
-	#ifdef _TASK_ROLLOVER_FIX
-				if ( targetMillis < p ) {  // targetMillis rolled over!
-					if ( p > ( m - i) )  break;
-				}
-				else
-	#endif
-					if ( targetMillis > m ) break;
+				
+	//			targetMillis = p + i;
+				if ( m - p < iCurrent->iDelay ) break;
 	
 	#ifdef _TASK_TIMECRITICAL
 	// Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero. 
 	// If negative - the task is behind (next execution time is already in the past) 
-				iCurrent->iOverrun = (long) ( targetMillis - m + i );
+				iCurrent->iOverrun = (long) ( p - m + (i<<1) );
 	#endif
 				if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
 				iCurrent->iRunCounter++;
-				iCurrent->iPreviousMillis = targetMillis; //p + i
+				iCurrent->iPreviousMillis = p + iCurrent->iDelay;
+				iCurrent->iDelay = i;
+//				iCurrent->iDelay = iCurrent->iInterval; // get rid of one time delay
 				if ( iCurrent->iCallback ) {
 					( *(iCurrent->iCallback) )();
 	#ifdef _TASK_SLEEP_ON_IDLE_RUN
