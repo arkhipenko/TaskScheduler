@@ -71,6 +71,8 @@
 //
 // v1.9.1:
 //    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
+//    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay() 
+
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -187,6 +189,7 @@ class Task {
 		inline void setOnDisable(void (*aCallback)()) { iOnDisable = aCallback; }
 #ifdef _TASK_TIMECRITICAL
 		inline long getOverrun() { return iOverrun; }
+		inline long getStartDelay() { return iStartDelay; }
 #endif
 		inline bool isFirstIteration() { return (iRunCounter <= 1); } 
 		inline bool isLastIteration() { return (iIterations == 0); }
@@ -215,6 +218,7 @@ class Task {
 		volatile unsigned long	iPreviousMillis;	// previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up" 
 #ifdef _TASK_TIMECRITICAL
 		volatile long			iOverrun; 		// negative if task is "catching up" to it's schedule (next invocation time is already in the past)
+		volatile long			iStartDelay;	// actual execution of the task's callback method was delayed by this number of millis
 #endif
 		volatile long			iIterations;		// number of iterations left. 0 - last iteration. -1 - infinite iterations
 		long					iSetIterations; 		// number of iterations originally requested (for restarts)
@@ -360,6 +364,7 @@ void Task::reset() {
 	iRunCounter = 0;
 #ifdef _TASK_TIMECRITICAL
 	iOverrun = 0;
+	iStartDelay = 0;
 #endif
 #ifdef _TASK_WDT_IDS
 	iControlPoint = 0;
@@ -593,18 +598,17 @@ void Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 	bool		idleRun = true;
 #endif
-//	unsigned long targetMillis;
-	register unsigned long m, p, i; //, d;
+	register unsigned long m, i;  // millis, interval;
 	
 	iCurrent = iFirst;
 
 	while (iCurrent) { 
 		do {   		
 			if ( iCurrent->iStatus.enabled ) {
-	#ifdef _TASK_WDT_IDS
+#ifdef _TASK_WDT_IDS
 	// For each task the control points are initialized to avoid confusion because of carry-over:
 				iCurrent->iControlPoint = 0;
-	#endif
+#endif
 	
 	// Disable task on last iteration:
 				if (iCurrent->iIterations == 0) {
@@ -613,8 +617,7 @@ void Scheduler::execute() {
 				}
 				m = millis();
 				i = iCurrent->iInterval;
-//				d = iCurrent->iDelay;
-	#ifdef  _TASK_STATUS_REQUEST
+#ifdef  _TASK_STATUS_REQUEST
 	// If StatusRequest object was provided, and still pending, and task is waiting, this task should not run
 	// Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to 
 	// how they were placed into waiting state (waitFor or waitForDelayed)
@@ -628,27 +631,27 @@ void Scheduler::execute() {
 					}
 					iCurrent->iStatus.waiting = 0;
 				}
-	#endif
-				p = iCurrent->iPreviousMillis;
-				
-	//			targetMillis = p + i;
-				if ( m - p < iCurrent->iDelay ) break;
-	
-	#ifdef _TASK_TIMECRITICAL
-	// Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero. 
-	// If negative - the task is behind (next execution time is already in the past) 
-				iCurrent->iOverrun = (long) ( p - m + (i<<1) );
-	#endif
+#endif
+				if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) break;
+
 				if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
 				iCurrent->iRunCounter++;
-				iCurrent->iPreviousMillis = p + iCurrent->iDelay;
+				iCurrent->iPreviousMillis += iCurrent->iDelay;
+
+#ifdef _TASK_TIMECRITICAL
+	// Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero. 
+	// If negative - the task is behind (next execution time is already in the past) 
+				unsigned long p = iCurrent->iPreviousMillis;
+				iCurrent->iOverrun = (long) ( p + i - m );
+				iCurrent->iStartDelay = (long) ( m - p ); 
+#endif
+
 				iCurrent->iDelay = i;
-//				iCurrent->iDelay = iCurrent->iInterval; // get rid of one time delay
 				if ( iCurrent->iCallback ) {
 					( *(iCurrent->iCallback) )();
-	#ifdef _TASK_SLEEP_ON_IDLE_RUN
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
 					idleRun = false;
-	#endif
+#endif
 				}
 			}
 		} while (0); 	//guaranteed single run - allows use of "break" to exit 
