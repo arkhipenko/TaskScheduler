@@ -43,6 +43,7 @@ setOnEnable	KEYWORD2
 setOnDisable	KEYWORD2
 disableOnLastIteration	KEYWORD2
 getOverrun	KEYWORD2
+getStartDelay	KEYWORD2
 isFirstIteration	KEYWORD2
 isLastIteration	KEYWORD2
 setWaiting	KEYWORD2

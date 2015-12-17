@@ -1,20 +1,24 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.9.1: 2015-11-28
+Version 1.9.1: 2015-12-17
   
 OVERVIEW:
-A lightweight implementation of cooperative multitasking (task scheduling) supporting:
-1. Periodic task execution (with dynamic execution period in milliseconds)
-2. Number of iterations (n times)
-3. Execution of tasks in predefined sequence
-4. Dynamic change of task execution parameters (frequency, number of iterations, callback function)
-5. Power saving via entering IDLE sleep mode between tasks are scheduled to run
-6. Support for task invocation via Status Request object
-7. Support for task IDs and Control Points for error handling and watchdog timer
-8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)
+ A lightweight implementation of cooperative multitasking (task scheduling) supporting:
+ 1. Periodic task execution (with dynamic execution period in milliseconds)
+ 2. Number of iterations (n times)
+ 3. Execution of tasks in predefined sequence
+ 4. Dynamic change of task execution parameters (frequency, number of iterations, callback function)
+ 5. Power saving via entering IDLE sleep mode between tasks are scheduled to run
+ 6. Support for task invocation via Status Request object
+ 7. Support for task IDs and Control Points for error handling and watchdog timer
+ 8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)
+
+Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the banchmark example).
 
 Changelog:
 v1.9.1:
     2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
+    2015-12-16 - bug fixes: automatic millis rollover support for delay methods
+    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay() 
 	
 v1.9.0:
     2015-11-24 - packed three byte-long status variables into one byte-long bit array structure data type - saving 2 bytes per each task instance

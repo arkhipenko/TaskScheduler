@@ -15,7 +15,7 @@
 	<!--
 		@page { margin: 0.79in }
 		P { margin-bottom: 0.08in; direction: ltr; color: #000000; widows: 0; orphans: 0 }
-		P.western { font-family: "Liberation Serif", "MS PMincho", serif; font-size: 12pt; so-language: en-US }
+		P.western { font-family: "Liberation Serif", "Times New Roman", serif; font-size: 12pt; so-language: en-US }
 		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt; so-language: zh-CN }
 		P.ctl { font-family: "Lohit Hindi", "MS Mincho"; font-size: 12pt; so-language: hi-IN }
 		A:link { color: #0000ff }
@@ -28,7 +28,7 @@ Scheduler</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
 multitasking for Arduino microcontrollers</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.9.1: 2015-11-28</B></FONT></P>
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.9.1: 2015-12-17</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -56,6 +56,10 @@ supporting:</P>
 	Task Storage pointer (allowing use of same callback code for
 	multiple tasks)</P>
 </OL>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Scheduling overhead:
+between 15 and 18 microseconds per scheduling pass.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>TASK</B>:</P>
@@ -200,10 +204,19 @@ defined before the library header file in the body of arduino sketch.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">...will compile the
 library with time critical tracking option enabled.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Time critical option
-keeps track where next execution time of the task falls, and makes it
-available via API through <B>Task::getOverrun()</B> method. If
-<B>getOverrun </B>returns a negative value, this Task’s next
-execution time point is <I>already</I> in the past, and task is
+keeps track when current execution took place relative to when it was
+scheduled, and where next execution time of the task falls. Two
+methods provide this information. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Task::getStartDelay()
+</B><SPAN STYLE="font-weight: normal">method: return number of
+milliseconds between current system time (millis) and point in time
+when the task was scheduled to start. A value of 0 (zero) indicates
+that task started right on time per schedule. </SPAN>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Task::getOverrun()</B>
+method: If <B>getOverrun </B>returns a negative value, this Task’s
+next execution time point is <I>already</I> in the past, and task is
 behind schedule. This most probably means that either task’s
 callback method's runtime is too long, or the execution interval is
 too short (and therefore schedule is too aggressive).</P>
@@ -780,8 +793,8 @@ do last part of the stuff</FONT></FONT></P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">This
 will execute all  parts of the callback function in three successive
-steps, sheduled immediately, but allowing other tasks in the cahin to
-run. Notince that task is scheduled to run immediately, and 1 second
+steps, sheduled immediately, but allowing other tasks in the chain to
+run. Notice that task is scheduled to run immediately, and 1 second
 period is achieved by delaying the task for 1000 millis at the last
 step. 
 </P>
@@ -1022,6 +1035,16 @@ getIterations() </B>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>long getOverrun()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; font-weight: normal">
+If library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
+enabled, you can assess how much later the callback method was
+invoked against when it was scheduled to be invoked. The return value
+of  <B>getOverrun() </B>method provides this information in
+milliseconds. 
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>long getOverrun()</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
 library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
 enabled, tasks are monitored for “long running” scenario. A “long
@@ -1031,8 +1054,9 @@ other tasks where they don't run on a scheduled interval, but rather
 “catch up” and are behind.  When task scheduler sets the next
 execution target time, it adds Task's execution interval to the
 previously scheduled execution time:</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">	<B>next
-execution time = previous execution time + task execution interval</B></P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<B>next execution time = current execution scheduled time + task
+execution interval</B></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
@@ -2794,7 +2818,7 @@ time examples of TaskScheduler are available here:</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <DIV TYPE=FOOTER>
-	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>4</SDFIELD></P>
+	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>31</SDFIELD></P>
 </DIV>
 </BODY>
 </HTML>

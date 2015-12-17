@@ -71,6 +71,7 @@
 //
 // v1.9.1:
 //    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
+//    2015-12-16 - bug fixes: automatic millis rollover support for delay methods
 //    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay() 
 
 
