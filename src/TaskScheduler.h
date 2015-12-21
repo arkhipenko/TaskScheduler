@@ -69,7 +69,7 @@
 // v1.9.0:
 //    2015-11-24 - packed three byte-long status variables into bit array structure data type - saving 2 bytes per each task instance
 //
-// v1.9.1:
+// v1.9.2:
 //    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
 //    2015-12-16 - bug fixes: automatic millis rollover support for delay methods
 //    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay() 

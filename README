@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 1.9.1: 2015-12-17
+Version 1.9.2: 2015-12-20
   
 OVERVIEW:
  A lightweight implementation of cooperative multitasking (task scheduling) supporting:
@@ -15,7 +15,7 @@ OVERVIEW:
 Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the banchmark example).
 
 Changelog:
-v1.9.1:
+v1.9.2:
     2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
     2015-12-16 - bug fixes: automatic millis rollover support for delay methods
     2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay() 
