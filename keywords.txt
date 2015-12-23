@@ -62,7 +62,8 @@ getControlPoint	KEYWORD2
 setLtsPointer	KEYWORD2
 getLtsPointer	KEYWORD2
 isOverrun	KEYWORD2
-
+setHighPriorityScheduler	KEYWORD2
+currentScheduler	KEYWORD2
 #######################################
 # Constants (LITERAL1)
 TASK_SECOND	LITERAL1
@@ -76,5 +77,6 @@ _TASK_SLEEP_ON_IDLE_RUN	LITERAL1
 _TASK_STATUS_REQUEST	LITERAL1
 _TASK_WDT_IDS	LITERAL1
 _TASK_LTS_POINTER	LITERAL1
+_TASK_PRIORITY	LITERAL1
 #######################################
 

@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="LibreOffice 3.5  (Linux)">
 	<META NAME="CREATED" CONTENT="20150206;16300000">
 	<META NAME="CHANGEDBY" CONTENT="Anatoli Arkhipenko">
-	<META NAME="CHANGED" CONTENT="20151128;23410000">
+	<META NAME="CHANGED" CONTENT="20151223;16480000">
 	<META NAME="Info 1" CONTENT="">
 	<META NAME="Info 2" CONTENT="">
 	<META NAME="Info 3" CONTENT="">
@@ -15,7 +15,7 @@
 	<!--
 		@page { margin: 0.79in }
 		P { margin-bottom: 0.08in; direction: ltr; color: #000000; widows: 0; orphans: 0 }
-		P.western { font-family: "Liberation Serif", "Times New Roman", serif; font-size: 12pt; so-language: en-US }
+		P.western { font-family: "Liberation Serif", "MS PMincho", serif; font-size: 12pt; so-language: en-US }
 		P.cjk { font-family: "WenQuanYi Micro Hei", "MS Mincho"; font-size: 12pt; so-language: zh-CN }
 		P.ctl { font-family: "Lohit Hindi", "MS Mincho"; font-size: 12pt; so-language: hi-IN }
 		A:link { color: #0000ff }
@@ -25,10 +25,10 @@
 <BODY LANG="en-US" TEXT="#000000" LINK="#0000ff" BGCOLOR="#ffffff" DIR="LTR">
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT SIZE=4 STYLE="font-size: 15pt"><B>Task
 Scheduler</B></FONT></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>cooperative
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Cooperative
 multitasking for Arduino microcontrollers</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 1.9.2: 2015-12-20</B></FONT></P>
+<FONT SIZE=2 STYLE="font-size: 11pt"><B>Version 2.0.0: 2015-12-23</B></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>OVERVIEW</B>:</P>
@@ -55,6 +55,8 @@ supporting:</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for Local
 	Task Storage pointer (allowing use of same callback code for
 	multiple tasks)</P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Support for
+	layered task prioritization</P>
 </OL>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -92,6 +94,13 @@ processed by the <B>Scheduler</B> in the order they were added
 (linked together).</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>Starting with
+version 2.0.0 TaskScheduler supports task prioritization. Please
+refer to the specific chapter of this manual for details on layered
+prioritization. </B>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Each task performs its
 function via a callback method. Scheduler calls Task’s callback
 method periodically until task is disabled or runs out of iterations.
@@ -126,14 +135,14 @@ than the Scheduler's <B>execute</B>() method).</P>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>Below is the flowchart of a Task lifecycle:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=570 BORDER=0></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><IMG SRC="TaskScheduler_html.png" NAME="graphics1" ALIGN=BOTTOM WIDTH=664 HEIGHT=517 BORDER=0></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>TaskScheduler</B>
 library maybe compiled with different compilation controls
 enabled/disabled. This is a way to limit TaskScheduler functionality
 (and size) for specific purpose (sketch). This is achieved by
-defining specific #<B>define</B> paramenters <I>before</I>
+defining specific #<B>define</B> parameters <I>before</I>
 TaskScheduler.h header file. Specifically:</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -150,7 +159,7 @@ tasks in the chain always requires immediate execution (aInterval =
 execution.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>Task
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: </B>Task
 Scheduler uses <B>millis()</B> to determine if tasks are ready to be
 invoked. Therefore, if you put your device to any “deep” sleep
 mode disabling timer interrupts, the <B>millis()</B> count will be
@@ -209,10 +218,10 @@ scheduled, and where next execution time of the task falls. Two
 methods provide this information. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Task::getStartDelay()
-</B><SPAN STYLE="font-weight: normal">method: return number of
-milliseconds between current system time (millis) and point in time
-when the task was scheduled to start. A value of 0 (zero) indicates
-that task started right on time per schedule. </SPAN>
+</B>method: return number of milliseconds between current system time
+(millis) and point in time when the task was scheduled to start. A
+value of 0 (zero) indicates that task started right on time per
+schedule. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>Task::getOverrun()</B>
 method: If <B>getOverrun </B>returns a negative value, this Task’s
@@ -260,9 +269,9 @@ anything hardware dependent) can be blocked (or hung), by failed
 hardware. In this case, a watchdog timer could be employed to trap
 such a failed task, and identify which one (by task id) and where in
 the task (by a control point) the problem is likely located.</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"> 
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>Note: </B>by
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>NOTE: </B>by
 default, talk IDs are assigned sequentially (1, 2, 3, …) to the
 tasks as they are being created. Programmer can assign a specific
 task id. <B>Task ids are unsigned integers.</B></P>
@@ -295,6 +304,17 @@ enabled by placing appropriate #define statements in front of the
 #include statement for the TaskScheduler header file.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in">#define <B>_TASK_PRIORITY</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in">…will compile
+TaskScheduler with support for layered task prioritization. Task
+prioritization is achieved by creating several schedulers, and
+organizing them in priority layers. Tasks are assigned to schedulers
+corresponding to their priority. Tasks assigned to the “higher”
+layers are evaluated for invocation more frequently, and are given
+priority in execution in case of the scheduling coincidence. More
+about layered prioritization in the API documentation and
+TaskScheduler examples.  
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -303,28 +323,163 @@ enabled by placing appropriate #define statements in front of the
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>TASK PRIORITY AND
 COOPERATIVE MULTITASKING:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in">TaskScheduler <B>does
-not support</B> task priority functionality. I have been thinking a
-lot about it (especially since Symbian's Active Objects, which
-TaskScheduler is inspired by, support it), but decided against it.  
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Starting with version
+2.0.0 TaskScheduler supports task prioritization. Priority is
+associated with a <B>Scheduler</B>, not individual <B>Tasks</B>,
+hence the concept of priority layers. Tasks subsequently are assigned
+to schedulers corresponding to their desired priority. The lowest
+priority Scheduler is called “<B>base scheduler</B>” or “<B>base
+layer</B>”. Let’s call higher priority schedulers by their
+priority number, with larger number corresponding to higher priority
+of task execution. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in">This is why:</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in">Task prioritization is
+achieved by executing the entire chain of tasks of the higher
+priority scheduler for every single step (task) of the lower priority
+chain. <B>Note</B> that actual callback method invocation depends on
+priority <B>and </B>the timing of task schedule. However, higher
+priority tasks are evaluated more frequently and are given priority
+in case of scheduling collision. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in">1. Execution chains are
-simple and efficient. The main idea is to minimize scheduling
-overhead by Scheduler going through the chain. Implementing true
-priority would require looking ahead through the entire chain,
-ranking and aging tasks by priorities. It would slow the <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">execute()
-</FONT></FONT>loop significantly.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">For most tasks
+TaskScheduler <B>does not need </B>task priority functionality.
+Prioritization requires additional scheduling overhead, and should be
+used only for critical tasks.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-bottom: 0in">A few points on that:</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">1. Plain (non-layered)
+execution chain is simple and efficient. The main idea is to minimize
+scheduling overhead by Scheduler going through the chain. Each
+priority layer adds scheduling overhead to overall task chain
+execution. Let’s review 3 scenarios:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>I.
+Flat chain of 7 tasks:</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Scheduling
+evaluation sequence:</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+1 <FONT FACE="Wingdings"></FONT> 2 <FONT FACE="Wingdings"></FONT>
+3 <FONT FACE="Wingdings"></FONT> 4 <FONT FACE="Wingdings"></FONT>
+5 <FONT FACE="Wingdings"></FONT> 6 <FONT FACE="Wingdings"></FONT>
+7</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Scheduling
+overhead:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">O
+= B * T = 7 * 18 = 126 microseconds,</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Where:</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">O
+– scheduling overhead</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">B
+– number of tasks in the base layer</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">T
+– scheduling overhead of a single task execution evaluation
+(currently with Arduino Uno running at 16 Mhz is between 15 and 18
+microseconds).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>II.
+Two priority layers of 7 tasks. </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>	</B>Tasks
+1, 2, 3, 4, 5 are base priority and 6, 7 are higher priority:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Scheduling
+evaluation sequence:</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+6 <FONT FACE="Wingdings"></FONT> 7 <FONT FACE="Wingdings"></FONT>
+1 <FONT FACE="Wingdings"></FONT> 6 <FONT FACE="Wingdings"></FONT>
+7 <FONT FACE="Wingdings"></FONT> 2 <FONT FACE="Wingdings"></FONT>
+6 <FONT FACE="Wingdings"></FONT> 7 <FONT FACE="Wingdings"></FONT>
+3 <FONT FACE="Wingdings"></FONT> 6 <FONT FACE="Wingdings"></FONT>
+7 <FONT FACE="Wingdings"></FONT> 4 <FONT FACE="Wingdings"></FONT>
+6 <FONT FACE="Wingdings"></FONT> 7 <FONT FACE="Wingdings"></FONT>
+5</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Scheduling
+overhead:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">O
+= (B + B * P1) * T = (5 + 5 * 2) * 18 = 270 microseconds,</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Where:</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">O
+– scheduling overhead</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">B
+– number of tasks in the base layer</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">P1
+– number of tasks in the priority 1 layer</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">T
+– scheduling overhead of a single task execution evaluation
+(currently with Arduino Uno running at 16 Mhz is between 15 and 18
+microseconds).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>III.
+Three priority layers of 7 tasks. </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>	</B>Tasks
+1, 2, 3, are base priority, 4, 5 are priority 1, and 6, 7 are
+priority 2:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Scheduling
+evaluation sequence:</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+6 <FONT FACE="Wingdings"></FONT> 7 <FONT FACE="Wingdings"></FONT>
+4 <FONT FACE="Wingdings"></FONT> 6 <FONT FACE="Wingdings"></FONT>
+7 <FONT FACE="Wingdings"></FONT> 5 <FONT FACE="Wingdings"></FONT>
+1 <FONT FACE="Wingdings"></FONT> 6 <FONT FACE="Wingdings"></FONT>
+7 <FONT FACE="Wingdings"></FONT> 4 <FONT FACE="Wingdings"></FONT>
+6 <FONT FACE="Wingdings"></FONT> 7 <FONT FACE="Wingdings"></FONT>
+5 <FONT FACE="Wingdings"></FONT> 2 <FONT FACE="Wingdings"></FONT>6
+<FONT FACE="Wingdings"></FONT> 7 <FONT FACE="Wingdings"></FONT>
+4 <FONT FACE="Wingdings"></FONT> 6 <FONT FACE="Wingdings"></FONT>
+7 <FONT FACE="Wingdings"></FONT> 5 <FONT FACE="Wingdings"></FONT>
+3 
+</P>
+<P CLASS="western" ALIGN=CENTER STYLE="margin-left: 0.49in; margin-bottom: 0in">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Scheduling
+overhead:</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">O
+= (B + B * P1 + B * P1 * P2) * T = (3 + 3 * 2 + 3 * 2 * 2) * 18 = 378
+microseconds,</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Where:</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">O
+– scheduling overhead</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">B
+– number of tasks in the base layer</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">P1
+– number of tasks in the priority 1 layer</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">P2
+– number of tasks in the priority 2 layer</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">T
+– scheduling overhead of a single task execution evaluation
+(currently with Arduino Uno running at 16 Mhz is between 15 and 18
+microseconds).</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in">Scheduling overhead of
+a 3 layer prioritization approach is 3 times higher than that of a
+flat execution chain. <B>Do</B> evaluate if task prioritization is
+really required for your sketch.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -338,7 +493,7 @@ cooperative behavior.</P>
 significant benefits: you don't need to worry about concurrency
 inside the callback method, since only one callback method runs at a
 time, and could not be interrupted. All resources are yours for that
-period of time, noone can switch the value of variables (except
+period of time, no one can switch the value of variables (except
 interrupt functions of course...), etc. It is a stable and
 predictable environment, and it helps a lot with writing stable code.
 </P>
@@ -426,7 +581,7 @@ callback methods written for cooperative multitasking.</P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">a)
-<B>DO NOT</B> use Arduino's  <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">delay()</FONT></FONT><FONT FACE="Andale Mono, MS Mincho">
+<B>DO NOT</B> use Arduino's  <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt"><B>delay</B></FONT></FONT><FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">()</FONT></FONT><FONT FACE="Andale Mono, MS Mincho">
 </FONT>function. It is blocking and will hold the entire chain.
 Instead break the callback method into two, switch the callback
 method of the task where delay is necessary and delay the task by
@@ -533,7 +688,7 @@ more stuff</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">b)
-Same goes to <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">pulseIn()</FONT></FONT>
+Same goes to <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt"><B>pulseIn</B></FONT></FONT><FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">()</FONT></FONT>
 function. If you have to use it, set the timeout parameter such that
 it is not a default 1 second. PulseIn functionality could be achieved
 via pin interrupts, and that solution is non-blocking.</P>
@@ -711,7 +866,7 @@ stuff // one loop action</FONT></FONT></P>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">d)
 Break long running callback methods into several shorter ones, and
-pass control from one to the other via <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">setCallback()
+pass control from one to the other via <FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt"><B>setCallback</B></FONT></FONT><FONT FACE="FreeMono, MS Mincho, monospace"><FONT SIZE=2 STYLE="font-size: 10pt">()
 </FONT></FONT>method:</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -792,11 +947,11 @@ do last part of the stuff</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">This
-will execute all  parts of the callback function in three successive
-steps, sheduled immediately, but allowing other tasks in the chain to
-run. Notice that task is scheduled to run immediately, and 1 second
-period is achieved by delaying the task for 1000 millis at the last
-step. 
+will execute all parts of the callback function in three successive
+steps, scheduled immediately, but allowing other tasks in the chain
+to run. Notice that task is scheduled to run immediately, and 1
+second period is achieved by delaying the task for 1000 millis at the
+last step. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
@@ -1034,12 +1189,12 @@ getIterations() </B>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>long getOverrun()</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; font-weight: normal">
-If library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>long getStartDelay()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+library is compiled with <FONT FACE="Courier New, monospace">_TASK_TIMECRITICAL</FONT>
 enabled, you can assess how much later the callback method was
 invoked against when it was scheduled to be invoked. The return value
-of  <B>getOverrun() </B>method provides this information in
+of  <B>getStartDelay () </B>method provides this information in
 milliseconds. 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
@@ -1391,6 +1546,8 @@ a StatusReqeust object this Task was waiting on.
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>TASK ID, CONTROL POINTS METHODS:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
@@ -1476,6 +1633,95 @@ into appropriate pointer type. Please refer to example sketches for
 implementation options. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>STATUS REQUEST:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<B>CREATION:</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>StatusRequest()</B><BR><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Default
+constructor. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Takes
+no parameters. Creates Status Request object, which is assigned a
+status of “completed” on creation. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>void
+setWaiting(unsigned int aCount = 1)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Activates
+Status Request object. By default each object is set to wait on one
+event only, however, if <B>aCount</B> is supplied, Status Request can
+wait on multiple events. For instance, <B>setWaiting(3)</B> will wait
+on three signals. An example could be waiting for completion of
+measurements from 3 sensors. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool signal(int
+aStatus)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Signals
+completion of the event to the Status Request object, and passes a
+completion code, which could be interrogated later. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
+</B> passing a <B>negative</B> status code to the status request
+object is considered reporting an error condition, and will complete
+the status request regardless of how many outstanding signals it is
+still waiting for. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note</B>:
+only the latest status code is kept.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool signalComplete
+(int aStatus)</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Signals
+completion of <B>ALL</B> events to the Status Request object, and
+passes a completion code, which could be interrogated later. The
+status request completes regardless of how many events it is still
+waiting on. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool pending() </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+<B>true</B> if status request is still waiting for event or events to
+happen.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool completed () </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+<B>true</B> if status has completed.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>int getStatus()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
+the status code passed to the status request object by the <B>signal()
+</B>and <B>signalComplete() </B>methods. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Any
+<B>positive</B> number is considered a successful completion status.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">A
+0 (zero) is considered a default successful completion status.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Any
+<B>negative</B> number is considered an error code and unsuccessful
+completion of a request.</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
@@ -1571,14 +1817,21 @@ in case not tasks are scheduled to run.</P>
 <B>default</B> behavior of scheduler upon creation is to allow sleep
 mode. 
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>void enableAll()</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>void disableAll()</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>void
+enableAll(bool aRecursive= true)</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>void disableAll(bool
+aRecursive= true)</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">enables
 and disables (respectively) all tasks in the chain. Convenient if
 your need to enable/disable majority of the tasks (i.e. disable all
 and then enable one). 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+support for layered task priority is enabled, supplying <B>aRecursive</B>
+parameter will enable/disable higher priority tasks as well (<B>true</B>,
+default), or tasks only on this priority layer (<B>false</B>). 
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR><B>Task&amp; currentTask()<BR></B><BR>
@@ -1606,21 +1859,34 @@ pointer to Local Task Storage of the task, currently executing via
 <B>execute()</B> loop <B>OR </B>for OnEnable and OnDisable methods,
 task being enabled or disabled. 
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>void execute()</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR><B>bool execute()</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Executes
-one scheduling pass, including end-of-pass sleep. This method is
-typically placed inside the <B>loop()</B> method of the sketch. Since
-<B>execute</B> exits after every pass, you can put additional
-statements after <B>execute</B> inside the <B>loop().</B></P>
+one scheduling pass, including (in case of the base priority
+scheduler) end-of-pass sleep. This method is typically placed inside
+the <B>loop()</B> method of the sketch. Since <B>execute</B> exits
+after every pass, you can put additional statements after <B>execute</B>
+inside the <B>loop().</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>If
+layered task prioritization is enabled, all higher priority tasks
+will be evaluated and invoked by the base <FONT FACE="Courier New, monospace">execute()</FONT>
+method. There is no need to call <FONT FACE="Courier New, monospace">execute()</FONT>
+of the higher priority schedulers explicitly. </B>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Generally,
-execute will perform the following steps:</P>
+base priority execute will perform the following steps:</P>
 <OL>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Call higher
+	priority scheduler’s execute method, if provided.</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Ignore task
 	completely if it is disabled.</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Disable task if it
-	ran out of iterations (calling OnDesable, if necessary).</P>
+	ran out of iterations (calling OnDisable, if necessary).</P>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in">Check if task is
 	waiting on a StatusRequest object, and make appropriate scheduling
 	arrangements</P>
@@ -1650,100 +1916,54 @@ has overrun its scheduled start time when it was invoked. Returns
 <B>false</B> if task has been invoked according to schedule.</P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
-<B>STATUS REQUEST:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
-<B>CREATION:</B></P>
+<B>TASK PRIORITY:</B></P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>StatusRequest()</B><BR><BR>
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Default
-constructor. 
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Takes
-no parameters. Creates Status Request object, which is assigned a
-status of “completed” on creation. 
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><B>void
-setWaiting(unsigned int aCount = 1)</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Activates
-Status Request object. By default each object is set to wait on one
-event only, however, if <B>aCount</B> is supplied, Status Request can
-wait on multiple events. For instance, <B>setWaiting(3)</B> will wait
-on three signals. An example could be waiting for completion of
-measurements from 3 sensors. 
+setHighPriorityScheduler(Scheduler* aScheduler);</B><BR><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+library is compiled with <FONT FACE="Courier New, monospace">_TASK_PRIORITY
+</FONT>enabled, this method associates current scheduler with a
+higher priority scheduler. 
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
+</B>Only one <B>execute() </B>method needs to be explicitly called in
+the main <B>loop(). </B>That is the execute method of <B>base</B>
+priority scheduler. All higher priority schedulers are called by the
+base priority scheduler.</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><B>static Scheduler&amp;
+currentScheduler()</B></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">If
+library is compiled with <FONT FACE="Courier New, monospace">_TASK_PRIORITY
+</FONT>enabled, this method returns reference to a scheduler, which
+invoked current task. 
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool signal(int
-aStatus)</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Signals
-completion of the event to the Status Request object, and passes a
-completion code, which could be interrogated later. 
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>NOTE:
+Please refer to examples 11 and 12 for illustration of Task Priority
+functionality</B></P>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note:
-</B> passing a <B>negative</B> status code to the status request
-object is considered reporting an error condition, and will complete
-the status request regardless of how many outstanding signals it is
-still waiting for. 
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><B>Note</B>:
-only the latest status code is kept.</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool signalComplete
-(int aStatus)</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Signals
-completion of <B>ALL</B> events to the Status Request object, and
-passes a completion code, which could be interrogated later. The
-status request completes regardless of how many events it is still
-waiting on. 
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool pending() </B>
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
-<B>true</B> if status request is still waiting for event or events to
-happen.</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>bool completed () </B>
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
-<B>true</B> if status has completed.</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><B>int getStatus()</B></P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Returns
-the status code passed to the status request object by the <B>signal()
-</B>and <B>signalComplete() </B>methods. 
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Any
-<B>positive</B> number is considered a successful completion status.</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">A
-0 (zero) is considered a default successful completion status.</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in">Any
-<B>negative</B> number is considered an error code and unsuccessful
-completion of a request.</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
-</P>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
 <B>CONSTANTS:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
 <B>TASK_SECOND	(1000)</B></P>
@@ -1783,13 +2003,15 @@ interval for immediate execution</P>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in; page-break-before: always; page-break-after: avoid">
 <B>IMPLEMENTATION SCENARIOS AND IDEAS:</B></P>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <OL>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><B>EVENT DRIVEN
-	PROGRAMMING</B></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<B>EVENT DRIVEN PROGRAMMING</B></P>
 </OL>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in">Each of the processes
 of your application becomes a separate and distinct programming area,
@@ -1876,10 +2098,12 @@ measureHumidity();<BR>}<BR><BR><BR>void loop ()<BR>{<BR>
 taskManager.execute();<BR>}</FONT><FONT FACE="Times New Roman, serif"><BR></FONT></FONT><BR>
 </P>
 <OL START=2>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in">“<FONT FACE="Times New Roman, serif"><B>NATIVE”
-	SUPPORT FOR FINITE STATE MACHINE</B></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	“<FONT FACE="Times New Roman, serif"><B>NATIVE” SUPPORT FOR
+	FINITE STATE MACHINE</B></FONT></P>
 </OL>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">Define
 “states” as callback method or methods. Each callback method
@@ -1942,10 +2166,12 @@ used to go through states.</FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <OL START=3>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>MULTIPLE
-	POSSIBLE CALLBACKS FOR TASK</B></FONT></P>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<FONT FACE="Times New Roman, serif"><B>MULTIPLE POSSIBLE CALLBACKS
+	FOR TASK</B></FONT></P>
 </OL>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">There
 may be a need to select an option for callback method based on
@@ -2024,11 +2250,13 @@ pass. </FONT>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <OL START=3>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>INTERRUP-DRIVEN
-	EXECUTION SUPPORT </B></FONT>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<FONT FACE="Times New Roman, serif"><B>INTERRUP-DRIVEN EXECUTION
+	SUPPORT </B></FONT>
 	</P>
 </OL>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif">In
 case of interrupt-driven program flow, tasks could be scheduled to
@@ -2112,11 +2340,13 @@ LOW;<BR>  <BR>}<BR><BR>void loop() {<BR>  // put your main code here,
 to run repeatedly:<BR>  r.execute();<BR>}<BR></FONT></FONT><BR>
 </P>
 <OL START=3>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>USING
-	ONENABLE AND ONDISBALE METHODS </B></FONT>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<FONT FACE="Times New Roman, serif"><B>USING ONENABLE AND ONDISBALE
+	METHODS </B></FONT>
 	</P>
 </OL>
-<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif">Consider
 a task to flash onboard LED for 5 seconds with random frequency. Task
@@ -2301,11 +2531,13 @@ code here, to run repeatedly:</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <OL START=3>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>USING
-	STATUS REQUEST OBJECTS  </B></FONT>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<FONT FACE="Times New Roman, serif"><B>USING STATUS REQUEST OBJECTS 
+	</B></FONT>
 	</P>
 </OL>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">This
 test emulates querying 3 sensors once every 10 seconds, each could
@@ -2683,11 +2915,13 @@ loop() {</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <OL START=3>
-	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>USING
-	LOCAL TASK STORAGE POINTER  </B></FONT>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<FONT FACE="Times New Roman, serif"><B>USING LOCAL TASK STORAGE
+	POINTER  </B></FONT>
 	</P>
 </OL>
-<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<BR>
 </P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Tasks
 can store a pointer to specific variable, structure or array, which
@@ -2798,6 +3032,83 @@ V1 = *((sensor_data*) ts.currentLts());</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
 </P>
 <OL START=3>
+	<LI><P CLASS="western" STYLE="margin-bottom: 0in; page-break-after: avoid">
+	<FONT FACE="Times New Roman, serif"><B>ENABLING TASK PRIORITIZATION 
+	</B></FONT>
+	</P>
+</OL>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in; page-break-after: avoid">
+<BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">In
+certain cases you want a task to be invoked before others in case of
+scheduling collision (tasks ready to be invoked at the same time). In
+a flat execution chain scenario tasks are evaluated for execution in
+the order they were added to the chain. Therefore a single task has
+to wait for the rest of the chain to be evaluated to get a chance
+again. </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Consider
+a scenario where a task taking gyroscope measurements has to be
+invoked as close to the actual scheduling time as possible. That is
+when task prioritization comes to help.  </FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">Let’s
+say tasks t4 and t5 are taking measurements from gyroscope and
+accelerometer, and tasks t1, t2 and t3 are doing something less
+important.</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><FONT SIZE=2 STYLE="font-size: 11pt">This
+is how such setup is coded:</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#define
+_TASK_PRIORITY</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>#include
+&lt;TaskScheduler.h&gt;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Scheduler
+r, hpr;</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>//
+Tasks</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+t1(1000, TASK_FOREVER, &amp;tCallback, &amp;r);  //base priority</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+t2(2000, TASK_FOREVER, &amp;tCallback, &amp;r);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+t3(3000, TASK_FOREVER, &amp;tCallback, &amp;r);</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+t4(10, TASK_FOREVER, &amp;tCallback, &amp;hpr);  // higher priority</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>Task
+t5(100, TASK_FOREVER, &amp;tCallback, &amp;hpr);  //higher priority</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">…</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>void
+setup () {</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in">  
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"> 
+…</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>r.setHighPriorityScheduler(&amp;hpr);
+</FONT></FONT>
+</P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"> 
+<FONT FACE="Courier New, monospace"><FONT SIZE=2>r.enableAll(true);
+// this will recursively enable the higher priority tasks as well</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.98in; margin-bottom: 0in"><FONT FACE="Courier New, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P CLASS="western" STYLE="margin-left: 0.49in; margin-bottom: 0in"><BR>
+</P>
+<OL START=3>
 	<LI><P CLASS="western" STYLE="margin-bottom: 0in"><FONT FACE="Times New Roman, serif"><B>FUTHER
 	INFROMATION</B></FONT></P>
 </OL>
@@ -2818,7 +3129,7 @@ time examples of TaskScheduler are available here:</FONT></FONT></P>
 <P CLASS="western" STYLE="margin-bottom: 0in"><BR>
 </P>
 <DIV TYPE=FOOTER>
-	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>31</SDFIELD></P>
+	<P STYLE="margin-top: 0.35in; margin-bottom: 0in">	<SDFIELD TYPE=PAGE SUBTYPE=RANDOM FORMAT=ARABIC>33</SDFIELD></P>
 </DIV>
 </BODY>
 </HTML>
