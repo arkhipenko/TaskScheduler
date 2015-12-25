@@ -15,6 +15,9 @@ OVERVIEW:
 
 Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the banchmark example).
 
+For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
+=======================================================================================================
+
 Changelog:
 v2.0.0:
     2015-12-22 - _TASK_PRIORITY - support for layered task prioritization
