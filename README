@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 2.0.0: 2015-12-23
+Version 2.0.1: 2016-01-02
   
 OVERVIEW:
  A lightweight implementation of cooperative multitasking (task scheduling) supporting:
@@ -19,6 +19,9 @@ For detailed functionality overview please refer to TaskScheduler documentation 
 =======================================================================================================
 
 Changelog:
+V2.0.1:
+    2016-01-02 - bug fix: issue#11 Xtensa compiler (esp8266): Declaration of constructor does not match implementation
+
 v2.0.0:
     2015-12-22 - _TASK_PRIORITY - support for layered task prioritization
 

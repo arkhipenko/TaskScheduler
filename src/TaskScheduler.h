@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 2.0.0
+// Cooperative multitasking library for Arduino version 2.0.1
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -76,6 +76,9 @@
 //
 // v2.0.0:
 //    2015-12-22 - _TASK_PRIORITY - support for layered task prioritization
+//
+// v2.0.1:
+//    2016-01-02 - bug fix: issue#11 Xtensa compiler (esp8266): Declaration of constructor does not match implementation
 
 
 /* ============================================
@@ -174,7 +177,7 @@ class Scheduler;
 class Task {
     friend class Scheduler;
     public:
-		Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, boolean aEnable=false, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
+		Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #ifdef _TASK_STATUS_REQUEST
 		Task(void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #endif
