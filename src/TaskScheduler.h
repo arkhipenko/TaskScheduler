@@ -1,4 +1,4 @@
-// Cooperative multitasking library for Arduino version 2.0.1
+// Cooperative multitasking library for Arduino version 2.0.2
 // Copyright (c) 2015 Anatoli Arkhipenko
 //
 // Changelog:
@@ -79,6 +79,10 @@
 //
 // v2.0.1:
 //    2016-01-02 - bug fix: issue#11 Xtensa compiler (esp8266): Declaration of constructor does not match implementation
+//
+// v2.0.2:
+//    2016-01-05 - bug fix: time constants wrapped inside compile option
+//    2016-01-05 - support for ESP8266 wifi power saving mode for _TASK_SLEEP_ON_IDLE_RUN compile option
 
 
 /* ============================================
@@ -124,10 +128,22 @@ THE SOFTWARE.
  *  #define _TASK_PRIORITY			// Support layered scheduling priority
  */
 
+
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+
+#ifdef ARDUINO_ARCH_AVR  
 #include <avr/sleep.h>
 #include <avr/power.h>
 #endif
+
+#ifdef ARDUINO_ARCH_ESP8266
+extern "C" {
+#include "user_interface.h"
+}
+#endif
+
+#endif
+
 
 #define TASK_IMMEDIATE			0
 #define TASK_SECOND			1000L
@@ -270,7 +286,7 @@ class Scheduler {
 		bool execute();			// Returns true if at none of the tasks' callback methods was invoked (true if idle run)
 		inline Task& currentTask() {return *iCurrent; }
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-		void allowSleep(bool aState = true) { iAllowSleep = aState; }
+		void allowSleep(bool aState = true);
 #endif
 #ifdef _TASK_LTS_POINTER
 		inline void* currentLts() {return iCurrent->iLTS; }
@@ -529,9 +545,6 @@ void Task::restartDelayed(unsigned long aDelay) {
  */
 Scheduler::Scheduler() {
 	init();
-#ifdef _TASK_SLEEP_ON_IDLE_RUN
-	iAllowSleep = true;
-#endif
 }
 
 /** Initializes all internal varaibles
@@ -542,6 +555,9 @@ void Scheduler::init() {
 	iCurrent = NULL; 
 #ifdef _TASK_PRIORITY
 	iHighPriority = NULL;
+#endif
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+	allowSleep(true);
 #endif
 }
 
@@ -643,6 +659,19 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 };
 #endif
 
+
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+void Scheduler::allowSleep(bool aState) { 
+	iAllowSleep = aState; 
+
+#ifdef ARDUINO_ARCH_ESP8266
+	wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
+#endif
+
+}
+#endif
+
+
 /** Makes one pass through the execution chain.
  * Tasks are executed in the order they were added to the chain
  * There is no concept of priority
@@ -652,7 +681,12 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 bool Scheduler::execute() {
 	bool	 idleRun = true;
 	register unsigned long m, i;  // millis, interval;
-	
+
+#ifdef ARDUINO_ARCH_ESP8266
+	  unsigned long t1 = micros();
+	  unsigned long t2 = 0;
+#endif
+
 	iCurrent = iFirst;
 	
 	while (iCurrent) {
@@ -721,6 +755,8 @@ bool Scheduler::execute() {
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
   	if (idleRun && iAllowSleep) {
+
+#ifdef ARDUINO_ARCH_AVR	// Could be used only for AVR-based boards. 
   	  set_sleep_mode(SLEEP_MODE_IDLE);
   	  sleep_enable();
 	  /* Now enter sleep mode. */
@@ -728,6 +764,13 @@ bool Scheduler::execute() {
 	  
 	  /* The program will continue from here after the timer timeout ~1 ms */
 	  sleep_disable(); /* First thing to do is disable sleep. */
+#endif
+
+#ifdef ARDUINO_ARCH_ESP8266
+// to do: find suitable sleep function for esp8266
+	  t2 = micros() - t1;
+	  if (t2 < 1000L) delay(1); 	// ESP8266 implementation of delay() uses timers and yield
+#endif
 	}
 #endif
 
