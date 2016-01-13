@@ -44,7 +44,6 @@ Duration=18423
 #define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 //#define _TASK_WDT_IDS          // Compile with support for wdt control points and task ids
 //#define _TASK_LTS_POINTER      // Compile with support for local task storage pointer
-#define _TASK_ROLLOVER_FIX       // Compensate for millis() rollover once every 47 days 
 #define _TASK_SLEEP_ON_IDLE_RUN
 #include <TaskScheduler.h>
 

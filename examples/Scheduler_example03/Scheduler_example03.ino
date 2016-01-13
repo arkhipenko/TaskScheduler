@@ -10,7 +10,9 @@
 #define _TASK_SLEEP_ON_IDLE_RUN
 #include <TaskScheduler.h>
 
-#define LEDPIN	13
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 13    // define appropriate pin for your board
+#endif
 
 Scheduler ts;
 
@@ -54,12 +56,12 @@ void BlinkOnDisable() {
 }
 
 void LEDOn () {
-	digitalWrite(LEDPIN, HIGH);
+	digitalWrite(LED_BUILTIN , HIGH);
 	tLED.setCallback( &LEDOff);
 }
 
 void LEDOff () {
-	digitalWrite(LEDPIN, LOW);
+	digitalWrite(LED_BUILTIN , LOW);
 	tLED.setCallback( &LEDOn);
 }
 
@@ -69,7 +71,7 @@ void LEDOff () {
 
 void setup() {
 // put your setup code here, to run once:
-  pinMode(LEDPIN, OUTPUT);
+  pinMode(LED_BUILTIN , OUTPUT);
 }
 
 void loop() {

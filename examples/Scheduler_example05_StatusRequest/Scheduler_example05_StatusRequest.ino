@@ -162,7 +162,7 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("TaskScheduler StatusRequest Sensor Emulation Test. Complex Test.");  
-  randomSeed(analogRead(A1)+millis());
+  randomSeed(analogRead(A0)+millis());
 }
 
 void loop() {
