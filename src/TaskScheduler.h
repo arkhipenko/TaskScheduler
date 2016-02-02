@@ -83,7 +83,9 @@
 // v2.0.2:
 //    2016-01-05 - bug fix: time constants wrapped inside compile option
 //    2016-01-05 - support for ESP8266 wifi power saving mode for _TASK_SLEEP_ON_IDLE_RUN compile option
-
+//
+// v2.1.0:
+//    2016-02-01 - support for microsecond resolution
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -125,10 +127,22 @@ THE SOFTWARE.
  *  #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
  *  #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
  *  #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
- *  #define _TASK_PRIORITY			// Support layered scheduling priority
+ *  #define _TASK_PRIORITY			// Support for layered scheduling priority
+ *  #define _TASK_MICRO_RES			// Support for microsecond resolution
  */
 
 
+ #ifdef _TASK_MICRO_RES
+ 
+ #undef _TASK_SLEEP_ON_IDLE_RUN		// SLEEP_ON_IDLE has only millisecond resolution
+ #define _TASK_TIME_FUNCTION() micros()
+ 
+ #else
+	 
+ #define _TASK_TIME_FUNCTION() millis()
+ 
+ #endif
+ 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef ARDUINO_ARCH_AVR  
@@ -144,13 +158,24 @@ extern "C" {
 
 #endif
 
-
 #define TASK_IMMEDIATE			0
+#define TASK_FOREVER		 (-1)
+#define TASK_ONCE				1
+
+
+#ifndef _TASK_MICRO_RES
+
 #define TASK_SECOND			1000L
 #define TASK_MINUTE		   60000L
 #define TASK_HOUR		 3600000L
-#define TASK_FOREVER		 (-1)
-#define TASK_ONCE				1
+
+#else
+
+#define TASK_SECOND		1000000L
+#define TASK_MINUTE	   60000000L
+#define TASK_HOUR	 3600000000L
+
+#endif
 
 
 #ifdef _TASK_STATUS_REQUEST
@@ -242,7 +267,7 @@ class Task {
 		void reset();
 
 		volatile __task_status	iStatus;
-		volatile unsigned long	iInterval;			// execution interval in milliseconds. 0 - immediate
+		volatile unsigned long	iInterval;			// execution interval in milliseconds (or microseconds). 0 - immediate
 		volatile unsigned long	iDelay; 			// actual delay until next execution (usually equal iInterval)
 		volatile unsigned long	iPreviousMillis;	// previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up" 
 #ifdef _TASK_TIMECRITICAL
@@ -456,7 +481,7 @@ void Task::enable() {
 		else {
 			iStatus.enabled = true;
 		}
-		iPreviousMillis = millis() - (iDelay = iInterval);
+		iPreviousMillis = _TASK_TIME_FUNCTION() - (iDelay = iInterval);
 	}
 }
 
@@ -484,7 +509,7 @@ void Task::enableDelayed(unsigned long aDelay) {
 void Task::delay(unsigned long aDelay) {
 //	if (!aDelay) aDelay = iInterval;
 	iDelay = aDelay ? aDelay : iInterval;
-	iPreviousMillis = millis(); // - iInterval + aDelay;
+	iPreviousMillis = _TASK_TIME_FUNCTION(); // - iInterval + aDelay;
 }
 
 /** Schedules next iteration of Task for execution immediately (if enabled)
@@ -492,7 +517,7 @@ void Task::delay(unsigned long aDelay) {
  * Task's original schedule is shifted, and all subsequent iterations will continue from this point in time
  */
 void Task::forceNextIteration() {
-	iPreviousMillis = millis() - (iDelay = iInterval);
+	iPreviousMillis = _TASK_TIME_FUNCTION() - (iDelay = iInterval);
 }
 
 /** Sets the execution interval.
@@ -710,7 +735,7 @@ bool Scheduler::execute() {
 					iCurrent->disable();
 					break;
 				}
-				m = millis();
+				m = _TASK_TIME_FUNCTION();
 				i = iCurrent->iInterval;
 
 #ifdef  _TASK_STATUS_REQUEST
