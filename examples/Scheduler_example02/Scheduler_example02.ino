@@ -65,6 +65,8 @@ void setup () {
   Serial.println("Scheduler TEST");
   
    delay(5000);
+   
+   runner.startNow();  // set point-in-time for scheduling start
 }
 
 

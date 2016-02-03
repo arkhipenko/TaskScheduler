@@ -86,6 +86,7 @@
 //
 // v2.1.0:
 //    2016-02-01 - support for microsecond resolution
+//    2016-02-02 - added Scheduler baseline start time reset method: startNow()
 
 /* ============================================
 Cooperative multitasking library code is placed under the MIT license
@@ -114,7 +115,6 @@ THE SOFTWARE.
 
 #include <Arduino.h>
 
-
 #ifndef _TASKSCHEDULER_H_
 #define _TASKSCHEDULER_H_
 
@@ -141,22 +141,24 @@ THE SOFTWARE.
 	 
  #define _TASK_TIME_FUNCTION() millis()
  
- #endif
+ #endif  // _TASK_MICRO_RES
+ 
  
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef ARDUINO_ARCH_AVR  
 #include <avr/sleep.h>
 #include <avr/power.h>
-#endif
+#endif  // ARDUINO_ARCH_AVR 
 
 #ifdef ARDUINO_ARCH_ESP8266
 extern "C" {
 #include "user_interface.h"
 }
-#endif
+#define _TASK_ESP8266_DLY_THRESHOLD	200L
+#endif  // ARDUINO_ARCH_ESP8266
 
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #define TASK_IMMEDIATE			0
 #define TASK_FOREVER		 (-1)
@@ -175,7 +177,7 @@ extern "C" {
 #define TASK_MINUTE	   60000000L
 #define TASK_HOUR	 3600000000L
 
-#endif
+#endif  // _TASK_MICRO_RES
 
 
 #ifdef _TASK_STATUS_REQUEST
@@ -197,7 +199,7 @@ class StatusRequest {
 		unsigned int	iCount;  					// number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
 		int			iStatus;  					// status of the last completed request. negative = error;  zero = OK; >positive = OK with a specific status
 };
-#endif
+#endif  // _TASK_STATUS_REQUEST
 
 
 typedef struct  {
@@ -213,7 +215,7 @@ class Scheduler;
 
 #ifdef _TASK_WDT_IDS
 	static unsigned int __task_id_counter = 0;		// global task ID counter for assiging task IDs automatically. 
-#endif
+#endif  // _TASK_WDT_IDS
 
 class Task {
     friend class Scheduler;
@@ -221,7 +223,7 @@ class Task {
 		Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #ifdef _TASK_STATUS_REQUEST
 		Task(void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
-#endif
+#endif  // _TASK_STATUS_REQUEST
 
 		void enable();
 		bool enableIfNot();
@@ -244,24 +246,24 @@ class Task {
 #ifdef _TASK_TIMECRITICAL
 		inline long getOverrun() { return iOverrun; }
 		inline long getStartDelay() { return iStartDelay; }
-#endif
+#endif  // _TASK_TIMECRITICAL
 		inline bool isFirstIteration() { return (iRunCounter <= 1); } 
 		inline bool isLastIteration() { return (iIterations == 0); }
 #ifdef _TASK_STATUS_REQUEST
 		void waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
 		void waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
 		inline StatusRequest* getStatusRequest() {return iStatusRequest; }
-#endif
+#endif  // _TASK_STATUS_REQUEST
 #ifdef _TASK_WDT_IDS
 		inline void setId(unsigned int aID) { iTaskID = aID; }
 		inline unsigned int getId() { return iTaskID; }
 		inline void setControlPoint(unsigned int aPoint) { iControlPoint = aPoint; }
 		inline unsigned int getControlPoint() { return iControlPoint; }
-#endif
+#endif  // _TASK_WDT_IDS
 #ifdef _TASK_LTS_POINTER
 		inline void	setLtsPointer(void *aPtr) { iLTS = aPtr; }
 		inline void* getLtsPointer() { return iLTS; }
-#endif
+#endif  // _TASK_LTS_POINTER
 	
     private:
 		void reset();
@@ -273,7 +275,7 @@ class Task {
 #ifdef _TASK_TIMECRITICAL
 		volatile long			iOverrun; 			// negative if task is "catching up" to it's schedule (next invocation time is already in the past)
 		volatile long			iStartDelay;		// actual execution of the task's callback method was delayed by this number of millis
-#endif
+#endif  // _TASK_TIMECRITICAL
 		volatile long			iIterations;		// number of iterations left. 0 - last iteration. -1 - infinite iterations
 		long					iSetIterations; 		// number of iterations originally requested (for restarts)
 		unsigned long			iRunCounter;		// current number of iteration (starting with 1). Resets on enable. 
@@ -284,20 +286,20 @@ class Task {
 		Scheduler				*iScheduler;		// pointer to the current scheduler
 #ifdef _TASK_STATUS_REQUEST
 		StatusRequest			*iStatusRequest;	// pointer to the status request task is or was waiting on
-#endif
+#endif  // _TASK_STATUS_REQUEST
 #ifdef _TASK_WDT_IDS
 		unsigned int			iTaskID;			// task ID (for debugging and watchdog identification)
 		unsigned int			iControlPoint;		// current control point within the callback method. Reset to 0 by scheduler at the beginning of each pass
-#endif
+#endif  // _TASK_WDT_IDS
 #ifdef _TASK_LTS_POINTER
 		void					*iLTS;				// pointer to task's local storage. Needs to be recast to appropriate type (usually a struct).
-#endif
+#endif  // _TASK_LTS_POINTER
 };
 
 
 #ifdef _TASK_PRIORITY
 		static Scheduler* iCurrentScheduler;
-#endif
+#endif  // _TASK_PRIORITY
 
 class Scheduler {
 	friend class Task;
@@ -309,29 +311,30 @@ class Scheduler {
 		void disableAll(bool aRecursive = true);
 		void enableAll(bool aRecursive = true);
 		bool execute();			// Returns true if at none of the tasks' callback methods was invoked (true if idle run)
+		void startNow(bool aRecursive = true); 			// reset ALL active tasks to immediate execution NOW.
 		inline Task& currentTask() {return *iCurrent; }
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 		void allowSleep(bool aState = true);
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 #ifdef _TASK_LTS_POINTER
 		inline void* currentLts() {return iCurrent->iLTS; }
-#endif
+#endif  // _TASK_LTS_POINTER
 #ifdef _TASK_TIMECRITICAL
 		inline bool isOverrun() { return (iCurrent->iOverrun < 0); }
-#endif
+#endif  // _TASK_TIMECRITICAL
 #ifdef _TASK_PRIORITY
 		void setHighPriorityScheduler(Scheduler* aScheduler);
 		static Scheduler& currentScheduler() { return *(iCurrentScheduler); };
-#endif
+#endif  // _TASK_PRIORITY
 
 	private:
 		Task	*iFirst, *iLast, *iCurrent;			// pointers to first, last and current tasks in the chain
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 		bool	iAllowSleep;						// indication if putting avr to IDLE_SLEEP mode is allowed by the program at this time. 
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 #ifdef _TASK_PRIORITY
 		Scheduler *iHighPriority;					// Pointer to a higher priority scheduler
-#endif
+#endif  // _TASK_PRIORITY
 };
 
 
@@ -346,10 +349,10 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
 	if (aScheduler) aScheduler->addTask(*this);
 #ifdef _TASK_STATUS_REQUEST
 	iStatusRequest = NULL;
-#endif
+#endif  // _TASK_STATUS_REQUEST
 #ifdef _TASK_WDT_IDS
 	iTaskID = ++__task_id_counter;
-#endif
+#endif  // _TASK_WDT_IDS
 	if (aEnable) enable();
 }
 
@@ -366,7 +369,7 @@ Task::Task( void (*aCallback)(), Scheduler* aScheduler, bool (*aOnEnable)(), voi
 	iStatusRequest = NULL;
 #ifdef _TASK_WDT_IDS
 	iTaskID = ++__task_id_counter;
-#endif
+#endif  // _TASK_WDT_IDS
 }
 
 /** Signals completion of the StatusRequest by one of the participating events
@@ -410,7 +413,7 @@ void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
 		enable();
 	}
 }
-#endif
+#endif  // _TASK_STATUS_REQUEST
 
 /** Resets (initializes) the task/
  * Task is not enabled and is taken out 
@@ -428,16 +431,16 @@ void Task::reset() {
 #ifdef _TASK_TIMECRITICAL
 	iOverrun = 0;
 	iStartDelay = 0;
-#endif
+#endif  // _TASK_TIMECRITICAL
 #ifdef _TASK_WDT_IDS
 	iControlPoint = 0;
-#endif
+#endif  // _TASK_WDT_IDS
 #ifdef _TASK_LTS_POINTER
 	iLTS = NULL;
-#endif
+#endif  // _TASK_LTS_POINTER
 #ifdef _TASK_STATUS_REQUEST
 	iStatus.waiting = 0;
-#endif
+#endif  // _TASK_STATUS_REQUEST
 }
 
 /** Explicitly set Task execution parameters
@@ -580,10 +583,10 @@ void Scheduler::init() {
 	iCurrent = NULL; 
 #ifdef _TASK_PRIORITY
 	iHighPriority = NULL;
-#endif
+#endif  // _TASK_PRIORITY
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 	allowSleep(true);
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 }
 
 /** Appends task aTask to the tail of the execution chain.
@@ -651,8 +654,8 @@ void Scheduler::disableAll(bool aRecursive) {
 		current = current->iNext;
 	}
 #ifdef _TASK_PRIORITY
-	if (aRecursive && iHighPriority) iHighPriority->disableAll(aRecursive);
-#endif
+	if (aRecursive && iHighPriority) iHighPriority->disableAll(true);
+#endif  // _TASK_PRIORITY
 }
 
 
@@ -666,8 +669,8 @@ void Scheduler::disableAll(bool aRecursive) {
 		current = current->iNext;
 	}
 #ifdef _TASK_PRIORITY
-	if (aRecursive && iHighPriority) iHighPriority->enableAll(aRecursive);
-#endif
+	if (aRecursive && iHighPriority) iHighPriority->enableAll(true);
+#endif  // _TASK_PRIORITY
 }
 
 /** Sets scheduler for the higher priority tasks (support for layered task priority)
@@ -680,9 +683,9 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 	if (iHighPriority) {
 		iHighPriority->allowSleep(false);		// Higher priority schedulers should not do power management
 	}
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 };
-#endif
+#endif  // _TASK_PRIORITY
 
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -691,11 +694,25 @@ void Scheduler::allowSleep(bool aState) {
 
 #ifdef ARDUINO_ARCH_ESP8266
 	wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
-#endif
+#endif  // ARDUINO_ARCH_ESP8266
 
 }
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 
+
+void Scheduler::startNow( bool aRecursive ) {
+	unsigned long t = _TASK_TIME_FUNCTION();
+	
+	iCurrent = iFirst;
+	while (iCurrent) {
+		if ( iCurrent->iStatus.enabled ) iCurrent->iPreviousMillis = t - iCurrent->iDelay;
+		iCurrent = iCurrent->iNext;
+	}
+	
+#ifdef _TASK_PRIORITY
+	if (aRecursive && iHighPriority) iHighPriority->startNow( true );
+#endif  // _TASK_PRIORITY
+}
 
 /** Makes one pass through the execution chain.
  * Tasks are executed in the order they were added to the chain
@@ -710,7 +727,7 @@ bool Scheduler::execute() {
 #ifdef ARDUINO_ARCH_ESP8266
 	  unsigned long t1 = micros();
 	  unsigned long t2 = 0;
-#endif
+#endif  // ARDUINO_ARCH_ESP8266
 
 	iCurrent = iFirst;
 	
@@ -720,7 +737,7 @@ bool Scheduler::execute() {
 	// If scheduler for higher priority tasks is set, it's entire chain is executed on every pass of the base scheduler
 		if (iHighPriority) idleRun = iHighPriority->execute() && idleRun; 
 		iCurrentScheduler = this;
-#endif
+#endif  // _TASK_PRIORITY
 
 		do {
 			if ( iCurrent->iStatus.enabled ) {
@@ -728,7 +745,7 @@ bool Scheduler::execute() {
 #ifdef _TASK_WDT_IDS
 	// For each task the control points are initialized to avoid confusion because of carry-over:
 				iCurrent->iControlPoint = 0;
-#endif
+#endif  // _TASK_WDT_IDS
 	
 	// Disable task on last iteration:
 				if (iCurrent->iIterations == 0) {
@@ -752,7 +769,7 @@ bool Scheduler::execute() {
 					}
 					iCurrent->iStatus.waiting = 0;
 				}
-#endif
+#endif  // _TASK_STATUS_REQUEST
 
 				if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) break;
 
@@ -766,7 +783,7 @@ bool Scheduler::execute() {
 				unsigned long p = iCurrent->iPreviousMillis;
 				iCurrent->iOverrun = (long) ( p + i - m );
 				iCurrent->iStartDelay = (long) ( m - p ); 
-#endif
+#endif  // _TASK_TIMECRITICAL
 
 				iCurrent->iDelay = i;
 				if ( iCurrent->iCallback ) {
@@ -789,15 +806,15 @@ bool Scheduler::execute() {
 	  
 	  /* The program will continue from here after the timer timeout ~1 ms */
 	  sleep_disable(); /* First thing to do is disable sleep. */
-#endif
+#endif // ARDUINO_ARCH_AVR
 
 #ifdef ARDUINO_ARCH_ESP8266
 // to do: find suitable sleep function for esp8266
 	  t2 = micros() - t1;
-	  if (t2 < 1000L) delay(1); 	// ESP8266 implementation of delay() uses timers and yield
-#endif
+	  if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1); 	// ESP8266 implementation of delay() uses timers and yield
+#endif  // ARDUINO_ARCH_ESP8266
 	}
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 	return (idleRun);
 }

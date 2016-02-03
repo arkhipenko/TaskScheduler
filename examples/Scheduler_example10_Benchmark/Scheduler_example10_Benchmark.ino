@@ -10,7 +10,20 @@
  * The test board is Arduino UNO 16MHz processor.
  *
  
- 
+TaskScheduler 2.1.0:
+No modifiers
+Duration=19869
+
+with SLEEP
+Duration=20058
+
+with status request:
+Duration=20058
+
+with time critical:
+Duration=27289
+
+
 TaskScheduler 1.9.0:
 No modifiers
 Duration=15656
@@ -41,10 +54,11 @@ Duration=18423
 
 
 //#define _TASK_TIMECRITICAL     // Enable monitoring scheduling overruns
-#define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
+//#define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 //#define _TASK_WDT_IDS          // Compile with support for wdt control points and task ids
 //#define _TASK_LTS_POINTER      // Compile with support for local task storage pointer
-#define _TASK_SLEEP_ON_IDLE_RUN
+//#define _TASK_SLEEP_ON_IDLE_RUN
+//#define _TASK_MICRO_RES
 #include <TaskScheduler.h>
 
 Scheduler ts;

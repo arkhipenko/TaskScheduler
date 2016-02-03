@@ -1,9 +1,12 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
 Version 2.1.0: 2016-02-01
+
+If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
+----------------------------------------------------------------------------------------------------------
   
 OVERVIEW:
  A lightweight implementation of cooperative multitasking (task scheduling) supporting:
- 1. Periodic task execution (with dynamic execution period in milliseconds)
+ 1. Periodic task execution (with dynamic execution period in milliseconds or microseconds)
  2. Number of iterations (n times)
  3. Execution of tasks in predefined sequence
  4. Dynamic change of task execution parameters (frequency, number of iterations, callback function)
@@ -18,9 +21,34 @@ Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check t
 For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
 =======================================================================================================
 
+Check out what TaskScheduler can do:
+====================================
+  Houston midi clock project - TaskScheduler with microseconds resolution
+    (by chaffneue: My first arduino project. It's a multi-master midi controller with a shared clock and 
+     auto count in behaviour. Project files on github: https://github.com/chaffneue/houston
+	 youtube: https://www.youtube.com/watch?v=QRof550TtXo)
+	  
+  Aurora Chaser Cubesat project, University of Sydney (Yay! TaskScheduler goes to space)
+    (by Jordan Jolly: http://52.35.220.33/blogs/jordan-jolly-cubesat--aero3670--blog)
+	
+  Arduino Nano based Hexbug Scarab Robotic Spider 
+    (by arkhipenko: http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider/)
+	
+  Wave your hand to control OWI Robotic Arm... no strings attached
+    (by arkhipenko: http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/)
+	
+  APIS - Automated Plant Irrigation System
+    (by arkhipenko: http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/)
+	
+  Interactive Halloween Pumpkin
+    (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
+
+
 Changelog:
+=========
 v2.1.0:
     2016-02-01 - support for microsecond resolution
+    2016-02-02 - added Scheduler baseline start time reset method: startNow()
 
 v2.0.1:
     2016-01-02 - bug fix: issue#11 Xtensa compiler (esp8266): Declaration of constructor does not match implementation
