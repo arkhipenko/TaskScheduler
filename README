@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 2.1.0: 2016-02-01
+Version 2.2.0: 2016-11-17
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -23,26 +23,42 @@ For detailed functionality overview please refer to TaskScheduler documentation 
 
 Check out what TaskScheduler can do:
 ====================================
+  Endeavor - build a space capable craft, with the ability to maneuver both in and out of atmosphere. 
+    (by Radical Space Technologies
+     http://radicalspacetechnologies.com/2015/10/01/endeavor-phase-i/
+
+         "So after some digging I found TaskScheduler an awesome little library developed by Anatoli Arkhipenko, 
+          his github is here and the documentation is here. Its fantastic, so far I’ve been able to replicate 
+          some things I’ve seen in Ardupilot. ..."
+  link: http://radicalspacetechnologies.com/2015/10/25/endeavors-code-definitely-progress/
+
+
+  3 Devo - Quality 3D printing filament, now made accessible and affordable
+     http://3devo.eu/
+
+
   Houston midi clock project - TaskScheduler with microseconds resolution
     (by chaffneue: My first arduino project. It's a multi-master midi controller with a shared clock and 
      auto count in behaviour. Project files on github: https://github.com/chaffneue/houston
 	 youtube: https://www.youtube.com/watch?v=QRof550TtXo)
+
 	  
-  Aurora Chaser Cubesat project, University of Sydney (Yay! TaskScheduler goes to space)
-    (by Jordan Jolly: http://52.35.220.33/blogs/jordan-jolly-cubesat--aero3670--blog)
-	
   Hackabot Nano -  Compact Plug and Play Arduino compatible robotic kit
     (by Funnyvale: http://hackarobot.com/
      also: https://www.kickstarter.com/projects/hackarobot/hackabot-nano-compact-plug-and-play-arduino-robot)
+
      
   Arduino Nano based Hexbug Scarab Robotic Spider 
     (by arkhipenko: http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider/)
+
 	
   Wave your hand to control OWI Robotic Arm... no strings attached
     (by arkhipenko: http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/)
 	
+
   APIS - Automated Plant Irrigation System
     (by arkhipenko: http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/)
+
 	
   Interactive Halloween Pumpkin
     (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
@@ -50,6 +66,9 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v2.2.0:
+    2016-11-17 - all methods made 'inline' to support inclusion of TaskSchedule.h file into other header files
+
 v2.1.0:
     2016-02-01 - support for microsecond resolution
     2016-02-02 - added Scheduler baseline start time reset method: startNow()

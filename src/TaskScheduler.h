@@ -87,6 +87,9 @@
 // v2.1.0:
 //    2016-02-01 - support for microsecond resolution
 //    2016-02-02 - added Scheduler baseline start time reset method: startNow()
+//
+// v2.2.0:
+//    2016-11-17 - all methods made 'inline' to support inclusion of TaskSchedule.h file into other header files
 
 #include <Arduino.h>
 
@@ -164,15 +167,15 @@ class StatusRequest {
 	public:
 		StatusRequest() {iCount = 0; iStatus = 0; }
 		inline void setWaiting(unsigned int aCount = 1) { iCount = aCount; iStatus = 0; }
-		bool signal(int aStatus = 0);
-		void signalComplete(int aStatus = 0);
+		inline bool signal(int aStatus = 0);
+		inline void signalComplete(int aStatus = 0);
 		inline bool pending() { return (iCount != 0); }
 		inline bool completed() { return (iCount == 0); }
 		inline int getStatus() { return iStatus; }
 		
 	private:
 		unsigned int	iCount;  					// number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
-		int			iStatus;  					// status of the last completed request. negative = error;  zero = OK; >positive = OK with a specific status
+		int				iStatus;  					// status of the last completed request. negative = error;  zero = OK; >positive = OK with a specific status
 };
 #endif  // _TASK_STATUS_REQUEST
 
@@ -200,19 +203,19 @@ class Task {
 		Task(void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #endif  // _TASK_STATUS_REQUEST
 
-		void enable();
-		bool enableIfNot();
-		void enableDelayed(unsigned long aDelay=0);
-		void delay(unsigned long aDelay=0);
-		void forceNextIteration(); 
-		void restart();
-		void restartDelayed(unsigned long aDelay=0);
-		bool disable();
+		inline void enable();
+		inline bool enableIfNot();
+		inline void enableDelayed(unsigned long aDelay=0);
+		inline void delay(unsigned long aDelay=0);
+		inline void forceNextIteration(); 
+		inline void restart();
+		inline void restartDelayed(unsigned long aDelay=0);
+		inline bool disable();
 		inline bool isEnabled() { return iStatus.enabled; }
-		void set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
-		void setInterval(unsigned long aInterval);
+		inline void set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
+		inline void setInterval(unsigned long aInterval);
 		inline unsigned long getInterval() { return iInterval; }
-		void setIterations(long aIterations);
+		inline void setIterations(long aIterations);
 		inline long getIterations() { return iIterations; }
 		inline unsigned long getRunCounter() { return iRunCounter; }
 		inline void setCallback(void (*aCallback)()) { iCallback = aCallback; }
@@ -225,8 +228,8 @@ class Task {
 		inline bool isFirstIteration() { return (iRunCounter <= 1); } 
 		inline bool isLastIteration() { return (iIterations == 0); }
 #ifdef _TASK_STATUS_REQUEST
-		void waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
-		void waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+		inline void waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+		inline void waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
 		inline StatusRequest* getStatusRequest() {return iStatusRequest; }
 #endif  // _TASK_STATUS_REQUEST
 #ifdef _TASK_WDT_IDS
@@ -241,7 +244,7 @@ class Task {
 #endif  // _TASK_LTS_POINTER
 	
     private:
-		void reset();
+		inline void reset();
 
 		volatile __task_status	iStatus;
 		volatile unsigned long	iInterval;			// execution interval in milliseconds (or microseconds). 0 - immediate
@@ -280,16 +283,16 @@ class Scheduler {
 	friend class Task;
 	public:
 		Scheduler();
-		void init();
-		void addTask(Task& aTask);
-		void deleteTask(Task& aTask);
-		void disableAll(bool aRecursive = true);
-		void enableAll(bool aRecursive = true);
-		bool execute();			// Returns true if at none of the tasks' callback methods was invoked (true if idle run)
-		void startNow(bool aRecursive = true); 			// reset ALL active tasks to immediate execution NOW.
+		inline void init();
+		inline void addTask(Task& aTask);
+		inline void deleteTask(Task& aTask);
+		inline void disableAll(bool aRecursive = true);
+		inline void enableAll(bool aRecursive = true);
+		inline bool execute();			// Returns true if at none of the tasks' callback methods was invoked (true if idle run)
+		inline void startNow(bool aRecursive = true); 			// reset ALL active tasks to immediate execution NOW.
 		inline Task& currentTask() {return *iCurrent; }
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-		void allowSleep(bool aState = true);
+		inline void allowSleep(bool aState = true);
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 #ifdef _TASK_LTS_POINTER
 		inline void* currentLts() {return iCurrent->iLTS; }
@@ -298,7 +301,7 @@ class Scheduler {
 		inline bool isOverrun() { return (iCurrent->iOverrun < 0); }
 #endif  // _TASK_TIMECRITICAL
 #ifdef _TASK_PRIORITY
-		void setHighPriorityScheduler(Scheduler* aScheduler);
+		inline void setHighPriorityScheduler(Scheduler* aScheduler);
 		static Scheduler& currentScheduler() { return *(iCurrentScheduler); };
 #endif  // _TASK_PRIORITY
 
