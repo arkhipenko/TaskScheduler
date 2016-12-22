@@ -43,6 +43,10 @@ setCallback	KEYWORD2
 setOnEnable	KEYWORD2
 setOnDisable	KEYWORD2
 disableOnLastIteration	KEYWORD2
+yield	KEYWORD2
+yieldOnce	KEYWORD2
+getInternalStatusRequest	KEYWORD2
+getCount	KEYWORD2
 getOverrun	KEYWORD2
 getStartDelay	KEYWORD2
 isFirstIteration	KEYWORD2
@@ -56,6 +60,7 @@ getStatus	KEYWORD2
 waitFor	KEYWORD2
 waitForDelayed	KEYWORD2
 getStatusRequest	KEYWORD2
+getCount	KEYWORD2
 setId	KEYWORD2
 getId	KEYWORD2
 setControlPoint	KEYWORD2

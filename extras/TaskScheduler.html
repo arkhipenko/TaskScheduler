@@ -6,7 +6,7 @@
 	<meta name="generator" content="LibreOffice 4.2.8.2 (Linux)">
 	<meta name="created" content="20150206;163000000000000">
 	<meta name="changedby" content="Anatoli Arkhipenko">
-	<meta name="changed" content="20160202;231400000000000">
+	<meta name="changed" content="20161222;100000000000">
 	<style type="text/css">
 	<!--
 		@page { margin: 0.79in }
@@ -24,7 +24,7 @@ Scheduler</b></font></p>
 <p class="western" style="margin-bottom: 0in"><b>Cooperative
 multitasking for Arduino microcontrollers</b></p>
 <p class="western" style="margin-bottom: 0in; border-top: none; border-bottom: 1px solid #000000; border-left: none; border-right: none; padding-top: 0in; padding-bottom: 0.01in; padding-left: 0in; padding-right: 0in">
-<font size="2" style="font-size: 11pt"><b>Version 2.1.0: 2016-02-02</b></font></p>
+<font size="2" style="font-size: 11pt"><b>Version 2.2.1: 2016-12-20</b></font></p>
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-bottom: 0in"><b>OVERVIEW</b>:</p>
@@ -63,16 +63,17 @@ between 15 and 18 microseconds per scheduling pass (Arduino UNO rev 3
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-bottom: 0in"><b>TASK</b>:</p>
-<p class="western" style="margin-bottom: 0in">“Task” is a
-container concept that links together:</p>
+<p class="western" style="margin-bottom: 0in">“Task” is an
+action, a part of the program logic, which requires scheduled
+execution. A concept of Task combines the following aspects:</p>
 <ol>
 	<li><p class="western" style="margin-bottom: 0in">Program code
-	performing specific task activities (callback methods)</p>
+	performing specific activities (callback methods)</p>
 	<li><p class="western" style="margin-bottom: 0in">Execution interval</p>
 	<li><p class="western" style="margin-bottom: 0in">Number of
 	execution iterations</p>
 	<li><p class="western" style="margin-bottom: 0in">(Optionally)
-	Execution event (Status Request)</p>
+	Execution start event (Status Request)</p>
 	<li><p class="western" style="margin-bottom: 0in">(Optionally)
 	Pointer to a Local Task Storage area</p>
 </ol>
@@ -273,6 +274,11 @@ TaskScheduler with support for StatusRequest object. Status Requests
 are objects allowing tasks to wait on an event, and signal event
 completion to each other. 
 </p>
+<p class="western" style="margin-bottom: 0in"><b>NOTE: </b> tas of
+version 2.2.1 each task has internal StatusRequest object, which
+triggered active at the moment Task is enabled, and triggered
+complete at the moment the task is disabled. These events could be
+used by other Tasks for event-driven execution</p>
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-bottom: 0in">#define <b>_TASK_WDT_IDS</b></p>
@@ -1335,6 +1341,16 @@ the Task against <b>OnEnable</b> infinite loop).
 </p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
 </p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><b>NOTE:
+</b>internal StatusRequest object will be set waiting for an event
+when Task is enabled (if TaskScheduler is compiled with support for
+StatusRequests). StatusRequest object is set waiting <b>after </b>the
+call to onEnable() method of the Task (if defined). Consequently, any
+Task#2 that is expected to wait on this Task’s internal
+StatusRequest should do it only <b>after </b>this task is enabled. 
+</p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
+</p>
 <p class="western" style="margin-bottom: 0in; page-break-after: avoid">
 <b>bool enableIfNot();</b></p>
 <p class="western" style="margin-bottom: 0in; page-break-after: avoid">
@@ -1347,6 +1363,8 @@ task was disabled. Since <b>enable() </b>schedules Task for execution
 immediately, this method provides a way to activate tasks and
 schedule them for immediate execution only if they are not active
 already.</p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in">All
+<b>NOTES</b> from the enable() method apply.</p>
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-bottom: 0in"><b>void delay();</b></p>
@@ -1440,6 +1458,19 @@ Calling <b>disable</b> 3 times for instance will invoke <b>OnDisable</b>
 only once.</p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
 </p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><b>NOTE:
+</b>internal StatusRequest object will signal completion of an event
+when Task is disabled (if TaskScheduler is compiled with support for
+StatusRequests). StatusRequest object is set complete <b>after </b>the
+call to onDisable() method of the Task (if defined). Consequently,
+the task which has to signal its completion to other Tasks could not
+restart itself. Do so will not ever set the internal StatusRequest
+object to a complete status, since the Task is never really disabled.
+</p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
+</p>
 <p class="western" style="margin-bottom: 0in"><b>void set(unsigned
 long aInterval, long aIterations, void (*aCallback)() , bool
 (*aOnEnable)() , void (*aOnDisable)());</b></p>
@@ -1497,8 +1528,37 @@ interval. If immediate invocation is required, call
 </p>
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
-<p class="western" style="margin-bottom: 0in"><b>STATUS REQUEST
-METHODS:</b></p>
+<p class="western" style="margin-bottom: 0in"><b>void yield(void
+(*aCallback)())</b></p>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-bottom: 0in">This method could be
+used to break up long callback methods. A long callback method should
+be broken up into several shorter methods. Yield method just gives
+control back to scheduler, while ensuring that next iteration of the
+Task is executed immediately with the next callback method. Basically
+“yield(&amp;callBack2)” is equivalent to setting new callback
+method, and forcing next iteration to be immediate. Please not that
+original interval and number of iterations are preserved. Even the
+runcounter of the callback2 after yielding will remain the same.
+Typically a call to yield() method is the last line of the method
+yielding.</p>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-bottom: 0in"><b>void yield</b><font face="Times New Roman, serif"><b>Once</b></font><b>(void
+(*aCallback)())</b></p>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-bottom: 0in">This method is
+equivalent to <b>yield(),</b> only execution of the target <i><b>a</b></i><font face="Times New Roman, serif"><span lang="ru-RU"><i><b>С</b></i></span></font><i><b>allback</b></i>
+method is set to happen only once, after which the Task will be
+disabled.</p>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-bottom: 0in; page-break-after: avoid">
+<b>STATUS REQUEST METHODS:</b></p>
 <p class="western" style="margin-bottom: 0in; page-break-after: avoid">
 <br>
 </p>
@@ -1558,11 +1618,34 @@ sequence of events to use Status Request object is as follows:</p>
 <p class="western" style="margin-bottom: 0in"><b>StatusRequest*
 getStatusRequest()</b></p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in">Returns
-a StatusReqeust object this Task was waiting on. 
+a pointer to StatusReqeust object this Task was waiting on. 
 </p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
 </p>
-<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
+<p class="western" style="margin-bottom: 0in"><b>StatusRequest*
+getInternalStatusRequest()</b></p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in">Returns
+a pointer to an internal StatusReqeust object associated with this
+Task. Internal StatusRequest object is:</p>
+<ol>
+	<li><p class="western" style="margin-bottom: 0in">Always waits on 1
+	event – completion of this task</p>
+	<li><p class="western" style="margin-bottom: 0in">Is activated (set
+	to “waiting” status) after Task is enabled</p>
+	<li><p class="western" style="margin-bottom: 0in">Is completed after
+	Task is disabled (either explicitly, or by running out of
+	iterations)</p>
+</ol>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><b>NOTE:
+</b>Please remember that a task is deactivated at the next scheduling
+pass after the last iteration, which means that other Tasks in the
+chain will have a chance to run before Task StatusRequest signaling
+completion of the internal StatusRequest. However, there is no
+further delay – deactivation will take place at the next scheduling
+pass.</p>
+<p class="western" style="margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
 </p>
@@ -1724,7 +1807,7 @@ happen.</p>
 <p class="western" style="margin-bottom: 0in"><b>bool completed () </b>
 </p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in">Returns
-<b>true</b> if status has completed.</p>
+<b>true</b> if status request event has completed.</p>
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-bottom: 0in"><b>int getStatus()</b></p>
@@ -1739,6 +1822,16 @@ the status code passed to the status request object by the <b>signal()
 <p class="western" style="margin-left: 0.49in; margin-bottom: 0in">Any
 <b>negative</b> number is considered an error code and unsuccessful
 completion of a request.</p>
+<p class="western" style="margin-bottom: 0in"><br>
+</p>
+<p class="western" style="margin-bottom: 0in"><b>int getCount()</b></p>
+<p class="western" style="margin-left: 0.49in; margin-bottom: 0in">Returns
+the count of events not yet completed. Typically by default a
+StatusRequest object only waits on 1 event. However, in the
+situations where a StatusRequest object is waiting on multiple
+events, a number of events <b>not yet completed </b>is returned by
+this method.  
+</p>
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
 <p class="western" style="margin-bottom: 0in"><br>
@@ -3198,7 +3291,7 @@ time examples of TaskScheduler are available here:</font></font></p>
 <p class="western" style="margin-bottom: 0in"><br>
 </p>
 <div title="footer">
-	<p style="margin-top: 0.35in; margin-bottom: 0in">	<sdfield type=PAGE subtype=RANDOM format=ARABIC>33</sdfield></p>
+	<p style="margin-top: 0.35in; margin-bottom: 0in">	<sdfield type=PAGE subtype=RANDOM format=ARABIC>34</sdfield></p>
 </div>
 </body>
 </html>

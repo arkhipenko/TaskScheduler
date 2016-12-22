@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino microcontrollers
-Version 2.2.0: 2016-11-17
+Version 2.2.1: 2016-12-20
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -66,6 +66,12 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v2.2.1:
+    2016-11-30 - inlined constructors. Added "yield()" and "yieldOnce()" functions to easily break down and
+				 chain back together long running callback methods
+    2016-12-16 - added "getCount()" to StatusRequest objects, made every task StatusRequest enabled. 
+                 Internal StatusRequest objects are accessible via "getInternalStatusRequest()" method. 
+
 v2.2.0:
     2016-11-17 - all methods made 'inline' to support inclusion of TaskSchedule.h file into other header files
 

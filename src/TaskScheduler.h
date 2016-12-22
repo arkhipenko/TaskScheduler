@@ -1,5 +1,5 @@
 // Cooperative multitasking library for Arduino
-// Copyright (c) 2015 Anatoli Arkhipenko
+// Copyright (c) 2015, 2016 Anatoli Arkhipenko
 //
 // Changelog:
 // v1.0.0:
@@ -14,7 +14,8 @@
 //
 // v1.4.1:
 //     2015-09-15 - more careful placement of AVR-specific includes for sleep method (compatibility with DUE)
-//                          sleep on idle run is no longer a default and should be explicitly compiled with _TASK_SLEEP_ON_IDLE_RUN defined
+//                  sleep on idle run is no longer a default and should be explicitly compiled with
+//                 _TASK_SLEEP_ON_IDLE_RUN defined
 //
 // v1.5.0:
 //	   2015-09-20 - access to currently executing task (for callback methods)
@@ -33,10 +34,13 @@
 //
 // v1.7.0:
 //	  2015-10-08 - introduced callback run counter - callback methods can branch on the iteration number. 
-//	  2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled. 
+//	  2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled,
+//                 false if was disabled. 
 //	  2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
-//	  2015-10-11 - introduced callback methods "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
-//	  2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
+//	  2015-10-11 - introduced callback methods "on enable" and "on disable". On enable runs every time enable is called,
+//                 on disable runs only if task was enabled
+//	  2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass
+//                 regardless how much time is left
 //
 // v1.8.0:
 //	  2015-10-13 - support for status request objects allowing tasks waiting on requests
@@ -52,14 +56,17 @@
 //    2015-10-29 - new currentLts() method in the scheduler class returns current task's LTS pointer in one call
 //
 // v1.8.3:
-//    2015-11-05 - support for task activation on a status request with arbitrary interval and number of iterations (0 and 1 are still default values)
-//    2015-11-05 - implement waitForDelayed() method to allow task activation on the status request completion delayed for one current interval
+//    2015-11-05 - support for task activation on a status request with arbitrary interval and number of iterations
+//                (0 and 1 are still default values)
+//    2015-11-05 - implement waitForDelayed() method to allow task activation on the status request completion
+//                 delayed for one current interval
 //    2015-11-09 - added callback methods prototypes to all examples for Arduino IDE 1.6.6 compatibility
 //    2015-11-14 - added several constants to be used as task parameters for readability (e.g, TASK_FOREVER, TASK_SECOND, etc.)
 //    2015-11-14 - significant optimization of the scheduler's execute loop, including millis() rollover fix option
 //
 // v1.8.4:
-//    2015-11-15 - bug fix: Task alignment with millis() for scheduling purposes should be done after OnEnable, not before. Especially since OnEnable method can change the interval
+//    2015-11-15 - bug fix: Task alignment with millis() for scheduling purposes should be done after OnEnable, not before.
+//                 Especially since OnEnable method can change the interval
 //    2015-11-16 - further optimizations of the task scheduler execute loop
 //
 // v1.8.5:
@@ -90,6 +97,12 @@
 //
 // v2.2.0:
 //    2016-11-17 - all methods made 'inline' to support inclusion of TaskSchedule.h file into other header files
+//
+// v2.2.1:
+//    2016-11-30 - inlined constructors. Added "yield()" and "yieldOnce()" functions to easily break down and chain
+//                 back together long running callback methods
+//    2016-12-16 - added "getCount()" to StatusRequest objects, made every task StatusRequest enabled. 
+//                 Internal StatusRequest objects are accessible via "getInternalStatusRequest()" method. 
 
 #include <Arduino.h>
 
@@ -145,15 +158,15 @@ extern "C" {
 
 #ifndef _TASK_MICRO_RES
 
-#define TASK_SECOND			1000L
-#define TASK_MINUTE		   60000L
-#define TASK_HOUR		 3600000L
+#define TASK_SECOND			1000UL
+#define TASK_MINUTE		   60000UL
+#define TASK_HOUR		 3600000UL
 
 #else
 
-#define TASK_SECOND		1000000L
-#define TASK_MINUTE	   60000000L
-#define TASK_HOUR	 3600000000L
+#define TASK_SECOND		1000000UL
+#define TASK_MINUTE	   60000000UL
+#define TASK_HOUR	 3600000000UL
 
 #endif  // _TASK_MICRO_RES
 
@@ -165,13 +178,14 @@ extern "C" {
 
 class StatusRequest {
 	public:
-		StatusRequest() {iCount = 0; iStatus = 0; }
+		inline StatusRequest() {iCount = 0; iStatus = 0; }
 		inline void setWaiting(unsigned int aCount = 1) { iCount = aCount; iStatus = 0; }
 		inline bool signal(int aStatus = 0);
 		inline void signalComplete(int aStatus = 0);
 		inline bool pending() { return (iCount != 0); }
 		inline bool completed() { return (iCount == 0); }
 		inline int getStatus() { return iStatus; }
+		inline int getCount() { return iCount; }
 		
 	private:
 		unsigned int	iCount;  					// number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
@@ -198,9 +212,9 @@ class Scheduler;
 class Task {
     friend class Scheduler;
     public:
-		Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
+		inline Task(unsigned long aInterval=0, long aIterations=0, void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #ifdef _TASK_STATUS_REQUEST
-		Task(void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
+		inline Task(void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #endif  // _TASK_STATUS_REQUEST
 
 		inline void enable();
@@ -221,6 +235,8 @@ class Task {
 		inline void setCallback(void (*aCallback)()) { iCallback = aCallback; }
 		inline void setOnEnable(bool (*aCallback)()) { iOnEnable = aCallback; }
 		inline void setOnDisable(void (*aCallback)()) { iOnDisable = aCallback; }
+		inline void yield(void (*aCallback)());
+		inline void yieldOnce(void (*aCallback)());
 #ifdef _TASK_TIMECRITICAL
 		inline long getOverrun() { return iOverrun; }
 		inline long getStartDelay() { return iStartDelay; }
@@ -231,6 +247,7 @@ class Task {
 		inline void waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
 		inline void waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
 		inline StatusRequest* getStatusRequest() {return iStatusRequest; }
+		inline StatusRequest* getInternalStatusRequest() {return &iMyStatusRequest; }
 #endif  // _TASK_STATUS_REQUEST
 #ifdef _TASK_WDT_IDS
 		inline void setId(unsigned int aID) { iTaskID = aID; }
@@ -264,6 +281,7 @@ class Task {
 		Scheduler				*iScheduler;		// pointer to the current scheduler
 #ifdef _TASK_STATUS_REQUEST
 		StatusRequest			*iStatusRequest;	// pointer to the status request task is or was waiting on
+		StatusRequest			iMyStatusRequest;   // internal Status request to let other tasks know of completion
 #endif  // _TASK_STATUS_REQUEST
 #ifdef _TASK_WDT_IDS
 		unsigned int			iTaskID;			// task ID (for debugging and watchdog identification)
@@ -282,7 +300,7 @@ class Task {
 class Scheduler {
 	friend class Task;
 	public:
-		Scheduler();
+		inline Scheduler();
 		inline void init();
 		inline void addTask(Task& aTask);
 		inline void deleteTask(Task& aTask);
@@ -418,6 +436,7 @@ void Task::reset() {
 #endif  // _TASK_LTS_POINTER
 #ifdef _TASK_STATUS_REQUEST
 	iStatus.waiting = 0;
+	iMyStatusRequest.signalComplete();
 #endif  // _TASK_STATUS_REQUEST
 }
 
@@ -444,6 +463,28 @@ void Task::setIterations(long aIterations) {
 	iSetIterations = iIterations = aIterations; 
 }
 
+/** Prepare task for next step iteration following yielding of control to the scheduler
+ * @param aCallback - pointer to the callback method for the next step
+ */
+void Task::yield (void (*aCallback)()) {
+	iCallback = aCallback;
+	forceNextIteration();
+	
+	// The next 2 lines adjust runcounter and number of iterations 
+	// as if it is the same run of the callback, just split between
+	// a series of callback methods
+	iRunCounter--;
+	if ( iIterations >= 0 ) iIterations++;
+}
+
+/** Prepare task for next step iteration following yielding of control to the scheduler
+ * @param aCallback - pointer to the callback method for the next step
+ */
+void Task::yieldOnce (void (*aCallback)()) {
+	yield(aCallback);
+	iIterations = 1;
+}
+
 /** Enables the task 
  *  schedules it for execution as soon as possible,
  *  and resets the RunCounter back to zero
@@ -463,6 +504,11 @@ void Task::enable() {
 			iStatus.enabled = true;
 		}
 		iPreviousMillis = _TASK_TIME_FUNCTION() - (iDelay = iInterval);
+#ifdef _TASK_STATUS_REQUEST
+		if ( iStatus.enabled ) {
+			iMyStatusRequest.setWaiting();
+		}
+#endif
 	}
 }
 
@@ -525,6 +571,9 @@ bool Task::disable() {
 		(*iOnDisable)();
 		iScheduler->iCurrent = current;
 	}
+#ifdef _TASK_STATUS_REQUEST
+	iMyStatusRequest.signalComplete();
+#endif
 	return (previousEnabled);
 }
 
@@ -771,6 +820,9 @@ bool Scheduler::execute() {
 			}
 		} while (0); 	//guaranteed single run - allows use of "break" to exit 
 		iCurrent = iCurrent->iNext;
+#ifdef ARDUINO_ARCH_ESP8266
+	    yield();
+#endif  // ARDUINO_ARCH_ESP8266
 	}
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
