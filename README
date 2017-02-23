@@ -1,9 +1,9 @@
-Task Scheduler – cooperative multitasking for Arduino microcontrollers
+Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
 Version 2.2.1: 2016-12-20
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
-  
+
 OVERVIEW:
  A lightweight implementation of cooperative multitasking (task scheduling) supporting:
  1. Periodic task execution (with dynamic execution period in milliseconds or microseconds)
@@ -16,19 +16,19 @@ OVERVIEW:
  8. Local Task Storage pointer (allowing use of same callback code for multiple tasks)
  9. Layered task prioritization
 
-Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the banchmark example).
+Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the benchmark example).
 
 For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
 =======================================================================================================
 
 Check out what TaskScheduler can do:
 ====================================
-  Endeavor - build a space capable craft, with the ability to maneuver both in and out of atmosphere. 
+  Endeavor - build a space capable craft, with the ability to maneuver both in and out of atmosphere.
     (by Radical Space Technologies
      http://radicalspacetechnologies.com/2015/10/01/endeavor-phase-i/
 
-         "So after some digging I found TaskScheduler an awesome little library developed by Anatoli Arkhipenko, 
-          his github is here and the documentation is here. Its fantastic, so far I’ve been able to replicate 
+         "So after some digging I found TaskScheduler an awesome little library developed by Anatoli Arkhipenko,
+          his github is here and the documentation is here. Its fantastic, so far I’ve been able to replicate
           some things I’ve seen in Ardupilot. ..."
   link: http://radicalspacetechnologies.com/2015/10/25/endeavors-code-definitely-progress/
 
@@ -38,32 +38,32 @@ Check out what TaskScheduler can do:
 
 
   Houston midi clock project - TaskScheduler with microseconds resolution
-    (by chaffneue: My first arduino project. It's a multi-master midi controller with a shared clock and 
+    (by chaffneue: My first arduino project. It's a multi-master midi controller with a shared clock and
      auto count in behaviour. Project files on github: https://github.com/chaffneue/houston
 	 youtube: https://www.youtube.com/watch?v=QRof550TtXo)
 
-	  
+
   Hackabot Nano -  Compact Plug and Play Arduino compatible robotic kit
     (by Funnyvale: http://hackarobot.com/
      also: https://www.kickstarter.com/projects/hackarobot/hackabot-nano-compact-plug-and-play-arduino-robot)
 
-     
-  Arduino Nano based Hexbug Scarab Robotic Spider 
+
+  Arduino Nano based Hexbug Scarab Robotic Spider
     (by arkhipenko: http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider/)
 
-	
+
   Wave your hand to control OWI Robotic Arm... no strings attached
     (by arkhipenko: http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/)
-	
+
 
   APIS - Automated Plant Irrigation System
     (by arkhipenko: http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/)
 
-  
+
   IoT APIS v2 - Autonomous IoT-enabled Automated Plant Irrigation System
     (by arkhipenko: http://www.instructables.com/id/IoT-APIS-V2-Autonomous-IoT-enabled-Automated-Plant/)
-	
-  
+
+
   Interactive Halloween Pumpkin
     (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
 
@@ -73,8 +73,8 @@ Changelog:
 v2.2.1:
     2016-11-30 - inlined constructors. Added "yield()" and "yieldOnce()" functions to easily break down and
 				 chain back together long running callback methods
-    2016-12-16 - added "getCount()" to StatusRequest objects, made every task StatusRequest enabled. 
-                 Internal StatusRequest objects are accessible via "getInternalStatusRequest()" method. 
+    2016-12-16 - added "getCount()" to StatusRequest objects, made every task StatusRequest enabled.
+                 Internal StatusRequest objects are accessible via "getInternalStatusRequest()" method.
 
 v2.2.0:
     2016-11-17 - all methods made 'inline' to support inclusion of TaskSchedule.h file into other header files
@@ -92,15 +92,15 @@ v2.0.0:
 v1.9.2:
     2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
     2015-12-16 - bug fixes: automatic millis rollover support for delay methods
-    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay() 
-	
+    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay()
+
 v1.9.0:
     2015-11-24 - packed three byte-long status variables into one byte-long bit array structure data type - saving 2 bytes per each task instance
 
 v1.8.5:
     2015-11-23 - bug fix: incorrect calculation of next task invocation in case callback changed the interval
     2015-11-23 - bug fix: Task::set() method calls setInterval() explicitly, therefore delaying the task in the same manner
-	
+
 v1.8.4:
     2015-11-15 - bug fix: Task alignment with millis() for scheduling purposes should be done after OnEnable, not before. Especially since OnEnable method can change the interval
 
@@ -116,17 +116,17 @@ v1.8.2:
     2015-10-27 - bug: currentTask() method returns incorrect Task reference if called within OnEnable and OnDisable methods
     2015-10-27 - protection against infinite loop in OnEnable (if enable() methods are called within OnEnable)
     2015-10-29 - new currentLts() method in the scheduler class returns current task's LTS pointer in one call
-	
+
 v1.8.1:
     2015-10-22 - implement Task id and control points to support identification of failure points for watchdog timer logging
-	
+
 v1.8.0:
     2015-10-13 - support for status request objects allowing tasks waiting on requests
     2015-10-13 - moved to a single header file to allow compilation control via #defines from the main sketch
 
 v1.7.0:
-    2015-10-08 - introduced callback run counter - callback functions can branch on the iteration number. 
-    2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled. 
+    2015-10-08 - introduced callback run counter - callback functions can branch on the iteration number.
+    2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled.
     2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
     2015-10-11 - introduced callback functions "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
     2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
@@ -137,25 +137,24 @@ v1.6.0:
     2015-10-01 - made version numbers semver compliant (documentation only)
 
 v1.5.1:
-    2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations(). 
+    2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations().
 		 		 Thanks to Hannes Morgenstern for catching this one
-				 
+
 v1.5.0:
     2015-09-20 - access to currently executing task (for callback functions)
     2015-09-20 - pass scheduler as a parameter to the task constructor to append the task to the end of the chain
     2015-09-20 - option to create a task already enabled
-	
+
 v1.4.1:
     2015-09-15 - more careful placement of AVR-specific includes for sleep functions (compatibility with DUE)
                          sleep on idle run is no longer a default and should be explicitly compiled with _TASK_SLEEP_ON_IDLE_RUN defined
-						 
+
 v1.0.0:
-    2015-02-24 - Initial release 
+    2015-02-24 - Initial release
     2015-02-28 - added delay() and disableOnLastIteration() functions
     2015-03-25 - changed scheduler execute() function for a more precise delay calculation:
                  1. Do not delay if any of the tasks ran (making request for immediate execution redundant)
-                 2. Delay is invoked only if none of the tasks ran 
+                 2. Delay is invoked only if none of the tasks ran
                  3. Delay is based on the min anticipated wait until next task _AND_ the runtime of execute function itself.
     2015-05-11 - added  restart() and restartDelayed() functions to restart tasks which are on hold after running all iterations
     2015-05-19 - completely removed  delay from the scheduler since there are no power saving there. using 1 ms sleep instead
-

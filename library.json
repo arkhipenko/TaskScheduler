@@ -1,0 +1,22 @@
+{
+  "name": "TaskScheduler",
+  "keywords": "multitasking, cooperative, event, task, taskscheduler, scheduling",
+  "description": "Cooperative multitasking for Arduino and ESP8266 microcontrollers",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/arkhipenko/TaskScheduler"
+  },
+  "authors":
+  [
+    {
+      "name": "Anatoli Arkhipenko",
+      "email": "arkhipenko@hotmail.com",
+      "url": "https://github.com/arkhipenko",
+      "maintainer": true
+    }
+  ],
+  "version": "2.2.1",
+  "frameworks": "arduino",
+  "platforms": "*"
+}
