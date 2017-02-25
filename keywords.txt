@@ -22,6 +22,7 @@ enableAll	KEYWORD2
 currentTask	KEYWORD2
 currentLts	KEYWORD2
 execute	KEYWORD2
+timeUntilNextIteration	KEYWORD2
 startNow	KEYWORD2
 allowSleep	KEYWORD2
 enable	KEYWORD2

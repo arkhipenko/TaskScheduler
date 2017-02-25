@@ -103,6 +103,10 @@
 //                 back together long running callback methods
 //    2016-12-16 - added "getCount()" to StatusRequest objects, made every task StatusRequest enabled. 
 //                 Internal StatusRequest objects are accessible via "getInternalStatusRequest()" method. 
+//
+// v2.3.0:
+//    2017-02-24 - new timeUntilNextIteration() method within Scheduler class - inquire when a particlar task is 
+//                 scheduled to run next time
 
 #include <Arduino.h>
 
@@ -306,9 +310,10 @@ class Scheduler {
 		inline void deleteTask(Task& aTask);
 		inline void disableAll(bool aRecursive = true);
 		inline void enableAll(bool aRecursive = true);
-		inline bool execute();			// Returns true if at none of the tasks' callback methods was invoked (true if idle run)
+		inline bool execute();			// Returns true if none of the tasks' callback methods was invoked (true = idle run)
 		inline void startNow(bool aRecursive = true); 			// reset ALL active tasks to immediate execution NOW.
 		inline Task& currentTask() {return *iCurrent; }
+		inline long timeUntilNextIteration(Task& aTask); // return number of ms until next iteration of a given Task
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 		inline void allowSleep(bool aState = true);
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
@@ -740,6 +745,29 @@ void Scheduler::startNow( bool aRecursive ) {
 	if (aRecursive && iHighPriority) iHighPriority->startNow( true );
 #endif  // _TASK_PRIORITY
 }
+
+/** Returns number millis or micros until next scheduled iteration of a given task
+ *
+ * @param aTask - reference to task which next iteration is in question
+ */
+long Scheduler::timeUntilNextIteration(Task& aTask) {
+	
+#ifdef _TASK_STATUS_REQUEST
+	
+	StatusRequest *s = aTask.getStatusRequest();
+	if ( s != NULL && s->pending() ) 
+		return (-1);	// cannot be determined
+#endif
+	if ( !aTask.isEnabled() )
+		return (-1); 	// cannot be determined
+	
+	long d = (long) aTask.iDelay - ( (long) ((_TASK_TIME_FUNCTION() - aTask.iPreviousMillis)) );
+	
+	if ( d < 0 ) 
+		return (0); // Task will run as soon as possible
+	return ( d );
+}
+
 
 /** Makes one pass through the execution chain.
  * Tasks are executed in the order they were added to the chain

@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 2.2.1: 2016-12-20
+Version 2.3.0: 2017-02-24
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -70,6 +70,10 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v2.3.0:
+    2017-02-24 - new timeUntilNextIteration() method within Scheduler class - inquire when a particlar task is 
+                 scheduled to run next time
+				 
 v2.2.1:
     2016-11-30 - inlined constructors. Added "yield()" and "yieldOnce()" functions to easily break down and
 				 chain back together long running callback methods
