@@ -344,7 +344,7 @@ class Scheduler {
 /** Constructor, uses default values for the parameters
  * so could be called with no parameters.
  */
-Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Scheduler* aScheduler, bool aEnable, bool (*aOnEnable)(), void (*aOnDisable)() ) {
+inline Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Scheduler* aScheduler, bool aEnable, bool (*aOnEnable)(), void (*aOnDisable)() ) {
 	reset();
 	set(aInterval, aIterations, aCallback, aOnEnable, aOnDisable);
 	if (aScheduler) aScheduler->addTask(*this);
@@ -363,7 +363,7 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
 /** Constructor with reduced parameter list for tasks created for 
  *  StatusRequest only triggering (always immediate and only 1 iteration)
  */
-Task::Task( void (*aCallback)(), Scheduler* aScheduler, bool (*aOnEnable)(), void (*aOnDisable)() ) {
+inline Task::Task( void (*aCallback)(), Scheduler* aScheduler, bool (*aOnEnable)(), void (*aOnDisable)() ) {
 	reset();
 	set(TASK_IMMEDIATE, TASK_ONCE, aCallback, aOnEnable, aOnDisable);
 	if (aScheduler) aScheduler->addTask(*this);
@@ -378,7 +378,7 @@ Task::Task( void (*aCallback)(), Scheduler* aScheduler, bool (*aOnEnable)(), voi
  *  Negative status will complete Status Request fully (since an error occured).
  *  @return: true, if StatusRequest is complete, false otherwise (still waiting for other events)
  */
-bool StatusRequest::signal(int aStatus) {
+inline bool StatusRequest::signal(int aStatus) {
 	if ( iCount) {	// do not update the status request if it was already completed
 		if (iCount > 0)  --iCount; 
 		if ( (iStatus = aStatus) < 0 ) iCount = 0;   // if an error is reported, the status is requested to be completed immediately
@@ -386,7 +386,7 @@ bool StatusRequest::signal(int aStatus) {
 	return (iCount == 0); 
 }
 
-void StatusRequest::signalComplete(int aStatus) {
+inline void StatusRequest::signalComplete(int aStatus) {
 	if (iCount) { // do not update the status request if it was already completed
 		iCount = 0; 
 		iStatus = aStatus;
@@ -397,7 +397,7 @@ void StatusRequest::signalComplete(int aStatus) {
  *  @param: aStatusRequest - a pointer for the StatusRequest to wait for.
  *  If aStatusRequest is NULL, request for waiting is ignored, and the waiting task is not enabled. 
  */
-void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
+inline void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
 	if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
 		setIterations(aIterations);
 		setInterval(aInterval); 
@@ -406,7 +406,7 @@ void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long 
 	}
 }
 
-void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
+inline void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
 	if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
 		setIterations(aIterations);
 		if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
@@ -420,7 +420,7 @@ void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
  * Task is not enabled and is taken out 
  * out of the execution chain as a result
  */
-void Task::reset() {
+inline void Task::reset() {
 	iStatus.enabled = false;
 	iStatus.inonenable = false;
 	iPreviousMillis = 0;
@@ -452,7 +452,7 @@ void Task::reset() {
  * @param aOnEnable - pointer to the callback method which is called on enable()
  * @param aOnDisable - pointer to the callback method which is called on disable()
  */
-void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)(), void (*aOnDisable)()) {
+inline void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)(),bool (*aOnEnable)(), void (*aOnDisable)()) {
 	setInterval(aInterval); 
 	iSetIterations = iIterations = aIterations;
 	iCallback = aCallback;
@@ -464,7 +464,7 @@ void Task::set(unsigned long aInterval, long aIterations, void (*aCallback)(),bo
  * if task is enabled, schedule for immediate execution
  * @param aIterations - number of iterations, use -1 for no limit
  */
-void Task::setIterations(long aIterations) { 
+inline void Task::setIterations(long aIterations) { 
 	iSetIterations = iIterations = aIterations; 
 }
 
@@ -494,7 +494,7 @@ void Task::yieldOnce (void (*aCallback)()) {
  *  schedules it for execution as soon as possible,
  *  and resets the RunCounter back to zero
  */
-void Task::enable() {
+inline void Task::enable() {
 	if (iScheduler) { // activation without active scheduler does not make sense
 		iRunCounter = 0;
 		if ( iOnEnable && !iStatus.inonenable ) {
@@ -520,7 +520,7 @@ void Task::enable() {
 /** Enables the task only if it was not enabled already
  * Returns previous state (true if was already enabled, false if was not)
  */
-bool Task::enableIfNot() {
+inline bool Task::enableIfNot() {
 	bool previousEnabled = iStatus.enabled;
 	if ( !previousEnabled ) enable();
 	return (previousEnabled);
@@ -529,7 +529,7 @@ bool Task::enableIfNot() {
 /** Enables the task 
  * and schedules it for execution after a delay = aInterval
  */
-void Task::enableDelayed(unsigned long aDelay) {
+inline void Task::enableDelayed(unsigned long aDelay) {
 	enable();
 	delay(aDelay);
 }
@@ -538,7 +538,7 @@ void Task::enableDelayed(unsigned long aDelay) {
  * leaves task enabled or disabled
  * if aDelay is zero, delays for the original scheduling interval from now
  */
-void Task::delay(unsigned long aDelay) {
+inline void Task::delay(unsigned long aDelay) {
 //	if (!aDelay) aDelay = iInterval;
 	iDelay = aDelay ? aDelay : iInterval;
 	iPreviousMillis = _TASK_TIME_FUNCTION(); // - iInterval + aDelay;
@@ -548,7 +548,7 @@ void Task::delay(unsigned long aDelay) {
  * leaves task enabled or disabled
  * Task's original schedule is shifted, and all subsequent iterations will continue from this point in time
  */
-void Task::forceNextIteration() {
+inline void Task::forceNextIteration() {
 	iPreviousMillis = _TASK_TIME_FUNCTION() - (iDelay = iInterval);
 }
 
@@ -557,7 +557,7 @@ void Task::forceNextIteration() {
  * Use  enable() to schedule execution ASAP
  * @param aInterval - new execution interval
  */
-void Task::setInterval (unsigned long aInterval) {
+inline void Task::setInterval (unsigned long aInterval) {
  	iInterval = aInterval; 
 	delay(); // iDelay will be updated by the delay() function
 }
@@ -566,7 +566,7 @@ void Task::setInterval (unsigned long aInterval) {
  * Task will no longer be executed by the scheduler
  * Returns status of the task before disable was called (i.e., if the task was already disabled)
  */
-bool Task::disable() {
+inline bool Task::disable() {
 	bool previousEnabled = iStatus.enabled;
 	iStatus.enabled = false;
 	iStatus.inonenable = false; 
@@ -585,7 +585,7 @@ bool Task::disable() {
 /** Restarts task
  * Task will run number of iterations again
  */
-void Task::restart() {
+inline void Task::restart() {
 	 iIterations = iSetIterations;
 	 enable();
 }
@@ -593,7 +593,7 @@ void Task::restart() {
 /** Restarts task delayed
  * Task will run number of iterations again
  */
-void Task::restartDelayed(unsigned long aDelay) {
+inline void Task::restartDelayed(unsigned long aDelay) {
 	 iIterations = iSetIterations;
 	 enableDelayed(aDelay);
 }
@@ -603,13 +603,13 @@ void Task::restartDelayed(unsigned long aDelay) {
 /** Default constructor.
  * Creates a scheduler with an empty execution chain.
  */
-Scheduler::Scheduler() {
+inline Scheduler::Scheduler() {
 	init();
 }
 
 /** Initializes all internal varaibles
  */
-void Scheduler::init() { 
+inline void Scheduler::init() { 
 	iFirst = NULL; 
 	iLast = NULL; 
 	iCurrent = NULL; 
@@ -625,7 +625,7 @@ void Scheduler::init() {
  * @param &aTask - reference to the Task to be appended.
  * @note Task can only be part of the chain once.
  */
- void Scheduler::addTask(Task& aTask) {
+inline void Scheduler::addTask(Task& aTask) {
 
 	aTask.iScheduler = this;
 // First task situation: 
@@ -646,7 +646,7 @@ void Scheduler::init() {
 /** Deletes specific Task from the execution chain
  * @param &aTask - reference to the task to be deleted from the chain
  */
-void Scheduler::deleteTask(Task& aTask) {
+inline void Scheduler::deleteTask(Task& aTask) {
 	if (aTask.iPrev == NULL) {
 		if (aTask.iNext == NULL) {
 			iFirst = NULL;
@@ -679,7 +679,7 @@ void Scheduler::deleteTask(Task& aTask) {
  * task remaining active is an error processing task
  * @param aRecursive - if true, tasks of the higher priority chains are disabled as well recursively
  */
-void Scheduler::disableAll(bool aRecursive) {
+inline void Scheduler::disableAll(bool aRecursive) {
 	Task	*current = iFirst;
 	while (current) {
 		current->disable();
@@ -694,7 +694,7 @@ void Scheduler::disableAll(bool aRecursive) {
 /** Enables all the tasks in the execution chain
  * @param aRecursive - if true, tasks of the higher priority chains are enabled as well recursively
  */
- void Scheduler::enableAll(bool aRecursive) {
+inline void Scheduler::enableAll(bool aRecursive) {
 	Task	*current = iFirst;
 	while (current) {
 		current->enable();
@@ -709,7 +709,7 @@ void Scheduler::disableAll(bool aRecursive) {
  * @param aScheduler - pointer to a scheduler for the higher priority tasks
  */
 #ifdef _TASK_PRIORITY
-void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
+inline void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 	if (aScheduler != this) iHighPriority = aScheduler;  // Setting yourself as a higher priority one will create infinite recursive call
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 	if (iHighPriority) {
@@ -721,7 +721,7 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-void Scheduler::allowSleep(bool aState) { 
+inline void Scheduler::allowSleep(bool aState) { 
 	iAllowSleep = aState; 
 
 #ifdef ARDUINO_ARCH_ESP8266
@@ -732,7 +732,7 @@ void Scheduler::allowSleep(bool aState) {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-void Scheduler::startNow( bool aRecursive ) {
+inline void Scheduler::startNow( bool aRecursive ) {
 	unsigned long t = _TASK_TIME_FUNCTION();
 	
 	iCurrent = iFirst;
@@ -775,7 +775,7 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
  * Different pseudo "priority" could be achieved
  * by running task more frequently 
  */
-bool Scheduler::execute() {
+inline bool Scheduler::execute() {
 	bool	 idleRun = true;
 	register unsigned long m, i;  // millis, interval;
 
