@@ -124,6 +124,7 @@
  *  #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
  *  #define _TASK_PRIORITY			// Support for layered scheduling priority
  *  #define _TASK_MICRO_RES			// Support for microsecond resolution
+ *  #define _TASK_STD_FUNCTION      // Support for std::function
  */
 
 
@@ -197,9 +198,17 @@ class StatusRequest {
 };
 #endif  // _TASK_STATUS_REQUEST
 
+#ifdef _TASK_STD_FUNCTION
+#define _TASK_STD_FUNCTION
+#include <functional>
+typedef std::function<void()> callback_t;
+typedef std::function<void()> onDisable_cb_t;
+typedef std::function<bool()> onEnable_cb_t;
+#else
 typedef void (*callback_t)();
 typedef void (*onDisable_cb_t)();
 typedef bool (*onEnable_cb_t)();
+#endif
 
 typedef struct  {
 	bool enabled : 1;							// indicates that task is enabled or not.
