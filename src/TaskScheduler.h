@@ -220,6 +220,7 @@ class Task {
 #ifdef _TASK_STATUS_REQUEST
 		inline Task(void (*aCallback)()=NULL, Scheduler* aScheduler=NULL, bool (*aOnEnable)()=NULL, void (*aOnDisable)()=NULL);
 #endif  // _TASK_STATUS_REQUEST
+        inline ~Task();
 
 		inline void enable();
 		inline bool enableIfNot();
@@ -355,6 +356,12 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
 	iTaskID = ++__task_id_counter;
 #endif  // _TASK_WDT_IDS
 	if (aEnable) enable();
+}
+
+Task::~Task() {
+    disable();
+    if (iScheduler)
+        iScheduler->deleteTask(*this);
 }
 
 
