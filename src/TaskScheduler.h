@@ -107,6 +107,11 @@
 // v2.3.0:
 //    2017-02-24 - new timeUntilNextIteration() method within Scheduler class - inquire when a particlar task is 
 //                 scheduled to run next time
+//
+// v2.4.0:
+//    2017-04-27 - added destructor to the Task class to ensure tasks are disables and taken off the execution chain
+//                 upon destruction. (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
+
 
 #include <Arduino.h>
 
@@ -358,6 +363,10 @@ Task::Task( unsigned long aInterval, long aIterations, void (*aCallback)(), Sche
 	if (aEnable) enable();
 }
 
+/** Destructor.
+ *  Makes sure the task disabled and deleted out of the chain
+ *  prior to being deleted.
+ */
 Task::~Task() {
     disable();
     if (iScheduler)
