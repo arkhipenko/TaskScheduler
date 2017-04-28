@@ -111,6 +111,10 @@
 // v2.4.0:
 //    2017-04-27 - added destructor to the Task class to ensure tasks are disables and taken off the execution chain
 //                 upon destruction. (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
+//
+// v2.5.0:
+//    2017-04-27 - added optional support for std::functions via _TASK_STD_FUNCTION define
+//                 (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
 
 
 #include <Arduino.h>
