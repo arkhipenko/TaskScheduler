@@ -127,7 +127,7 @@ void Calculate() {
 
 
 /**
- * Standard Arduino setup and loo methods
+ * Standard Arduino setup and loop methods
  */
 void setup() {
   Serial.begin(115200);

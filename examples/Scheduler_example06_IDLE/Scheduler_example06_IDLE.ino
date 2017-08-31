@@ -12,7 +12,7 @@ The result are:
 
 1): With #define _TASK_SLEEP_ON_IDLE_RUN enabled
 Start
-c1=10771  (v1.9.0: same)
+c1=10771 - v2.5.0 (v1.9.0: same)
 c2=1001
 
 
@@ -20,7 +20,7 @@ and
 
 2): With #define _TASK_SLEEP_ON_IDLE_RUN disabled (commented out)
 Start
-c1=529783  (v1.9.0: 551947)
+c1=635735 - v2.5.0  (v1.9.0: 551947)
 c2=1001
 
 C1 is scenario 2) is much higher than in scenario 1) because processor is put to sleep for 1), but not for 2)

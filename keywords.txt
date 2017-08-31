@@ -9,9 +9,7 @@
 Task	KEYWORD1
 Scheduler	KEYWORD1
 StatusRequest	KEYWORD1
-callback_t	KEYWORD1
-onDisable_cb_t	KEYWORD1
-onEnable_cb_t	KEYWORD1
+
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
@@ -89,5 +87,9 @@ _TASK_LTS_POINTER	LITERAL1
 _TASK_PRIORITY	LITERAL1
 _TASK_MICRO_RES	LITERAL1
 _TASK_STD_FUNCTION	LITERAL1
+_TASK_DEBUG	LITERAL1
+TaskCallback	LITERAL1
+TaskOnDisable	LITERAL1
+TaskOnEnable	LITERAL1
 #######################################
 
