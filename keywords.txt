@@ -73,6 +73,7 @@ setHighPriorityScheduler	KEYWORD2
 currentScheduler	KEYWORD2
 #######################################
 # Constants (LITERAL1)
+TASK_MILLISECOND	LITERAL1
 TASK_SECOND	LITERAL1
 TASK_MINUTE	LITERAL1
 TASK_HOUR	LITERAL1

@@ -798,6 +798,10 @@ bool Scheduler::execute() {
       t2 = micros() - t1;
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);   // ESP8266 implementation of delay() uses timers and yield
 #endif  // ARDUINO_ARCH_ESP8266
+        
+#ifdef ARDUINO_ARCH_ESP32
+#endif  // ARDUINO_ARCH_ESP32
+        
     }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 

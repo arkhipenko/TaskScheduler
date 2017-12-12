@@ -20,9 +20,6 @@
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
 
-
-
-
 #ifdef _TASK_DEBUG
     #define _TASK_SCOPE  public
 #else
@@ -41,12 +38,14 @@
 
 #ifndef _TASK_MICRO_RES
 
+#define TASK_MILLISECOND       1UL
 #define TASK_SECOND         1000UL
 #define TASK_MINUTE        60000UL
 #define TASK_HOUR        3600000UL
 
 #else
 
+#define TASK_MILLISECOND    1000UL
 #define TASK_SECOND      1000000UL
 #define TASK_MINUTE     60000000UL
 #define TASK_HOUR     3600000000UL
