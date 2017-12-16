@@ -26,10 +26,6 @@
     #define _TASK_SCOPE  private
 #endif
 
-#ifdef CORE_TEENSY
-#include <Snooze.h>
-#endif //CORE_TEENSY
-
 #define TASK_IMMEDIATE          0
 #define TASK_FOREVER         (-1)
 #define TASK_ONCE               1
@@ -192,7 +188,7 @@ class Scheduler {
   friend class Task;
   public:
     Scheduler();
-	~Scheduler();
+//	~Scheduler();
     void init();
     void addTask(Task& aTask);
     void deleteTask(Task& aTask);
@@ -220,11 +216,6 @@ class Scheduler {
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     bool        iAllowSleep;                      // indication if putting avr to IDLE_SLEEP mode is allowed by the program at this time. 
-
-#ifdef CORE_TEENSY
-	SnoozeTimer *timer;
-	SnoozeBlock *config;
-#endif //CORE_TEENSY
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 #ifdef _TASK_PRIORITY

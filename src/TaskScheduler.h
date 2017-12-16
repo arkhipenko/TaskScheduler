@@ -168,9 +168,6 @@ extern "C" {
 #define _TASK_ESP8266_DLY_THRESHOLD 200L
 #endif  // ARDUINO_ARCH_ESP8266
 
-#ifdef  CORE_TEENSY 
-#include <Snooze.h>
-#endif
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
@@ -526,14 +523,12 @@ Scheduler::Scheduler() {
     init();
 }
 
+/*
 Scheduler::~Scheduler() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-#ifdef CORE_TEENSY
-    delete config;
-	delete timer;
-#endif //CORE_TEENSY
 #endif // _TASK_SLEEP_ON_IDLE_RUN
 }
+*/
 
 /** Initializes all internal varaibles
  */
@@ -546,13 +541,6 @@ void Scheduler::init() {
 #endif  // _TASK_PRIORITY
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     allowSleep(true);
-	
-#ifdef CORE_TEENSY
-	timer = new SnoozeTimer;
-	config = new SnoozeBlock(*timer);
-	timer->setTimer(1);
-#endif //CORE_TEENSY
-	
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 }
 
@@ -814,7 +802,7 @@ bool Scheduler::execute() {
 #endif // ARDUINO_ARCH_AVR
 
 #ifdef CORE_TEENSY
-	Snooze.sleep(*config);
+    asm("wfi");
 #endif //CORE_TEENSY
 
 #ifdef ARDUINO_ARCH_ESP8266
