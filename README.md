@@ -2,6 +2,13 @@
 ### Cooperative multitasking for Arduino microcontrollers  
 #### Version 2.5.0: 2017-08-30
 
+### FORK:
+
+This is a fork of the main TaskScheduler repo. It adds some small changes to support use with bare metal code outside of the Arduino environment. It has only been tested on AVR devices.
+
+This library only depends on the Arduino millis() or micros() functions. You can use third-party libraries like Zak Kemble's millis lib (https://github.com/zkemble/millis) or write your own replacement. The ESP8266 target also requires a substitute for yield() and delay().
+
+
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:  
 1. Periodic task execution, with dynamic execution period in `milliseconds` (default) or `microseconds` (if explicitly enabled) – frequency of execution  
