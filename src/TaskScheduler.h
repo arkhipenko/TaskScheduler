@@ -156,7 +156,7 @@
  
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 
-#ifdef ARDUINO_ARCH_AVR  
+#ifdef ARDUINO_ARCH_AVR
 #include <avr/sleep.h>
 #include <avr/power.h>
 #endif  // ARDUINO_ARCH_AVR 
@@ -167,6 +167,7 @@ extern "C" {
 }
 #define _TASK_ESP8266_DLY_THRESHOLD 200L
 #endif  // ARDUINO_ARCH_ESP8266
+
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
@@ -522,6 +523,13 @@ Scheduler::Scheduler() {
     init();
 }
 
+/*
+Scheduler::~Scheduler() {
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+#endif // _TASK_SLEEP_ON_IDLE_RUN
+}
+*/
+
 /** Initializes all internal varaibles
  */
 void Scheduler::init() { 
@@ -792,6 +800,10 @@ bool Scheduler::execute() {
       /* The program will continue from here after the timer timeout ~1 ms */
       sleep_disable(); /* First thing to do is disable sleep. */
 #endif // ARDUINO_ARCH_AVR
+
+#ifdef CORE_TEENSY
+    asm("wfi");
+#endif //CORE_TEENSY
 
 #ifdef ARDUINO_ARCH_ESP8266
 // to do: find suitable sleep function for esp8266

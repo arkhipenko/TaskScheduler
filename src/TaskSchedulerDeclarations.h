@@ -26,7 +26,6 @@
     #define _TASK_SCOPE  private
 #endif
 
-
 #define TASK_IMMEDIATE          0
 #define TASK_FOREVER         (-1)
 #define TASK_ONCE               1
@@ -189,6 +188,7 @@ class Scheduler {
   friend class Task;
   public:
     Scheduler();
+//	~Scheduler();
     void init();
     void addTask(Task& aTask);
     void deleteTask(Task& aTask);
@@ -216,6 +216,7 @@ class Scheduler {
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     bool        iAllowSleep;                      // indication if putting avr to IDLE_SLEEP mode is allowed by the program at this time. 
+
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 #ifdef _TASK_PRIORITY
     Scheduler  *iHighPriority;                    // Pointer to a higher priority scheduler
