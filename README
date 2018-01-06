@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 2.5.0: 2017-08-30
+Version 2.5.1: 2018-01-06
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -79,6 +79,9 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v2.5.1:
+   2018-01-06 - support for IDLE sleep on Teensy boards (tested on Teensy 3.6)
+
 v2.5.0:
    2017-04-27 - added optional support for std::functions via _TASK_STD_FUNCTION
                 (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
