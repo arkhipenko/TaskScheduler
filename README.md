@@ -23,6 +23,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Arduino Micro  
 * ATtiny85  
 * ESP8266 (Node MCU v2.0)  
+* Teensy (tested on Teensy 3.6)
 ---
 ### [Changelog:](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
 Version|Version 1|Version 2

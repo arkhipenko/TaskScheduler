@@ -25,6 +25,7 @@ Tested on the following microcontrollers:
  - Arduino Micro
  - ATtiny85
  - ESP8266 (Node MCU v2.0)
+ - Teensy (tested on Teensy 3.6)
 
 For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
 =======================================================================================================
