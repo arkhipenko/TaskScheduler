@@ -1,7 +1,8 @@
 // Cooperative multitasking library for Arduino
 // Copyright (c) 2015-2017 Anatoli Arkhipenko
 
-#include <stddef.h> 
+#include <stddef.h>
+#include <stdint.h>
 
 #ifndef _TASKSCHEDULERDECLARATIONS_H_
 #define _TASKSCHEDULERDECLARATIONS_H_
@@ -89,7 +90,7 @@ typedef struct  {
     bool  enabled    : 1;           // indicates that task is enabled or not.
     bool  inonenable : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
 #ifdef _TASK_STATUS_REQUEST
-    byte  waiting    : 2;           // indication if task is waiting on the status request
+    uint8_t  waiting : 2;           // indication if task is waiting on the status request
 #endif
 } __task_status;
 

@@ -120,12 +120,40 @@
 //    2017-08-30 - bug fix: Scheduler::addTask() checks if task is already part of an execution chain (github issue #37)
 //    2017-08-30 - support for multi-tab sketches (Contributed by Adam Ryczkowski - https://github.com/adamryczkowski)
 
-
-#include <Arduino.h>
-#include "TaskSchedulerDeclarations.h"
-
 #ifndef _TASKSCHEDULER_H_
 #define _TASKSCHEDULER_H_
+
+#if defined(ARDUINO_ARCH_AVR) || defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
+#  include "Arduino.h"
+
+#else // Not in Arduino environment
+
+// Detect target arch
+#  if !defined(ARDUINO_ARCH_AVR) && defined(__AVR__)
+#    define ARDUINO_ARCH_AVR 1
+#  endif
+
+
+// NOTE: You must supply one of these functions depending on _TASK_MICRO_RES
+//       ESP8266 requires micros(), delay(), and yield().
+#  if defined(_TASK_MICRO_RES) || defined(ARDUINO_ARCH_ESP8266)
+extern unsigned long micros(void);
+#  endif
+extern unsigned long millis(void);
+
+#  if defined(ARDUINO_ARCH_ESP8266)
+extern void yield(void);
+extern void delay(unsigned long);
+#  endif
+
+#  if !(defined(ARDUINO_ARCH_AVR) || defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32))
+#    error Missing ARDUINO_ARCH_* definition.
+#  endif
+
+#endif // ARDUINO_ARCH_*
+
+#include "TaskSchedulerDeclarations.h"
+
 
 // ----------------------------------------
 // The following "defines" control library functionality at compile time,
