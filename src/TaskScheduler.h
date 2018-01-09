@@ -119,6 +119,13 @@
 //                 Use at your own risk!
 //    2017-08-30 - bug fix: Scheduler::addTask() checks if task is already part of an execution chain (github issue #37)
 //    2017-08-30 - support for multi-tab sketches (Contributed by Adam Ryczkowski - https://github.com/adamryczkowski)
+//
+// v2.5.1:
+//    2018-01-06 - support for IDLE sleep on Teensy boards (tested on Teensy 3.5)
+//
+// v2.5.2:
+//    2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
+
 
 
 #include <Arduino.h>
@@ -140,6 +147,7 @@
 // #define _TASK_MICRO_RES         // Support for microsecond resolution
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
+// #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 
 
 
