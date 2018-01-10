@@ -21,7 +21,7 @@
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
 // #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-
+// #define _TASK_BARE_METAL        // Add declarations of a few arduino-specifc methods 
 
 #ifdef _TASK_DEBUG
     #define _TASK_SCOPE  public
@@ -37,6 +37,13 @@
     class Scheduler;
     extern Scheduler* iCurrentScheduler;
 #endif // _TASK_PRIORITY
+
+#ifdef _TASK_BARE_METAL
+	extern unsigned long micros(void);
+	extern unsigned long millis(void);
+	extern void yield(void);
+	extern void delay(unsigned long);
+#endif
 
 
 #ifdef _TASK_INLINE	

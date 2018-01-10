@@ -80,7 +80,10 @@ Check out what TaskScheduler can do:
 Changelog:
 =========
 v2.5.2:
+
    2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
+   2018-01-10 - _TASK_BARE_METAL compilation directive. Forward definition of arduino specific methods 
+                for bare metal implementations
 
 v2.5.1:
    2018-01-06 - support for IDLE sleep on Teensy boards (tested on Teensy 3.6)

@@ -125,7 +125,8 @@
 //
 // v2.5.2:
 //    2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
-
+//    2018-01-10 - _TASK_BARE_METAL compilation directive. Forward definition of arduino specific methods 
+//                 for bare metal implementations
 
 
 #include <Arduino.h>
@@ -148,8 +149,7 @@
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
 // #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-
-
+// #define _TASK_BARE_METAL        // Add declarations of a few arduino-specifc methods 
 
  #ifdef _TASK_MICRO_RES
  
