@@ -161,7 +161,7 @@
 #include <avr/power.h>
 #endif  // ARDUINO_ARCH_AVR 
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
 extern "C" {
 #include "user_interface.h"
 }
@@ -171,7 +171,7 @@ extern "C" {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-#ifndef ARDUINO_ARCH_ESP8266
+#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32)
 #ifdef _TASK_STD_FUNCTION
 #error Support for std::function only for ESP8266 architecture
 #undef _TASK_STD_FUNCTION
@@ -651,7 +651,7 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 void Scheduler::allowSleep(bool aState) { 
     iAllowSleep = aState; 
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
     wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
 #endif  // ARDUINO_ARCH_ESP8266
 
@@ -714,7 +714,7 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined ARDUINO_ARCH_ESP8266 || defined (ARDUINO_ARCH_ESP32) 
       unsigned long t1 = micros();
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
@@ -783,7 +783,7 @@ bool Scheduler::execute() {
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit 
         iCurrent = iCurrent->iNext;
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined ARDUINO_ARCH_ESP8266 || defined (ARDUINO_ARCH_ESP32) 
         yield();
 #endif  // ARDUINO_ARCH_ESP8266
     }
@@ -805,7 +805,7 @@ bool Scheduler::execute() {
     asm("wfi");
 #endif //CORE_TEENSY
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined ARDUINO_ARCH_ESP8266 || defined (ARDUINO_ARCH_ESP32) 
 // to do: find suitable sleep function for esp8266
       t2 = micros() - t1;
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);   // ESP8266 implementation of delay() uses timers and yield
