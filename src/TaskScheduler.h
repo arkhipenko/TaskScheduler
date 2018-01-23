@@ -161,7 +161,7 @@
 #include <avr/power.h>
 #endif  // ARDUINO_ARCH_AVR 
 
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
+#if defined (ARDUINO_ARCH_ESP8266) 
 extern "C" {
 #include "user_interface.h"
 }
