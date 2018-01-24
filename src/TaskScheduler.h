@@ -119,7 +119,9 @@
 //                 Use at your own risk!
 //    2017-08-30 - bug fix: Scheduler::addTask() checks if task is already part of an execution chain (github issue #37)
 //    2017-08-30 - support for multi-tab sketches (Contributed by Adam Ryczkowski - https://github.com/adamryczkowski)
-
+// v2.6:
+//    2018-01-24 - ESP32 support:
+//
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"
@@ -161,19 +163,23 @@
 #include <avr/power.h>
 #endif  // ARDUINO_ARCH_AVR 
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined (ARDUINO_ARCH_ESP8266) 
 extern "C" {
 #include "user_interface.h"
 }
+
+#elif defined (ARDUINO_ARCH_ESP32)
+    //#warning _TASK_SLEEP_ON_IDLE_RUN is not tested for ESP32.. going in light sleep for 1 ms
+#endif  // ARDUINO_ARCH_ESP8266 ESP32
+
 #define _TASK_ESP8266_DLY_THRESHOLD 200L
-#endif  // ARDUINO_ARCH_ESP8266
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-#ifndef ARDUINO_ARCH_ESP8266
+#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32)
 #ifdef _TASK_STD_FUNCTION
-#error Support for std::function only for ESP8266 architecture
+    #error Support for std::function only for ESP8266 or ESP32 architecture
 #undef _TASK_STD_FUNCTION
 #endif // _TASK_STD_FUNCTION
 #endif // ARDUINO_ARCH_ESP8266
@@ -651,8 +657,11 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 void Scheduler::allowSleep(bool aState) { 
     iAllowSleep = aState; 
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined (ARDUINO_ARCH_ESP8266) 
     wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
+#elif defined (ARDUINO_ARCH_ESP32)
+//TODO find a replacement?
+
 #endif  // ARDUINO_ARCH_ESP8266
 
 }
@@ -714,7 +723,7 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined ARDUINO_ARCH_ESP8266 || defined (ARDUINO_ARCH_ESP32) 
       unsigned long t1 = micros();
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
@@ -783,7 +792,7 @@ bool Scheduler::execute() {
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit 
         iCurrent = iCurrent->iNext;
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined ARDUINO_ARCH_ESP8266 || defined (ARDUINO_ARCH_ESP32) 
         yield();
 #endif  // ARDUINO_ARCH_ESP8266
     }
@@ -805,13 +814,16 @@ bool Scheduler::execute() {
     asm("wfi");
 #endif //CORE_TEENSY
 
-#ifdef ARDUINO_ARCH_ESP8266
-// to do: find suitable sleep function for esp8266
+#if defined ARDUINO_ARCH_ESP8266
+// to do: find suitable sleep function for ESP8266 ESP32
       t2 = micros() - t1;
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);   // ESP8266 implementation of delay() uses timers and yield
 #endif  // ARDUINO_ARCH_ESP8266
         
-#ifdef ARDUINO_ARCH_ESP32
+#if defined ARDUINO_ARCH_ESP32 
+//TODO Test this light sleep implementation for ESP32
+      esp_sleep_enable_timer_wakeup(1000); //1ms
+      int ret= esp_light_sleep_start();
 #endif  // ARDUINO_ARCH_ESP32
         
     }
