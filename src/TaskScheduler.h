@@ -167,13 +167,12 @@
 extern "C" {
 #include "user_interface.h"
 }
-#define _TASK_ESP8266_DLY_THRESHOLD 200L
 
 #elif defined (ARDUINO_ARCH_ESP32)
-//TODO ESP32 replacement for user_interface.h"?!
-    #error "_TASK_SLEEP_ON_IDLE_RUN not supported by now for ESP32.. (find a replacement for user_interface.h)"
+    //#warning _TASK_SLEEP_ON_IDLE_RUN is not tested for ESP32.. going in light sleep for 1 ms
+#endif  // ARDUINO_ARCH_ESP8266 ESP32
 
-#endif  // ARDUINO_ARCH_ESP8266
+#define _TASK_ESP8266_DLY_THRESHOLD 200L
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
@@ -658,8 +657,11 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 void Scheduler::allowSleep(bool aState) { 
     iAllowSleep = aState; 
 
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
+#if defined (ARDUINO_ARCH_ESP8266) 
     wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
+#elif defined (ARDUINO_ARCH_ESP32)
+//TODO find a replacement?
+
 #endif  // ARDUINO_ARCH_ESP8266
 
 }
@@ -812,13 +814,16 @@ bool Scheduler::execute() {
     asm("wfi");
 #endif //CORE_TEENSY
 
-#if defined ARDUINO_ARCH_ESP8266 || defined (ARDUINO_ARCH_ESP32) 
-// to do: find suitable sleep function for esp8266
+#if defined ARDUINO_ARCH_ESP8266
+// to do: find suitable sleep function for ESP8266 ESP32
       t2 = micros() - t1;
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);   // ESP8266 implementation of delay() uses timers and yield
 #endif  // ARDUINO_ARCH_ESP8266
         
-#ifdef ARDUINO_ARCH_ESP32
+#if defined ARDUINO_ARCH_ESP32 
+//TODO Test this light sleep implementation for ESP32
+      esp_sleep_enable_timer_wakeup(1000); //1ms
+      int ret= esp_light_sleep_start();
 #endif  // ARDUINO_ARCH_ESP32
         
     }
