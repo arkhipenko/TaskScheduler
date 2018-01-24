@@ -167,12 +167,12 @@
 extern "C" {
 #include "user_interface.h"
 }
+#define _TASK_ESP8266_DLY_THRESHOLD 200L
+
 #elif defined (ARDUINO_ARCH_ESP32)
 //TODO ESP32 replacement for user_interface.h"?!
     #error "_TASK_SLEEP_ON_IDLE_RUN not supported by now for ESP32.. (find a replacement for user_interface.h)"
-#endif
 
-#define _TASK_ESP8266_DLY_THRESHOLD 200L
 #endif  // ARDUINO_ARCH_ESP8266
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
@@ -180,7 +180,7 @@ extern "C" {
 
 #if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32)
 #ifdef _TASK_STD_FUNCTION
-#error Support for std::function only for ESP8266 architecture
+    #error Support for std::function only for ESP8266 or ESP32 architecture
 #undef _TASK_STD_FUNCTION
 #endif // _TASK_STD_FUNCTION
 #endif // ARDUINO_ARCH_ESP8266
