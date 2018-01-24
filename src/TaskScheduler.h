@@ -119,7 +119,9 @@
 //                 Use at your own risk!
 //    2017-08-30 - bug fix: Scheduler::addTask() checks if task is already part of an execution chain (github issue #37)
 //    2017-08-30 - support for multi-tab sketches (Contributed by Adam Ryczkowski - https://github.com/adamryczkowski)
-
+// v2.6:
+//    2018-01-24 - ESP32 support:
+//
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"
@@ -165,6 +167,11 @@
 extern "C" {
 #include "user_interface.h"
 }
+#elif defined (ARDUINO_ARCH_ESP32)
+//TODO ESP32 replacement for user_interface.h"?!
+    #error "_TASK_SLEEP_ON_IDLE_RUN not supported by now for ESP32.. (find a replacement for user_interface.h)"
+#endif
+
 #define _TASK_ESP8266_DLY_THRESHOLD 200L
 #endif  // ARDUINO_ARCH_ESP8266
 
