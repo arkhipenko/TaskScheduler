@@ -16,6 +16,7 @@ OVERVIEW:
  8. Local Task Storage pointer (allowing use of same callback code for multiple tasks)
  9. Layered task prioritization
 10. Support for std::functions (ESP8266 only)
+11. Overall task timeout
 
 Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the benchmark example).
 
@@ -82,6 +83,7 @@ Changelog:
 v2.6.0:
    2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
    2018-01-30 - Support for ESP32
+                (Contributed by Marco Tombesi: https://github.com/baggior)
    
 v2.5.2:
    2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
