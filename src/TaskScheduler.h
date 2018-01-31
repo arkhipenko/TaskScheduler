@@ -129,7 +129,8 @@
 // v2.6.0:
 //    2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
 //
-//    2018-01-24 - ESP32 support:
+//    2018-01-30 - ESP32 support (experimental)
+//                 (Contributed by Marco Tombesi: https://github.com/baggior)
 
 
 #include <Arduino.h>
@@ -172,7 +173,8 @@
 #include <avr/power.h>
 #endif  // ARDUINO_ARCH_AVR 
 
-#if defined (ARDUINO_ARCH_ESP8266) 
+#ifdef ARDUINO_ARCH_ESP8266
+
 extern "C" {
 #include "user_interface.h"
 }
@@ -182,6 +184,10 @@ extern "C" {
 #endif  // ARDUINO_ARCH_ESP8266 ESP32
 
 #define _TASK_ESP8266_DLY_THRESHOLD 200L
+
+#ifdef ARDUINO_ARCH_ESP32
+    //#warning _TASK_SLEEP_ON_IDLE_RUN is not tested for ESP32.. going in light sleep for 1 ms
+#endif  // ARDUINO_ARCH_ESP8266 ESP32
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
@@ -721,13 +727,16 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 void Scheduler::allowSleep(bool aState) { 
     iAllowSleep = aState; 
 
-#if defined (ARDUINO_ARCH_ESP8266) 
+#ifdef ARDUINO_ARCH_ESP8266
     wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
 #elif defined (ARDUINO_ARCH_ESP32)
 //TODO find a replacement?
 
 #endif  // ARDUINO_ARCH_ESP8266
 
+#ifdef ARDUINO_ARCH_ESP32
+	// TO-DO; find a suitable replacement for ESP32 if possible.
+#endif  // ARDUINO_ARCH_ESP32
 }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
