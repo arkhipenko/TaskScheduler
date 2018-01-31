@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 2.5.1: 2018-01-06
+Version 2.5.2: 2018-01-09
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -79,6 +79,14 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v2.6.0:
+   2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
+   2018-01-30 - Support for ESP32
+   
+v2.5.2:
+   2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
+
+
 v2.5.1:
    2018-01-06 - support for IDLE sleep on Teensy boards (tested on Teensy 3.6)
 
