@@ -795,7 +795,7 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
+#ifdef ARDUINO_ARCH_ESP8266
       unsigned long t1 = micros();
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
@@ -833,7 +833,7 @@ bool Scheduler::execute() {
 					iCurrent->disable();
                     break;
 				}
-#endif
+#endif // _TASK_TIMEOUT
                 
 #ifdef  _TASK_STATUS_REQUEST
     // If StatusRequest object was provided, and still pending, and task is waiting, this task should not run
