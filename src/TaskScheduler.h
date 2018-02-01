@@ -152,7 +152,8 @@
 // #define _TASK_MICRO_RES         // Support for microsecond resolution
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
-
+// #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
+// #define _TASK_TIMEOUT           // Support for overall task timeout 
 
 
  #ifdef _TASK_MICRO_RES
@@ -174,20 +175,16 @@
 #endif  // ARDUINO_ARCH_AVR 
 
 #ifdef ARDUINO_ARCH_ESP8266
-
+#define _TASK_ESP8266_DLY_THRESHOLD 200L
 extern "C" {
 #include "user_interface.h"
 }
-
-#elif defined (ARDUINO_ARCH_ESP32)
-    //#warning _TASK_SLEEP_ON_IDLE_RUN is not tested for ESP32.. going in light sleep for 1 ms
-#endif  // ARDUINO_ARCH_ESP8266 ESP32
-
-#define _TASK_ESP8266_DLY_THRESHOLD 200L
+#endif //ARDUINO_ARCH_ESP8266
 
 #ifdef ARDUINO_ARCH_ESP32
-    //#warning _TASK_SLEEP_ON_IDLE_RUN is not tested for ESP32.. going in light sleep for 1 ms
-#endif  // ARDUINO_ARCH_ESP8266 ESP32
+#define _TASK_ESP8266_DLY_THRESHOLD 200L
+#warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
+#endif  // ARDUINO_ARCH_ESP32
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
@@ -905,9 +902,11 @@ bool Scheduler::execute() {
 #endif  // ARDUINO_ARCH_ESP8266
 
 #ifdef ARDUINO_ARCH_ESP32 
-//TODO Test this light sleep implementation for ESP32
-      esp_sleep_enable_timer_wakeup(1000); //1 ms
-      int ret= esp_light_sleep_start();
+//TODO: find a correct light sleep implementation for ESP32
+    // esp_sleep_enable_timer_wakeup(1000); //1 ms
+    // int ret= esp_light_sleep_start();
+      t2 = micros() - t1;
+      if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1); 
 #endif  // ARDUINO_ARCH_ESP32	
  
     }
