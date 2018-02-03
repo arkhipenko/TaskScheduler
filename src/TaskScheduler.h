@@ -125,7 +125,7 @@
 //
 // v2.5.2:
 //    2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
-// 
+//
 // v2.6.0:
 //    2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
 //    2018-01-30 - ESP32 support (experimental)
@@ -173,22 +173,23 @@
 #endif  // ARDUINO_ARCH_AVR 
 
 #ifdef ARDUINO_ARCH_ESP8266
+#define _TASK_ESP8266_DLY_THRESHOLD 200L
 extern "C" {
 #include "user_interface.h"
 }
-#define _TASK_ESP8266_DLY_THRESHOLD 200L
-#endif  // ARDUINO_ARCH_ESP8266
+#endif //ARDUINO_ARCH_ESP8266
 
 #ifdef ARDUINO_ARCH_ESP32
-    //#warning _TASK_SLEEP_ON_IDLE_RUN is not tested for ESP32.. going in light sleep for 1 ms
-#endif  // ARDUINO_ARCH_ESP8266 ESP32
+#define _TASK_ESP8266_DLY_THRESHOLD 200L
+#warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
+#endif  // ARDUINO_ARCH_ESP32
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
 #if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32)
 #ifdef _TASK_STD_FUNCTION
-#error Support for std::function only for ESP8266 architecture
+    #error Support for std::function only for ESP8266 or ESP32 architecture
 #undef _TASK_STD_FUNCTION
 #endif // _TASK_STD_FUNCTION
 #endif // ARDUINO_ARCH_ESP8266
@@ -787,7 +788,7 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
       unsigned long t1 = micros();
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
@@ -894,9 +895,11 @@ bool Scheduler::execute() {
 #endif  // ARDUINO_ARCH_ESP8266
 
 #ifdef ARDUINO_ARCH_ESP32 
-//TODO Test this light sleep implementation for ESP32
-      esp_sleep_enable_timer_wakeup(1000); //1 ms
-      int ret= esp_light_sleep_start();
+//TODO: find a correct light sleep implementation for ESP32
+    // esp_sleep_enable_timer_wakeup(1000); //1 ms
+    // int ret= esp_light_sleep_start();
+      t2 = micros() - t1;
+      if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1); 
 #endif  // ARDUINO_ARCH_ESP32	
  
     }
