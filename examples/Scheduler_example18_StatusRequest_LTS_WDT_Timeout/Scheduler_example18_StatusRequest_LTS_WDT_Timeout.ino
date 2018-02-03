@@ -1,22 +1,22 @@
-/** 
- *  This is example 5 rewritten with Timeout, LTS and WDT functioanlity:
- *  - 1 second timeout is set for the main calculation task
- *  - LTS is used to address individual array elements for each sensor sinlce the callback code is shared
- *  - WDT is used to set the Task ID and use that as an index for array of distances (alternative to LTS)
- *  
- *  Original description:
- *  ====================
- *    This test emulates querying 3 sensors once every 10 seconds, each could respond with a different delay
- *    (ultrasonic sensors for instance) and printing a min value of the three when all three have reported their values.
- *    The overall timeout of 1 second is setup as well.
- *    An error message needs to be printed if a timeout occurred instead of a value.
- *    
- *    Example5:
- *     Sketch uses 6066 bytes (18%) of program storage space. Maximum is 32256 bytes.
- *     Global variables use 1039 bytes (50%) of dynamic memory, leaving 1009 bytes for local variables. Maximum is 2048 bytes.
- *    Example 18:
- *     Sketch uses 5142 bytes (15%) of program storage space. Maximum is 32256 bytes.
- *     Global variables use 878 bytes (42%) of dynamic memory, leaving 1170 bytes for local variables. Maximum is 2048 bytes.
+/**
+    This is example 5 rewritten with Timeout, LTS and WDT functioanlity:
+    - 1 second timeout is set for the main calculation task
+    - LTS is used to address individual array elements for each sensor sinlce the callback code is shared
+    - WDT is used to set the Task ID and use that as an index for array of distances (alternative to LTS)
+
+    Original description:
+    ====================
+      This test emulates querying 3 sensors once every 10 seconds, each could respond with a different delay
+      (ultrasonic sensors for instance) and printing a min value of the three when all three have reported their values.
+      The overall timeout of 1 second is setup as well.
+      An error message needs to be printed if a timeout occurred instead of a value.
+
+      Example5:
+       Sketch uses 6066 bytes (18%) of program storage space. Maximum is 32256 bytes.
+       Global variables use 1039 bytes (50%) of dynamic memory, leaving 1009 bytes for local variables. Maximum is 2048 bytes.
+      Example 18:
+       Sketch uses 5142 bytes (15%) of program storage space. Maximum is 32256 bytes.
+       Global variables use 878 bytes (42%) of dynamic memory, leaving 1170 bytes for local variables. Maximum is 2048 bytes.
 */
 
 // #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
@@ -24,10 +24,10 @@
 #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
 #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
-// #define _TASK_PRIORITY          // Support for layered scheduling priority
+#define _TASK_PRIORITY          // Support for layered scheduling priority
 // #define _TASK_MICRO_RES         // Support for microsecond resolution
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 and ESP32 ONLY)
-// #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
+#define _TASK_DEBUG             // Make all methods and variables public for debug purposes
 #define _TASK_INLINE       // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 #define _TASK_TIMEOUT           // Support for overall task timeout 
 
@@ -35,7 +35,7 @@
 
 StatusRequest measure;
 
-Scheduler ts;
+Scheduler ts, hts;
 
 // Callback methods prototypes
 void CycleCallback();
@@ -49,13 +49,14 @@ Task tSensor1(0, TASK_ONCE, &SCallback, &ts, false, &SEnable);  // task ID = 1
 Task tSensor2(0, TASK_ONCE, &SCallback, &ts, false, &SEnable); // task ID = 2
 Task tSensor3(0, TASK_ONCE, &SCallback, &ts, false, &SEnable); // task ID = 3
 
-Task tCycle(10000, TASK_FOREVER, &CycleCallback, &ts);
-Task tCalculate(TASK_IMMEDIATE , TASK_ONCE, &CalcCallback, &ts, false, &CalcEnable, &CalcDisable);
+Task tCycle(10000, TASK_FOREVER, &CycleCallback, &hts);
+Task tCalculate(TASK_IMMEDIATE , TASK_ONCE, &CalcCallback, &hts, false, &CalcEnable, &CalcDisable);
 
 #define NO_OF_SENSORS 3
-long distance, d[NO_OF_SENSORS+1], d_lts[NO_OF_SENSORS]; // d[] will be populated via task ID used as array indexes, d_lts will be addressed via LTS pointers
+long distance, d[NO_OF_SENSORS + 1], d_lts[NO_OF_SENSORS]; // d[] will be populated via task ID used as array indexes, d_lts will be addressed via LTS pointers
 
 void CycleCallback() {
+  Serial.println();
   Serial.print(millis()); Serial.print(":\t");
   Serial.println("CycleCallback: Initiating measurement cycle every 10 seconds");
 
@@ -80,7 +81,7 @@ void CalcDisable() {
   if (tCalculate.timedOut()) {
     measure.signalComplete(-1);  // signal error
     Serial.print(millis()); Serial.print(":\t");
-    Serial.println("MeasureCallback: Timeout!");
+    Serial.println("MeasureCallback: ***** Timeout *****");
     //    tSensor1.disable();
     //    tSensor2.disable();
     //    tSensor3.disable();
@@ -133,11 +134,11 @@ void SCallback() {
   Serial.print("SCallback: TaskID=");
   Serial.println(i);
   Serial.print("Emulating measurement. d=");
-  
+
   d[i] = random(501); // pick a value from 0 to 500 "centimeters" simulating a measurement
   int *pd = (int*) t.getLtsPointer();
   *pd = d[i];
-  
+
   measure.signal();
 
   Serial.print(d[i]);
@@ -152,14 +153,15 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("TaskScheduler StatusRequest Sensor Emulation Test. Complex Test.");
-  randomSeed(analogRead(A1) + millis());
+  randomSeed(analogRead(A0) + millis());
 
   tSensor1.setLtsPointer(&d_lts[0]);
   tSensor2.setLtsPointer(&d_lts[1]);
   tSensor3.setLtsPointer(&d_lts[2]);
 
-  tCalculate.setTimeout(1 * TASK_SECOND);
+  ts.setHighPriorityScheduler(&hts);
 
+  tCalculate.setTimeout(1 * TASK_SECOND);
   tCycle.enable();
 }
 
