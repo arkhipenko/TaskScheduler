@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino microcontrollers  
-#### Version 2.5.1: 2018-01-06
+#### Version 2.6.0: 2018-01-30
 
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:  
@@ -13,7 +13,8 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 7. Support for task IDs and Control Points for error handling and watchdog timer  
 8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)  
 9. Support for layered task prioritization  
-10. Support for `std::functions` (`ESP8266` only)  
+10. Support for `std::functions` (`ESP8266` only)
+11. Overall task timeout
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)  
 
@@ -22,23 +23,24 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Arduino Nano  
 * Arduino Micro  
 * ATtiny85  
-* ESP8266 (Node MCU v2.0)  
-* Teensy (tested on Teensy 3.6)
+* ESP8266 (Node MCU v2.0)
+* ESP32
+* Teensy (tested on Teensy 3.5)
 ---
 ### [Changelog:](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
 Version|Version 1|Version 2
 ---|---|---
-||[1.9.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v192)|[2.5.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v250) (*current version*)
-||[1.9.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v190)|[2.4.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v240)
-||[1.8.5](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v185)|[2.3.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v230)
-||[1.8.4](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v184)|[2.2.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v221)
-||[1.8.3](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v183)|[2.2.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v220)
-||[1.8.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v182)|[2.1.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v210)
-||[1.8.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v181)|[2.0.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v201)
-||[1.8.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v180)|[2.0.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v200)
-||[1.7.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v170)|
-||[1.6.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v160)|
-||[1.5.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v151)|
+||[1.9.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v192)|[2.6.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v260) (*current version*)
+||[1.9.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v190)|[2.5.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v252)
+||[1.8.5](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v185)|[2.5.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v251)
+||[1.8.4](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v184)|[2.5.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v250)
+||[1.8.3](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v183)|[2.4.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v240)
+||[1.8.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v182)|[2.3.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v230)
+||[1.8.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v181)|[2.2.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v221)
+||[1.8.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v180)|[2.2.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v220)
+||[1.7.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v170)|[2.1.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v210)
+||[1.6.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v160)|[2.0.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v201)
+||[1.5.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v151)|[2.0.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v200)
 ||[1.5.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v150)|
 ||[1.4.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v141)|
 ||[1.0.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v100)|  

@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 2.5.2: 2018-01-09
+Version 2.6.0 2018-01-09
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -26,7 +26,8 @@ Tested on the following microcontrollers:
  - Arduino Micro
  - ATtiny85
  - ESP8266 (Node MCU v2.0)
- - Teensy (tested on Teensy 3.6)
+ - ESP32
+ - Teensy (tested on Teensy 3.5)
 
 For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
 =======================================================================================================
