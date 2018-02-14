@@ -68,12 +68,12 @@ bool OnEnable() {
 
 void OnDisable() {
   Task *t = &ts.currentTask();
-
-  Serial.print(millis()); Serial.print("\t");
-  Serial.print("Task N"); Serial.print(t->getId()); Serial.print(F("\tfinished and destroyed.\tFree mem="));
-  Serial.print(freeMemory());Serial.print(F("\tNo of tasks=")); Serial.println(--noOfTasks);
+  unsigned int tid = t->getId();
+    
   delete t;
-
+  Serial.print(millis()); Serial.print("\t");
+  Serial.print("Task N"); Serial.print(tid); Serial.print(F("\tfinished and destroyed.\tFree mem="));
+  Serial.print(freeMemory());Serial.print(F("\tNo of tasks=")); Serial.println(--noOfTasks);
 }
 
 /**
