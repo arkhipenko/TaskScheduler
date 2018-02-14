@@ -81,6 +81,10 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v2.6.1:
+   2018-02-13 - Bug: Support for task self-destruction in the OnDisable method.
+                Example 19: dynamic task creation and destruction.
+
 v2.6.0:
    2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
    2018-01-30 - Support for ESP32

@@ -130,7 +130,10 @@
 //    2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
 //    2018-01-30 - ESP32 support (experimental)
 //                 (Contributed by Marco Tombesi: https://github.com/baggior)
-
+//
+// v2.6.1:
+//    2018-02-13 - Bug: support for task self-destruction in the OnDisable method
+//                 Example 19: dynamic tasks creation and destruction.
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"
@@ -793,6 +796,7 @@ bool Scheduler::execute() {
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
 
+	Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
     
     while (iCurrent) {
@@ -802,7 +806,7 @@ bool Scheduler::execute() {
         if (iHighPriority) idleRun = iHighPriority->execute() && idleRun; 
         iCurrentScheduler = this;
 #endif  // _TASK_PRIORITY
-
+		nextTask = iCurrent->iNext;
         do {
             if ( iCurrent->iStatus.enabled ) {
 
@@ -865,7 +869,7 @@ bool Scheduler::execute() {
                 }
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit 
-        iCurrent = iCurrent->iNext;
+        iCurrent = nextTask;
 #if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
         yield();
 #endif  // ARDUINO_ARCH_ESP8266
