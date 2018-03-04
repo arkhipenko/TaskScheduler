@@ -788,7 +788,7 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
+#if defined (_TASK_SLEEP_ON_IDLE_RUN) && (defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32))
       unsigned long t1 = micros();
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
