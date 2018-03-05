@@ -791,10 +791,12 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
 #if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
       unsigned long t1 = micros();
       unsigned long t2 = 0;
 #endif  // ARDUINO_ARCH_ESP8266
+#endif // _TASK_SLEEP_ON_IDLE_RUN
 
 	Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
