@@ -801,6 +801,14 @@ bool Scheduler::execute() {
 	Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
     
+#ifdef _TASK_PRIORITY
+    // If lower priority scheduler does not have a single task in the chain
+    // the higher priority scheduler still has to have a chance to run
+        if (!iCurrent && iHighPriority) iHighPriority->execute(); 
+        iCurrentScheduler = this;
+#endif  // _TASK_PRIORITY
+    
+    
     while (iCurrent) {
         
 #ifdef _TASK_PRIORITY
