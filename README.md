@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino microcontrollers
-#### Version 2.6.0: 2018-01-30
+#### Version 2.6.1: 2018-03-15
 
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:
@@ -30,7 +30,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 ### [Changelog:](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
 Version|Version 1|Version 2
 ---|---|---
-|| |[]2.6.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v261) (*current version*)
+|| |[2.6.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v261) (*current version*)
 ||[1.9.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v192)|[2.6.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v260)
 ||[1.9.0](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v190)|[2.5.2](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v252)
 ||[1.8.5](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v185)|[2.5.1](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog#v251)
