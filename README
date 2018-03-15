@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 2.6.0 2018-01-09
+Version 2.6.1 2018-03-15
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -84,12 +84,14 @@ Changelog:
 v2.6.1:
    2018-02-13 - Bug: Support for task self-destruction in the OnDisable method.
                 Example 19: dynamic task creation and destruction.
+   2018-03-14 - Bug: high level scheduler ignored if lower level chain is empty
+                Example 20: use of local task storage to work with task-specific class objects
 
 v2.6.0:
    2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
    2018-01-30 - Support for ESP32
                 (Contributed by Marco Tombesi: https://github.com/baggior)
-   
+
 v2.5.2:
    2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
 
@@ -104,15 +106,15 @@ v2.5.0:
                 *** USE AT YOUR OWN RISK ***
    2017-08-30 - bug fix: Scheduler::addTask() checks if task is already part of an execution chain (github issue #37)
    2017-08-30 - support for multi-tab sketches (Contributed by Adam Ryczkowski - https://github.com/adamryczkowski)
-   
+
 v2.4.0:
    2017-04-27 - added destructor to the Task class to ensure tasks are disables and taken off the execution chain
                 upon destruction. (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
 
 v2.3.0:
-    2017-02-24 - new timeUntilNextIteration() method within Scheduler class - inquire when a particlar task is 
+    2017-02-24 - new timeUntilNextIteration() method within Scheduler class - inquire when a particlar task is
                  scheduled to run next time
-				 
+
 v2.2.1:
     2016-11-30 - inlined constructors. Added "yield()" and "yieldOnce()" functions to easily break down and
 				 chain back together long running callback methods
