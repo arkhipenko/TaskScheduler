@@ -15,6 +15,7 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 9. Support for layered task prioritization
 10. Support for `std::functions` (`ESP8266` only)
 11. Overall task timeout
+12. Static and dynamic callback method binding
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 
