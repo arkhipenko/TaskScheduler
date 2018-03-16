@@ -1,5 +1,5 @@
 /**
-    This is example 5 rewritten with Timeout, LTS, WDT functioanlity + multitab and extra classes
+    This is example 5 rewritten with dynamic binding of callback methods
     - 1 second timeout is set for the main calculation task
     - LTS is used to address task-specific sensor class object
     - WDT is used to set the Task ID and use that for identifying the tasks (debug)
@@ -36,8 +36,8 @@ Scheduler ts, hts;
 
 // Tasks
 
-Calculator* tCalculate;//(&hts, &ts);
-Ticker*     tCycle; //(&hts, (Task*) &tCalculate, &measure);
+Calculator* tCalculate;
+Ticker*     tCycle;
 
 int pins[] = { 1, 9, 3, 7, 5, 6, 4, 8, 2, 10 };
 
