@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino microcontrollers
-#### Version 2.6.1: 2018-03-15
+#### Version 3.0.0: 2018-03-15
 
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:
