@@ -27,6 +27,8 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * ESP32
 * Teensy (tested on Teensy 3.5)
 ---
+![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
+---
 ### [Changelog:](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
 Version|Version 1|Version 2
 ---|---|---
