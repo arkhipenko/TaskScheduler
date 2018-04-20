@@ -52,6 +52,8 @@ Version|Version 1|Version 2
 
 ### Check out what TaskScheduler can do:
 
+* [Blow the Wall!](http://embedio.com.au/projects/LCDgame/index.htm) - a simple computer shooter game using a 16x2 LCD panel, an Arduino, piezo buzzer, WAV player module, and pushbutton switches.
+
 * [3 Devo](http://3devo.eu/) - Quality 3D printing filament, now made accessible and affordable
 (http://3devo.eu/license-information/)
 
