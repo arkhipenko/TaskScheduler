@@ -919,6 +919,14 @@ bool Scheduler::execute() {
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);
 #endif  // ARDUINO_ARCH_ESP32
 
+#ifdef ENERGIA_ARCH_MSP432
+      delay(1);
+#endif  // ENERGIA_ARCH_MSP432
+
+#ifdef ENERGIA_ARCH_MSP430
+      sleep(1);
+#endif  // ENERGIA_ARCH_MSP430
+
     }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 

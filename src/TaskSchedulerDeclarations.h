@@ -42,7 +42,7 @@
     extern Scheduler* iCurrentScheduler;
 #endif // _TASK_PRIORITY
 
-#if !defined(ARDUINO)
+#if !defined(ARDUINO) && !defined(ENERGIA)
 	extern unsigned long micros(void);
 	extern unsigned long millis(void);
 #endif
