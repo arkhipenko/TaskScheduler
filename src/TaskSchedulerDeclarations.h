@@ -242,6 +242,7 @@ class Scheduler {
     INLINE void disableAll(bool aRecursive = true);
     INLINE void enableAll(bool aRecursive = true);
     INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
+    INLINE bool executeBacklog(size_t noTasks = 10);
     INLINE void startNow(bool aRecursive = true);       // reset ALL active tasks to immediate execution NOW.
     INLINE Task& currentTask() ;
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task

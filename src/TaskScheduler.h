@@ -925,6 +925,17 @@ bool Scheduler::execute() {
     return (idleRun);
 }
 
-
+/** Execute upto the given noTasks from the backlog  
+ */
+bool Scheduler::executeBacklog(size_t noTasks) {
+    size_t i = 0;
+    // Run till scheduler is idle (or we executed a max no. tasks)
+    auto idle = this->execute();
+    while (i < noTasks && !idle) {
+        idle = this->execute();
+        ++i;
+    }
+    return idle;
+}
 
 #endif /* _TASKSCHEDULER_H_ */
