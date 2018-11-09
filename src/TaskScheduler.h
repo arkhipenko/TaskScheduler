@@ -136,7 +136,12 @@
 //                 Example 19: dynamic tasks creation and destruction
 //    2018-03-14 - Bug: high level scheduler ignored if lower level chain is empty
 //                 Example 20: use of local task storage to work with task-specific class objects
-
+//
+// v3.0.0:
+//    2018-03-15 - Major Release: Support for dynamic callback methods binding via compilation parameter _TASK_OO_CALLBACKS
+//
+// v.3.0.1:
+//    2018-11-09 - bug: task deleted from the execution chain cannot be added back
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"
@@ -704,6 +709,7 @@ void Scheduler::init() {
  * @param &aTask - reference to the task to be deleted from the chain
  */
 void Scheduler::deleteTask(Task& aTask) {
+	aTask.iScheduler = NULL;
     if (aTask.iPrev == NULL) {
         if (aTask.iNext == NULL) {
             iFirst = NULL;
