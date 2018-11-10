@@ -12,6 +12,18 @@
 // #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
 #include <TaskScheduler.h>
 
+// Debug and Test options
+#define _DEBUG_
+//#define _TEST_
+
+#ifdef _DEBUG_
+#define _PP(a) Serial.print(a);
+#define _PL(a) Serial.println(a);
+#else
+#define _PP(a)
+#define _PL(a)
+#endif
+
 
 // Scheduler
 Scheduler ts;
@@ -20,7 +32,7 @@ void task1Callback();
 void task2Callback();
 
 /*
-Scheduling defines:
+  Scheduling defines:
   TASK_MILLISECOND
   TASK_SECOND
   TASK_MINUTE
@@ -37,7 +49,11 @@ Task t2 (TASK_IMMEDIATE, 100, &task2Callback, &ts, true);
 
 void setup() {
   // put your setup code here, to run once:
-
+#if defined(_DEBUG_) || defined(_TEST_)
+  Serial.begin(115200);
+  delay(2000);
+  _PL("Scheduler Template: setup()");
+#endif
 }
 
 void loop() {
@@ -46,10 +62,14 @@ void loop() {
 
 
 void task1Callback() {
+_PP(millis());
+_PL(": task1Callback()");
 
 }
 
 void task2Callback() {
+_PP(millis());
+_PL(": task2Callb()");
 
 }
 
