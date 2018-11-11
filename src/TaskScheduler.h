@@ -140,8 +140,11 @@
 // v3.0.0:
 //    2018-03-15 - Major Release: Support for dynamic callback methods binding via compilation parameter _TASK_OO_CALLBACKS
 //
-// v.3.0.1:
-//    2018-11-09 - bug: task deleted from the execution chain cannot be added back
+// v3.0.1:
+//    2018-11-09 - bug: task deleted from the execution chain cannot be added back (github issue #67)
+//
+// v3.0.2:
+//    2018-11-11 - bug: default constructor is ambiguous when Status Request objects are enabled (github issue #65 & #68)
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"
@@ -256,6 +259,7 @@ Task::~Task() {
 /** Constructor with reduced parameter list for tasks created for
  *  StatusRequest only triggering (always immediate and only 1 iteration)
  */
+
 
 #ifdef _TASK_OO_CALLBACKS
 Task::Task( Scheduler* aScheduler ) {

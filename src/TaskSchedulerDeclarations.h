@@ -133,11 +133,14 @@ class Task {
     INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
 #endif // _TASK_OO_CALLBACKS
 
+
 #ifdef _TASK_STATUS_REQUEST
 #ifdef _TASK_OO_CALLBACKS
-    INLINE Task(Scheduler* aScheduler=NULL);
+//    INLINE Task(Scheduler* aScheduler=NULL);
+    INLINE Task(Scheduler* aScheduler);
 #else
-    INLINE Task(TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+//    INLINE Task(TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+    INLINE Task(TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
 #endif // _TASK_OO_CALLBACKS
 #endif  // _TASK_STATUS_REQUEST
 
@@ -231,7 +234,7 @@ class Task {
 
 #ifndef _TASK_OO_CALLBACKS
     TaskCallback              iCallback;             // pointer to the void callback method
-    TaskOnEnable              iOnEnable;             // pointer to the bolol OnEnable callback method
+    TaskOnEnable              iOnEnable;             // pointer to the bool OnEnable callback method
     TaskOnDisable             iOnDisable;            // pointer to the void OnDisable method
 #endif // _TASK_OO_CALLBACKS
 
