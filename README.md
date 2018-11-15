@@ -28,7 +28,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * ESP8266 (Node MCU v2.0)
 * ESP32
 * Teensy (tested on Teensy 3.5)
-* STN32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
+* STM32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 ---
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
 ---

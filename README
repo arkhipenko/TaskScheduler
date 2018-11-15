@@ -30,7 +30,7 @@ Tested on the following microcontrollers:
  - ESP8266 (Node MCU v2.0)
  - ESP32
  - Teensy (tested on Teensy 3.5)
- - STN32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
+ - STM32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 
 For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
 =======================================================================================================
