@@ -21,20 +21,42 @@ On Teensy 3.5 (120MHz ARM):
   c1=21065
   c2=1001
 
+On esp8266 (80 MHz)
+  Start
+  c1=10492
+  c2=1001
+  
+On STM32F103RCBT6 (Maple Mini @72 MHz)
+  Start
+  c1=21004
+  c2=1001
+
 and
 
 2): With #define _TASK_SLEEP_ON_IDLE_RUN disabled (commented out)
 Arduino Uno:
   Start
-  c1=635735 - v2.5.0  (v1.9.0: 551947)
+  c1=722426 - v3.0.2
+  c1=635735 - v2.5.0  
+  c1=551947 - v1.9.0
   c2=1001
 
 On Teensy 3.5 (120MHz ARM):
   Start
   c1=2690322
   c2=1001
+
+On esp8266 (80 MHz)
+  Start
+  c1=351085 (689833 at 160Mhz)
+  c2=1001
   
-C1 is scenario 2) is much higher than in scenario 1) because processor is put to sleep for 1), but not for 2)
+On STM32F103RCBT6 (Maple Mini @72 MHz)
+  Start
+  c1=4665019
+  c2=1001
+  
+C1 in scenario 2) is much higher than in scenario 1) because processor is put to sleep for 1), but not for 2)
 
  */
 
@@ -76,9 +98,11 @@ void tOff() {
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  delay(1000);
   Serial.println("Start");
+
+  ts.startNow();
   t.delay();
- // ts.allowSleep(false);
 }
 
 void Count() {

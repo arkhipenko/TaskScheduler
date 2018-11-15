@@ -1,7 +1,18 @@
 #include "Calculator.h"
 #include "SuperSensor.h"
-#include <MemoryFree.h>
 
+#if defined (ARDUINO_ARCH_AVR)
+#include <MemoryFree.h>
+#endif
+
+#if defined(__arm__)
+extern "C" char* sbrk(int incr);
+static int freeMemory() {
+  char top = 't';
+  return &top - reinterpret_cast<char*>(sbrk(0));
+}
+
+#endif
 Calculator::Calculator( Scheduler* aS, Scheduler* aSensors) : Task(aS) {
   iS = aSensors;
   setTimeout(1000 * TASK_MILLISECOND);
@@ -44,7 +55,9 @@ void Calculator::OnDisable() {
     Serial.println("MeasureCallback: ***** Timeout *****");
   }
   iS->disableAll(false); // only disable tasks in the ts scheduler
+#if defined (ARDUINO_ARCH_AVR) || defined(__arm__)
   Serial.print("Free mem = "); Serial.println(freeMemory()); Serial.println();
+#endif
 }
 
 void Calculator::reportDistance(long aD) {

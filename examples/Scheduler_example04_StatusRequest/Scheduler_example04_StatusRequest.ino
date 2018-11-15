@@ -73,8 +73,10 @@ void PrepareStatus() {
 void setup() {
 
   Serial.begin(115200);
+  delay(1000);
   Serial.println("TaskScheduler: Status Request Test 1. Simple Test.");  
 
+  ts.startNow();
   PrepareStatus();
   t3.waitFor(&st);
 

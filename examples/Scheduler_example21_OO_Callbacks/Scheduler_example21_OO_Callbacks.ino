@@ -14,6 +14,7 @@
       Task and SuperSensor objects are dynamically created and destroyed as needed every 10 seconds
 
        This sketch uses a FreeMemory library: https://github.com/McNeight/MemoryFree
+	   FreeMemory for ARM32 boards is based on: http://www.stm32duino.com/viewtopic.php?f=18&t=2065
 */
 
 
@@ -41,6 +42,9 @@ Ticker*     tCycle;
 
 int pins[] = { 1, 9, 3, 7, 5, 6, 4, 8, 2, 10 };
 
+#ifdef ARDUINO_ARCH_STM32F1
+#define A0	3
+#endif
 
 /** Main Arduino code
   Not much is left here - everything is taken care of by the framework
@@ -48,13 +52,20 @@ int pins[] = { 1, 9, 3, 7, 5, 6, 4, 8, 2, 10 };
 void setup() {
 
   Serial.begin(115200);
+  delay(1000);
+  while (!Serial) {} 
   Serial.println("TaskScheduler StatusRequest Sensor Emulation Test. Complex Test.");
+  
+#ifdef ARDUINO_ARCH_STM32F1
+  pinMode(A0, INPUT_ANALOG);
+#endif
+
   randomSeed(analogRead(A0) + millis());
 
   ts.setHighPriorityScheduler(&hts);
 
   tCalculate = new Calculator (&hts, &ts);
-  tCycle     = new Ticker (&hts, (Task*) &tCalculate, &measure);
+  tCycle     = new Ticker (&hts, (Task*) tCalculate, &measure);
 
   tCalculate->setTimeout(1 * TASK_SECOND);
   tCycle->enable();

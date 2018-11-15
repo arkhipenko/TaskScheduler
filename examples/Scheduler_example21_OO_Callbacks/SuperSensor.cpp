@@ -66,6 +66,7 @@ bool SuperSensor::Callback() {
 
     iS->signal();
     disable();
+	delete this;
     return true;
   }
   return false;
@@ -79,6 +80,4 @@ void SuperSensor::OnDisable() {
   Serial.println(i);
 
   stop();
-
-  delete this;
 }

@@ -199,6 +199,11 @@ extern "C" {
 #warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
 #endif  // ARDUINO_ARCH_ESP32
 
+#ifdef ARDUINO_ARCH_STM32F1
+#include <libmaple/pwr.h>
+#include <libmaple/scb.h>
+#endif  // ARDUINO_ARCH_STM32F1
+
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
@@ -318,7 +323,8 @@ void StatusRequest::signalComplete(int aStatus) {
  *  If aStatusRequest is NULL, request for waiting is ignored, and the waiting task is not enabled.
  */
 void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
-    if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
+	iStatusRequest = aStatusRequest;
+    if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
         setInterval(aInterval);
         iStatus.waiting = _TASK_SR_NODELAY;  // no delay
@@ -327,7 +333,8 @@ void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long 
 }
 
 void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
-    if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
+	iStatusRequest = aStatusRequest;
+    if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
         if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
         iStatus.waiting = _TASK_SR_DELAY;  // with delay equal to the current interval
@@ -994,6 +1001,12 @@ bool Scheduler::execute() {
       t2 = micros() - t1;
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);
 #endif  // ARDUINO_ARCH_ESP32
+
+#ifdef ARDUINO_ARCH_STM32F1
+	  // Now go into stop mode, wake up on interrupt.
+	  // Systick interrupt will run every 1 milliseconds.
+	  asm("    wfi");
+#endif  // ARDUINO_ARCH_STM32
 
     }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN

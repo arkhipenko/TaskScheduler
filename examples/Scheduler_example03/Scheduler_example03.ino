@@ -38,7 +38,7 @@ void WrapperCallback() {
 // and enable LED blinking task, which actually controls
 // the hardware (LED in this example)
 bool BlinkOnEnable() {
-	tLED.setInterval( 500 + random(501) );
+	tLED.setInterval( 200 + random(801) );
 	tLED.setCallback( &LEDOn);
 	tLED.enable();
 
