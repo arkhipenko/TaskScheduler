@@ -1,5 +1,5 @@
 Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 2.6.1 2018-03-15
+Version 3.0.2 2018-11-14
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -17,6 +17,8 @@ OVERVIEW:
  9. Layered task prioritization
 10. Support for std::functions (ESP8266 only)
 11. Overall task timeout
+12. Static and dynamic callback method binding
+13. Support for STM32F1 ARM Cortex-M3 boards
 
 Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the benchmark example).
 
@@ -28,6 +30,7 @@ Tested on the following microcontrollers:
  - ESP8266 (Node MCU v2.0)
  - ESP32
  - Teensy (tested on Teensy 3.5)
+ - STM32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 
 For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
 =======================================================================================================
@@ -81,6 +84,9 @@ Check out what TaskScheduler can do:
 
 Changelog:
 =========
+v3.0.0: MAJOR RELEASE
+   2018-03-15 - Optional Dynamic callback method binding (_TASK_OO_CALLBACKS compilation directive).
+
 v2.6.1:
    2018-02-13 - Bug: Support for task self-destruction in the OnDisable method.
                 Example 19: dynamic task creation and destruction.

@@ -136,7 +136,15 @@
 //                 Example 19: dynamic tasks creation and destruction
 //    2018-03-14 - Bug: high level scheduler ignored if lower level chain is empty
 //                 Example 20: use of local task storage to work with task-specific class objects
-
+//
+// v3.0.0:
+//    2018-03-15 - Major Release: Support for dynamic callback methods binding via compilation parameter _TASK_OO_CALLBACKS
+//
+// v3.0.1:
+//    2018-11-09 - bug: task deleted from the execution chain cannot be added back (github issue #67)
+//
+// v3.0.2:
+//    2018-11-11 - bug: default constructor is ambiguous when Status Request objects are enabled (github issue #65 & #68)
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"
@@ -157,8 +165,9 @@
 // #define _TASK_MICRO_RES         // Support for microsecond resolution
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
-// #define _TASK_INLINE		   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
+// #define _TASK_INLINE		       // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT           // Support for overall task timeout
+// #define _TASK_OO_CALLBACKS      // Support for callbacks via inheritance
 
  #ifdef _TASK_MICRO_RES
 
@@ -190,6 +199,11 @@ extern "C" {
 #warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
 #endif  // ARDUINO_ARCH_ESP32
 
+#ifdef ARDUINO_ARCH_STM32F1
+#include <libmaple/pwr.h>
+#include <libmaple/scb.h>
+#endif  // ARDUINO_ARCH_STM32F1
+
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
@@ -215,9 +229,16 @@ extern "C" {
 /** Constructor, uses default values for the parameters
  * so could be called with no parameters.
  */
+#ifdef _TASK_OO_CALLBACKS
+Task::Task( unsigned long aInterval, long aIterations, Scheduler* aScheduler, bool aEnable ) {
+    reset();
+    set(aInterval, aIterations);
+#else
 Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, Scheduler* aScheduler, bool aEnable, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable ) {
     reset();
     set(aInterval, aIterations, aCallback, aOnEnable, aOnDisable);
+#endif
+
     if (aScheduler) aScheduler->addTask(*this);
 
 #ifdef _TASK_WDT_IDS
@@ -243,9 +264,18 @@ Task::~Task() {
 /** Constructor with reduced parameter list for tasks created for
  *  StatusRequest only triggering (always immediate and only 1 iteration)
  */
+
+
+#ifdef _TASK_OO_CALLBACKS
+Task::Task( Scheduler* aScheduler ) {
+    reset();
+    set(TASK_IMMEDIATE, TASK_ONCE);
+#else
 Task::Task( TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable ) {
     reset();
     set(TASK_IMMEDIATE, TASK_ONCE, aCallback, aOnEnable, aOnDisable);
+#endif // _TASK_OO_CALLBACKS
+
     if (aScheduler) aScheduler->addTask(*this);
 
 #ifdef _TASK_WDT_IDS
@@ -293,7 +323,8 @@ void StatusRequest::signalComplete(int aStatus) {
  *  If aStatusRequest is NULL, request for waiting is ignored, and the waiting task is not enabled.
  */
 void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
-    if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
+	iStatusRequest = aStatusRequest;
+    if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
         setInterval(aInterval);
         iStatus.waiting = _TASK_SR_NODELAY;  // no delay
@@ -302,7 +333,8 @@ void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long 
 }
 
 void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
-    if ( ( iStatusRequest = aStatusRequest) ) { // assign internal StatusRequest var and check if it is not NULL
+	iStatusRequest = aStatusRequest;
+    if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
         if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
         iStatus.waiting = _TASK_SR_DELAY;  // with delay equal to the current interval
@@ -319,11 +351,20 @@ long Task::getIterations() { return iIterations; }
 
 unsigned long Task::getRunCounter() { return iRunCounter; }
 
+#ifdef _TASK_OO_CALLBACKS
+
+// bool Task::Callback() { return true; }
+bool Task::OnEnable() { return true; }
+void Task::OnDisable() { }
+
+#else
+
 void Task::setCallback(TaskCallback aCallback) { iCallback = aCallback; }
-
 void Task::setOnEnable(TaskOnEnable aCallback) { iOnEnable = aCallback; }
-
 void Task::setOnDisable(TaskOnDisable aCallback) { iOnDisable = aCallback; }
+
+#endif // _TASK_OO_CALLBACKS
+
 
 /** Resets (initializes) the task/
  * Task is not enabled and is taken out
@@ -372,12 +413,18 @@ void Task::reset() {
  * @param aOnEnable - pointer to the callback method which is called on enable()
  * @param aOnDisable - pointer to the callback method which is called on disable()
  */
+
+#ifdef _TASK_OO_CALLBACKS
+void Task::set(unsigned long aInterval, long aIterations) {
+#else
 void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable) {
-    setInterval(aInterval);
-    iSetIterations = iIterations = aIterations;
     iCallback = aCallback;
     iOnEnable = aOnEnable;
     iOnDisable = aOnDisable;
+#endif // _TASK_OO_CALLBACKS
+
+    setInterval(aInterval);
+    iSetIterations = iIterations = aIterations;
 }
 
 /** Sets number of iterations for the task
@@ -387,6 +434,8 @@ void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback
 void Task::setIterations(long aIterations) {
     iSetIterations = iIterations = aIterations;
 }
+
+#ifndef _TASK_OO_CALLBACKS
 
 /** Prepare task for next step iteration following yielding of control to the scheduler
  * @param aCallback - pointer to the callback method for the next step
@@ -409,6 +458,8 @@ void Task::yieldOnce (TaskCallback aCallback) {
     yield(aCallback);
     iIterations = 1;
 }
+#endif // _TASK_OO_CALLBACKS
+
 
 /** Enables the task
  *  schedules it for execution as soon as possible,
@@ -417,6 +468,17 @@ void Task::yieldOnce (TaskCallback aCallback) {
 void Task::enable() {
     if (iScheduler) { // activation without active scheduler does not make sense
         iRunCounter = 0;
+
+#ifdef _TASK_OO_CALLBACKS
+        if ( !iStatus.inonenable ) {
+            Task *current = iScheduler->iCurrent;
+            iScheduler->iCurrent = this;
+            iStatus.inonenable = true;      // Protection against potential infinite loop
+            iStatus.enabled = OnEnable();
+            iStatus.inonenable = false;     // Protection against potential infinite loop
+            iScheduler->iCurrent = current;
+        }
+#else
         if ( iOnEnable && !iStatus.inonenable ) {
             Task *current = iScheduler->iCurrent;
             iScheduler->iCurrent = this;
@@ -428,6 +490,8 @@ void Task::enable() {
         else {
             iStatus.enabled = true;
         }
+#endif // _TASK_OO_CALLBACKS
+
         iPreviousMillis = _TASK_TIME_FUNCTION() - (iDelay = iInterval);
 
 #ifdef _TASK_TIMEOUT
@@ -521,14 +585,26 @@ void Task::setInterval (unsigned long aInterval) {
  * Task will no longer be executed by the scheduler
  * Returns status of the task before disable was called (i.e., if the task was already disabled)
  */
+
 bool Task::disable() {
     bool previousEnabled = iStatus.enabled;
     iStatus.enabled = false;
     iStatus.inonenable = false;
+
+#ifdef _TASK_OO_CALLBACKS
+    if (previousEnabled) {
+#else
     if (previousEnabled && iOnDisable) {
+#endif // _TASK_OO_CALLBACKS
+
         Task *current = iScheduler->iCurrent;
         iScheduler->iCurrent = this;
+#ifdef _TASK_OO_CALLBACKS
+        OnDisable();
+#else
         iOnDisable();
+#endif // _TASK_OO_CALLBACKS
+
         iScheduler->iCurrent = current;
     }
 #ifdef _TASK_STATUS_REQUEST
@@ -644,6 +720,7 @@ void Scheduler::init() {
  * @param &aTask - reference to the task to be deleted from the chain
  */
 void Scheduler::deleteTask(Task& aTask) {
+	aTask.iScheduler = NULL;
     if (aTask.iPrev == NULL) {
         if (aTask.iNext == NULL) {
             iFirst = NULL;
@@ -876,10 +953,16 @@ bool Scheduler::execute() {
 #endif  // _TASK_TIMECRITICAL
 
                 iCurrent->iDelay = i;
+
+#ifdef _TASK_OO_CALLBACKS
+                idleRun = !iCurrent->Callback();
+#else
                 if ( iCurrent->iCallback ) {
                     iCurrent->iCallback();
                     idleRun = false;
                 }
+#endif // _TASK_OO_CALLBACKS
+
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit
         iCurrent = nextTask;
@@ -918,6 +1001,12 @@ bool Scheduler::execute() {
       t2 = micros() - t1;
       if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);
 #endif  // ARDUINO_ARCH_ESP32
+
+#ifdef ARDUINO_ARCH_STM32F1
+	  // Now go into stop mode, wake up on interrupt.
+	  // Systick interrupt will run every 1 milliseconds.
+	  asm("    wfi");
+#endif  // ARDUINO_ARCH_STM32
 
 #ifdef ENERGIA_ARCH_MSP432
       delay(1);

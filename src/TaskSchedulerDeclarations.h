@@ -1,7 +1,7 @@
 // Cooperative multitasking library for Arduino
 // Copyright (c) 2015-2017 Anatoli Arkhipenko
 
-#include <stddef.h> 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifndef _TASKSCHEDULERDECLARATIONS_H_
@@ -10,9 +10,9 @@
 // ----------------------------------------
 // The following "defines" control library functionality at compile time,
 // and should be used in the main sketch depending on the functionality required
-// 
+//
 // #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
-// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback methods were invoked during the pass 
+// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback methods were invoked during the pass
 // #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 // #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
 // #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
@@ -21,7 +21,8 @@
 // #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 and ESP32 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
 // #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-// #define _TASK_TIMEOUT           // Support for overall task timeout 
+// #define _TASK_TIMEOUT           // Support for overall task timeout
+// #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
 
 #ifdef _TASK_DEBUG
     #define _TASK_SCOPE  public
@@ -33,7 +34,7 @@
 #define TASK_FOREVER         (-1)
 #define TASK_ONCE               1
 
-#ifdef _TASK_TIMEOUT  
+#ifdef _TASK_TIMEOUT
 #define TASK_NOTIMEOUT			0
 #endif
 
@@ -48,7 +49,7 @@
 #endif
 
 
-#ifdef _TASK_INLINE	
+#ifdef _TASK_INLINE
 #define INLINE	inline
 #else
 #define INLINE
@@ -119,23 +120,35 @@ typedef struct  {
 
 } __task_status;
 
-class Scheduler; 
+class Scheduler;
 
 
 class Task {
   friend class Scheduler;
   public:
+
+#ifdef _TASK_OO_CALLBACKS
+    INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false);
+#else
     INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+#endif // _TASK_OO_CALLBACKS
+
 
 #ifdef _TASK_STATUS_REQUEST
-    INLINE Task(TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+#ifdef _TASK_OO_CALLBACKS
+//    INLINE Task(Scheduler* aScheduler=NULL);
+    INLINE Task(Scheduler* aScheduler);
+#else
+//    INLINE Task(TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+    INLINE Task(TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+#endif // _TASK_OO_CALLBACKS
 #endif  // _TASK_STATUS_REQUEST
 
     INLINE ~Task();
 
-#ifdef _TASK_TIMEOUT 
+#ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout, bool aReset=false);
-    INLINE void resetTimeout(); 
+    INLINE void resetTimeout();
     INLINE unsigned long getTimeout();
     INLINE long untilTimeout();
     INLINE bool timedOut();
@@ -148,23 +161,36 @@ class Task {
     INLINE void restartDelayed(unsigned long aDelay=0);
 
     INLINE void delay(unsigned long aDelay=0);
-    INLINE void forceNextIteration(); 
+    INLINE void forceNextIteration();
     INLINE bool disable();
     INLINE bool isEnabled();
+
+#ifdef _TASK_OO_CALLBACKS
+    INLINE void set(unsigned long aInterval, long aIterations);
+#else
     INLINE void set(unsigned long aInterval, long aIterations, TaskCallback aCallback,TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+#endif // _TASK_OO_CALLBACKS
     INLINE void setInterval(unsigned long aInterval);
     INLINE unsigned long getInterval();
     INLINE void setIterations(long aIterations);
     INLINE long getIterations();
     INLINE unsigned long getRunCounter() ;
+
+#ifdef _TASK_OO_CALLBACKS
+    virtual INLINE bool Callback() =0;  // return true if run was "productive - this will disable sleep on the idle run for next pass
+    virtual INLINE bool OnEnable();  // return true if task should be enabled, false if it should remain disabled
+    virtual INLINE void OnDisable();
+#else
     INLINE void setCallback(TaskCallback aCallback) ;
     INLINE void setOnEnable(TaskOnEnable aCallback) ;
     INLINE void setOnDisable(TaskOnDisable aCallback) ;
     INLINE void yield(TaskCallback aCallback);
     INLINE void yieldOnce(TaskCallback aCallback);
+#endif // _TASK_OO_CALLBACKS
+
     INLINE bool isFirstIteration() ;
     INLINE bool isLastIteration() ;
-    
+
 #ifdef _TASK_TIMECRITICAL
     INLINE long getOverrun() ;
     INLINE long getStartDelay() ;
@@ -195,7 +221,7 @@ class Task {
     volatile __task_status    iStatus;
     volatile unsigned long    iInterval;             // execution interval in milliseconds (or microseconds). 0 - immediate
     volatile unsigned long    iDelay;                // actual delay until next execution (usually equal iInterval)
-    volatile unsigned long    iPreviousMillis;       // previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up" 
+    volatile unsigned long    iPreviousMillis;       // previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up"
 
 #ifdef _TASK_TIMECRITICAL
     volatile long             iOverrun;              // negative if task is "catching up" to it's schedule (next invocation time is already in the past)
@@ -204,10 +230,14 @@ class Task {
 
     volatile long             iIterations;           // number of iterations left. 0 - last iteration. -1 - infinite iterations
     long                      iSetIterations;        // number of iterations originally requested (for restarts)
-    unsigned long             iRunCounter;           // current number of iteration (starting with 1). Resets on enable. 
+    unsigned long             iRunCounter;           // current number of iteration (starting with 1). Resets on enable.
+
+#ifndef _TASK_OO_CALLBACKS
     TaskCallback              iCallback;             // pointer to the void callback method
-    TaskOnEnable              iOnEnable;             // pointer to the bolol OnEnable callback method
+    TaskOnEnable              iOnEnable;             // pointer to the bool OnEnable callback method
     TaskOnDisable             iOnDisable;            // pointer to the void OnDisable method
+#endif // _TASK_OO_CALLBACKS
+
     Task                     *iPrev, *iNext;         // pointers to the previous and next tasks in the chain
     Scheduler                *iScheduler;            // pointer to the current scheduler
 
@@ -225,10 +255,10 @@ class Task {
     void                     *iLTS;                  // pointer to task's local storage. Needs to be recast to appropriate type (usually a struct).
 #endif  // _TASK_LTS_POINTER
 
-#ifdef _TASK_TIMEOUT 
+#ifdef _TASK_TIMEOUT
 	unsigned long            iTimeout;				 // Task overall timeout
 	unsigned long 			 iStarttime;			 // millis at task start time
-#endif // _TASK_TIMEOUT 
+#endif // _TASK_TIMEOUT
 };
 
 class Scheduler {
@@ -267,7 +297,7 @@ class Scheduler {
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-    bool        iAllowSleep;                      // indication if putting avr to IDLE_SLEEP mode is allowed by the program at this time. 
+    bool        iAllowSleep;                      // indication if putting avr to IDLE_SLEEP mode is allowed by the program at this time.
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_PRIORITY

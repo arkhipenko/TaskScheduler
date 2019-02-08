@@ -1,5 +1,6 @@
 /** 
  *  TaskScheduler Test sketch - use of task IDs and watchdog timer to identify hung tasks
+ *  THIS SKETCH RUNS ON AVR BOARDS ONLY
  *  Test case: 
  *    Watchdog timer is set to 2 seconds (interrupt + reset)
  *    A hearbeat task (resetting the watchdog timer) is scheduled with 500 ms interval

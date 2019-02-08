@@ -9,6 +9,10 @@
 #define _TASK_STATUS_REQUEST
 #include <TaskScheduler.h>
 
+#ifdef ARDUINO_ARCH_STM32F1
+#define A0	3
+#endif
+
 StatusRequest measure;
 
 Scheduler ts; 
@@ -162,6 +166,11 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("TaskScheduler StatusRequest Sensor Emulation Test. Complex Test.");  
+  
+#ifdef ARDUINO_ARCH_STM32F1
+  pinMode(A0, INPUT_ANALOG);
+#endif
+  
   randomSeed(analogRead(A0)+millis());
 }
 

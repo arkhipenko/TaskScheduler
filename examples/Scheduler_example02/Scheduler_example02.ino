@@ -62,11 +62,10 @@ void t3Callback() {
 
 void setup () {
   Serial.begin(115200);
+  delay(5000);
   Serial.println("Scheduler TEST");
   
-   delay(5000);
-   
-   runner.startNow();  // set point-in-time for scheduling start
+  runner.startNow();  // set point-in-time for scheduling start
 }
 
 
