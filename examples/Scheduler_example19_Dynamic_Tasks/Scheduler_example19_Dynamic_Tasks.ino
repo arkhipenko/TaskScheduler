@@ -4,23 +4,38 @@
       Main task runs every 100 milliseconds 100 times and in 50% cases generates a task object
       which runs 1 to 10 times with 100 ms to 5 s interval, and then destroyed.
 
-      This sketch uses a FreeMemory library: https://github.com/McNeight/MemoryFree
+      This sketch uses the following libraries:
+       - FreeMemory library: https://github.com/McNeight/MemoryFree
+       - QueueArray library: https://playground.arduino.cc/Code/QueueArray/
 */
 
 #define _TASK_WDT_IDS // To enable task unique IDs
 #define _TASK_SLEEP_ON_IDLE_RUN  // Compile with support for entering IDLE SLEEP state for 1 ms if not tasks are scheduled to run
 #define _TASK_LTS_POINTER       // Compile with support for Local Task Storage pointer
 #include <TaskScheduler.h>
+#include <QueueArray.h>
 
+#if defined (ARDUINO_ARCH_AVR)
 #include <MemoryFree.h>
+#elif defined(__arm__)
+extern "C" char* sbrk(int incr);
+static int freeMemory() {
+  char top = 't';
+  return &top - reinterpret_cast<char*>(sbrk(0));
+}
+#else
+int freeMemory(); // supply your own
+#endif
 
 Scheduler ts;
 
 // Callback methods prototypes
 void MainLoop();
+void GC();
 
 // Statis task
-Task tMain(100*TASK_MILLISECOND, 100, MainLoop, &ts, true);
+Task tMain(100*TASK_MILLISECOND, 100, &MainLoop, &ts, true);
+Task tGarbageCollection(TASK_IMMEDIATE, TASK_FOREVER, &GC, &ts, false);
 
 
 void Iteration();
@@ -28,6 +43,7 @@ bool OnEnable();
 void OnDisable();
 
 int noOfTasks = 0;
+QueueArray <(Task*)> toDelete;
 
 void MainLoop() {
   Serial.print(millis()); Serial.print("\t");
@@ -42,8 +58,9 @@ void MainLoop() {
     Task *t = new Task(p, j, Iteration, &ts, false, OnEnable, OnDisable);
 
     Serial.print(F("Generated a new task:\t")); Serial.print(t->getId()); Serial.print(F("\tInt, Iter = \t"));
-    Serial.print(p); Serial.print(", "); Serial.print(j); Serial.print(F("\tFree mem="));
-    Serial.print(freeMemory()); Serial.print(F("\tNo of tasks=")); Serial.println(++noOfTasks);
+    Serial.print(p); Serial.print(", "); Serial.print(j); 
+	Serial.print(F("\tFree mem=")); Serial.print(freeMemory()); 
+	Serial.print(F("\tNo of tasks=")); Serial.println(++noOfTasks);
     t->enable();
   }
   else {
@@ -69,10 +86,12 @@ bool OnEnable() {
 void OnDisable() {
   Task *t = &ts.currentTask();
   unsigned int tid = t->getId();
-    
-  delete t;
+  toDelete.push(t);
+  tGarbageCollection.enableIfNot();
+
   Serial.print(millis()); Serial.print("\t");
-  Serial.print("Task N"); Serial.print(tid); Serial.print(F("\tfinished and destroyed.\tFree mem="));
+  Serial.print("Task N"); Serial.print(tid); Serial.println(F("\tfinished");
+  Serial.ptint("and destroyed.\tFree mem="));
   Serial.print(freeMemory());Serial.print(F("\tNo of tasks=")); Serial.println(--noOfTasks);
 }
 
@@ -87,14 +106,29 @@ void setup() {
 
   Serial.println(F("Dynamic Task Creation/Destruction Example"));
   Serial.println();
-  Serial.print(F("Free mem="));
-  Serial.print(freeMemory()); Serial.print(F("\tNo of tasks=")); Serial.println(noOfTasks);
+  
+  Serial.print(F("Free mem=")); Serial.print(freeMemory()); 
+  Serial.print(F("\tNo of tasks=")); Serial.println(noOfTasks);
   Serial.println();
+}
+
+void GC() {
+	if ( toDelete.isEmpty() ) {
+		tGarbageCollection.disable();
+		return;
+	}
+	Task *t = toDelete.pop();
+    Serial.print(millis()); Serial.print("\t");
+    Serial.print("Task N"); Serial.print(t->getId()); Serial.println(F("\tdestroyed");
+    Serial.ptint("Free mem=")); Serial.print(freeMemory());
+	Serial.print(F("\tNo of tasks=")); Serial.println(--noOfTasks);
+	delete t;
 }
 
 void loop() {
   ts.execute();
 }
+
 
 
 /* Output on Arduino Uno:
