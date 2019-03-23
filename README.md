@@ -33,6 +33,10 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
 ---
 ### Changelog is located [here.](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
+<<<<<<< HEAD
+=======
+
+>>>>>>> b36cc818db89430b7564d1c56a668937f6dae6ec
 
 #### For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
 
@@ -71,3 +75,6 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Interactive Halloween Pumpkin
     (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
 
+* Interactive Predator Costume with Real-Time Head Tracking Plasma Cannon
+    (by arkhipenko: https://www.instructables.com/id/Interactive-Predator-Costume-With-Head-Tracking-Pl/)
+    
