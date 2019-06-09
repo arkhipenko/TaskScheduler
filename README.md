@@ -74,3 +74,6 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Interactive Halloween Pumpkin
     (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
 
+* Interactive Predator Costume with Real-Time Head Tracking Plasma Cannon
+    (by arkhipenko: https://www.instructables.com/id/Interactive-Predator-Costume-With-Head-Tracking-Pl/)
+    
