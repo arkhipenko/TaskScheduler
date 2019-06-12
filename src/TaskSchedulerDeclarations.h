@@ -1,5 +1,5 @@
 // Cooperative multitasking library for Arduino
-// Copyright (c) 2015-2017 Anatoli Arkhipenko
+// Copyright (c) 2015-2019 Anatoli Arkhipenko
 
 #include <stddef.h>
 #include <stdint.h>
@@ -12,7 +12,7 @@
 // and should be used in the main sketch depending on the functionality required
 //
 // #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
-// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback methods were invoked during the pass
+// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
 // #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 // #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
 // #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
@@ -23,6 +23,8 @@
 // #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT           // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
+
+class Scheduler;
 
 #ifdef _TASK_DEBUG
     #define _TASK_SCOPE  public
@@ -39,14 +41,11 @@
 #endif
 
 #ifdef _TASK_PRIORITY
-    class Scheduler;
     extern Scheduler* iCurrentScheduler;
 #endif // _TASK_PRIORITY
 
-#if !defined(ARDUINO)
-	extern unsigned long micros(void);
-	extern unsigned long millis(void);
-#endif
+extern unsigned long micros(void);
+extern unsigned long millis(void);
 
 
 #ifdef _TASK_INLINE
@@ -104,7 +103,15 @@ typedef std::function<bool()> TaskOnEnable;
 typedef void (*TaskCallback)();
 typedef void (*TaskOnDisable)();
 typedef bool (*TaskOnEnable)();
-#endif
+#endif  // _TASK_STD_FUNCTION
+
+
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+  typedef void (*SleepCallback)( unsigned long aDuration );
+
+  extern Scheduler* iSleepScheduler;
+  extern SleepCallback iSleepMethod;
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 typedef struct  {
     bool  enabled    : 1;           // indicates that task is enabled or not.
@@ -278,6 +285,7 @@ class Scheduler {
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     INLINE void allowSleep(bool aState = true);
+    INLINE void setSleepMethod( SleepCallback aCallback );
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_LTS_POINTER
@@ -297,7 +305,7 @@ class Scheduler {
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-    bool        iAllowSleep;                      // indication if putting avr to IDLE_SLEEP mode is allowed by the program at this time.
+    bool        iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_PRIORITY

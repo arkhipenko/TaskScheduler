@@ -1,5 +1,5 @@
 // Cooperative multitasking library for Arduino
-// Copyright (c) 2015-2017 Anatoli Arkhipenko
+// Copyright (c) 2015-2019 Anatoli Arkhipenko
 //
 // Changelog:
 // v1.0.0:
@@ -157,7 +157,7 @@
 // and should be used in the main sketch depending on the functionality required
 //
 // #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
-// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback methods were invoked during the pass
+// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
 // #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 // #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
 // #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
@@ -181,28 +181,10 @@
 
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+#include "TaskSchedulerSleepMethods.h"
 
-#ifdef ARDUINO_ARCH_AVR
-#include <avr/sleep.h>
-#include <avr/power.h>
-#endif  // ARDUINO_ARCH_AVR
-
-#ifdef ARDUINO_ARCH_ESP8266
-#define _TASK_ESP8266_DLY_THRESHOLD 200L
-extern "C" {
-#include "user_interface.h"
-}
-#endif //ARDUINO_ARCH_ESP8266
-
-#ifdef ARDUINO_ARCH_ESP32
-#define _TASK_ESP8266_DLY_THRESHOLD 200L
-#warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
-#endif  // ARDUINO_ARCH_ESP32
-
-#ifdef ARDUINO_ARCH_STM32F1
-#include <libmaple/pwr.h>
-#include <libmaple/scb.h>
-#endif  // ARDUINO_ARCH_STM32F1
+  Scheduler* iSleepScheduler;
+  SleepCallback iSleepMethod;
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
@@ -665,6 +647,9 @@ void* Task::getLtsPointer() { return iLTS; }
  */
 Scheduler::Scheduler() {
     init();
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+	setSleepMethod(&SleepMethod);
+#endif // _TASK_SLEEP_ON_IDLE_RUN
 }
 
 /*
@@ -859,6 +844,15 @@ void* Scheduler::currentLts() { return iCurrent->iLTS; }
 bool Scheduler::isOverrun() { return (iCurrent->iOverrun < 0); }
 #endif  // _TASK_TIMECRITICAL
 
+	
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
+	if ( aCallback != NULL ) {
+		iSleepScheduler = this;
+		iSleepMethod = aCallback;
+	}
+}
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
 /** Makes one pass through the execution chain.
@@ -867,19 +861,16 @@ bool Scheduler::isOverrun() { return (iCurrent->iOverrun < 0); }
  * Different pseudo "priority" could be achieved
  * by running task more frequently
  */
+
 bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
-
-#ifdef _TASK_SLEEP_ON_IDLE_RUN
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
-      unsigned long t1 = micros();
-      unsigned long t2 = 0;
-#endif  // ARDUINO_ARCH_ESP8266
-#endif // _TASK_SLEEP_ON_IDLE_RUN
+	unsigned long tStart, tFinish;
 
 	Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
+
+	tStart = micros();  // Scheduling pass start time in microseconds. 
 
 #ifdef _TASK_PRIORITY
     // If lower priority scheduler does not have a single task in the chain
@@ -887,7 +878,6 @@ bool Scheduler::execute() {
         if (!iCurrent && iHighPriority) iHighPriority->execute();
         iCurrentScheduler = this;
 #endif  // _TASK_PRIORITY
-
 
     while (iCurrent) {
 
@@ -966,48 +956,22 @@ bool Scheduler::execute() {
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit
         iCurrent = nextTask;
+		
 #if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
         yield();
-#endif  // ARDUINO_ARCH_ESP8266
+#endif  // ARDUINO_ARCH_ESPxx
+		
     }
 
+    tFinish = micros(); // Scheduling pass end time in microseconds.
+	
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     if (idleRun && iAllowSleep) {
-
-#ifdef ARDUINO_ARCH_AVR // Could be used only for AVR-based boards.
-      set_sleep_mode(SLEEP_MODE_IDLE);
-      sleep_enable();
-      /* Now enter sleep mode. */
-      sleep_mode();
-
-      /* The program will continue from here after the timer timeout ~1 ms */
-      sleep_disable(); /* First thing to do is disable sleep. */
-#endif // ARDUINO_ARCH_AVR
-
-#ifdef CORE_TEENSY
-    asm("wfi");
-#endif //CORE_TEENSY
-
-#ifdef ARDUINO_ARCH_ESP8266
-// to do: find suitable sleep function for esp8266
-      t2 = micros() - t1;
-      if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);   // ESP8266 implementation of delay() uses timers and yield
-#endif  // ARDUINO_ARCH_ESP8266
-
-#ifdef ARDUINO_ARCH_ESP32
-//TODO: find a correct light sleep implementation for ESP32
-    // esp_sleep_enable_timer_wakeup(1000); //1 ms
-    // int ret= esp_light_sleep_start();
-      t2 = micros() - t1;
-      if (t2 < _TASK_ESP8266_DLY_THRESHOLD) delay(1);
-#endif  // ARDUINO_ARCH_ESP32
-
-#ifdef ARDUINO_ARCH_STM32F1
-	  // Now go into stop mode, wake up on interrupt.
-	  // Systick interrupt will run every 1 milliseconds.
-	  asm("    wfi");
-#endif  // ARDUINO_ARCH_STM32
-
+		if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 
+			if ( iSleepMethod != NULL ) {
+				(*iSleepMethod)( tFinish-tStart );
+			}
+		}
     }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
