@@ -1,5 +1,5 @@
-Task Scheduler – cooperative multitasking for Arduino and ESP8266 microcontrollers
-Version 3.0.2 2018-11-14
+Task Scheduler – cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
+Version 3.0.3 2019-06-13
 
 If you find TaskScheduler useful for your Arduino project, please drop me an email: arkhipenko@hotmail.com
 ----------------------------------------------------------------------------------------------------------
@@ -15,10 +15,9 @@ OVERVIEW:
  7. Task IDs and Control Points for error handling and watchdog timer
  8. Local Task Storage pointer (allowing use of same callback code for multiple tasks)
  9. Layered task prioritization
-10. Support for std::functions (ESP8266 only)
+10. Support for std::functions (tested on ESPx only)
 11. Overall task timeout
 12. Static and dynamic callback method binding
-13. Support for STM32F1 ARM Cortex-M3 boards
 
 Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the benchmark example).
 
@@ -31,9 +30,11 @@ Tested on the following microcontrollers:
  - ESP32
  - Teensy (tested on Teensy 3.5)
  - STM32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
+ - MSP430 and MSP432 boards
 
-For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder.
-=======================================================================================================
+For detailed functionality overview please refer to TaskScheduler Wiki page: 
+            https://github.com/arkhipenko/TaskScheduler/wiki
+============================================================================
 
 Check out what TaskScheduler can do:
 ====================================
@@ -82,130 +83,5 @@ Check out what TaskScheduler can do:
     (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
 
 
-Changelog:
-=========
-v3.0.0: MAJOR RELEASE
-   2018-03-15 - Optional Dynamic callback method binding (_TASK_OO_CALLBACKS compilation directive).
-
-v2.6.1:
-   2018-02-13 - Bug: Support for task self-destruction in the OnDisable method.
-                Example 19: dynamic task creation and destruction.
-   2018-03-14 - Bug: high level scheduler ignored if lower level chain is empty
-                Example 20: use of local task storage to work with task-specific class objects
-
-v2.6.0:
-   2018-01-30 - _TASK_TIMEOUT compilation directive: Task overall timeout functionality
-   2018-01-30 - Support for ESP32
-                (Contributed by Marco Tombesi: https://github.com/baggior)
-
-v2.5.2:
-   2018-01-09 - _TASK_INLINE compilation directive making all methods declared "inline" (issue #42)
-
-
-v2.5.1:
-   2018-01-06 - support for IDLE sleep on Teensy boards (tested on Teensy 3.6)
-
-v2.5.0:
-   2017-04-27 - added optional support for std::functions via _TASK_STD_FUNCTION
-                (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
-   2017-08-30 - add _TASK_DEBUG making all methods and variables public FOR DEBUGGING PURPOSES ONLY!
-                *** USE AT YOUR OWN RISK ***
-   2017-08-30 - bug fix: Scheduler::addTask() checks if task is already part of an execution chain (github issue #37)
-   2017-08-30 - support for multi-tab sketches (Contributed by Adam Ryczkowski - https://github.com/adamryczkowski)
-
-v2.4.0:
-   2017-04-27 - added destructor to the Task class to ensure tasks are disables and taken off the execution chain
-                upon destruction. (Contributed by Edwin van Leeuwen [BlackEdder - https://github.com/BlackEdder)
-
-v2.3.0:
-    2017-02-24 - new timeUntilNextIteration() method within Scheduler class - inquire when a particlar task is
-                 scheduled to run next time
-
-v2.2.1:
-    2016-11-30 - inlined constructors. Added "yield()" and "yieldOnce()" functions to easily break down and
-				 chain back together long running callback methods
-    2016-12-16 - added "getCount()" to StatusRequest objects, made every task StatusRequest enabled.
-                 Internal StatusRequest objects are accessible via "getInternalStatusRequest()" method.
-
-v2.2.0:
-    2016-11-17 - all methods made 'inline' to support inclusion of TaskSchedule.h file into other header files
-
-v2.1.0:
-    2016-02-01 - support for microsecond resolution
-    2016-02-02 - added Scheduler baseline start time reset method: startNow()
-
-v2.0.1:
-    2016-01-02 - bug fix: issue#11 Xtensa compiler (esp8266): Declaration of constructor does not match implementation
-
-v2.0.0:
-    2015-12-22 - _TASK_PRIORITY - support for layered task prioritization
-
-v1.9.2:
-    2015-11-28 - _TASK_ROLLOVER_FIX is deprecated (not necessary)
-    2015-12-16 - bug fixes: automatic millis rollover support for delay methods
-    2015-12-17 - new method for _TASK_TIMECRITICAL option: getStartDelay()
-
-v1.9.0:
-    2015-11-24 - packed three byte-long status variables into one byte-long bit array structure data type - saving 2 bytes per each task instance
-
-v1.8.5:
-    2015-11-23 - bug fix: incorrect calculation of next task invocation in case callback changed the interval
-    2015-11-23 - bug fix: Task::set() method calls setInterval() explicitly, therefore delaying the task in the same manner
-
-v1.8.4:
-    2015-11-15 - bug fix: Task alignment with millis() for scheduling purposes should be done after OnEnable, not before. Especially since OnEnable method can change the interval
-
-v1.8.3:
-    2015-11-05 - support for task activation on a status request with arbitrary interval and number of iterations (0 and 1 are still default values)
-    2015-11-05 - implement waitForDelayed() method to allow task activation on the status request completion delayed for one current interval
-    2015-11-09 - added callback methods prototypes to all examples for Arduino IDE 1.6.6 compatibility
-    2015-11-14 - added several constants to be used as task parameters for readability (e.g, TASK_FOREVER, TASK_SECOND, etc.)
-    2015-11-14 - significant optimization of the scheduler's execute loop, including millis() rollover fix option
-
-v1.8.2:
-    2015-10-27 - implement Local Task Storage Pointer (allow use of same callback code for different tasks)
-    2015-10-27 - bug: currentTask() method returns incorrect Task reference if called within OnEnable and OnDisable methods
-    2015-10-27 - protection against infinite loop in OnEnable (if enable() methods are called within OnEnable)
-    2015-10-29 - new currentLts() method in the scheduler class returns current task's LTS pointer in one call
-
-v1.8.1:
-    2015-10-22 - implement Task id and control points to support identification of failure points for watchdog timer logging
-
-v1.8.0:
-    2015-10-13 - support for status request objects allowing tasks waiting on requests
-    2015-10-13 - moved to a single header file to allow compilation control via #defines from the main sketch
-
-v1.7.0:
-    2015-10-08 - introduced callback run counter - callback functions can branch on the iteration number.
-    2015-10-11 - enableIfNot() - enable a task only if it is not already enabled. Returns true if was already enabled, false if was disabled.
-    2015-10-11 - disable() returns previous enable state (true if was enabled, false if was already disabled)
-    2015-10-11 - introduced callback functions "on enable" and "on disable". On enable runs every time enable is called, on disable runs only if task was enabled
-    2015-10-12 - new Task method: forceNextIteration() - makes next iteration happen immediately during the next pass regardless how much time is left
-
-v1.6.0:
-    2015-09-22 - revert back to having all tasks disable on last iteration.
-    2015-09-22 - deprecated disableOnLastIteration method as a result
-    2015-10-01 - made version numbers semver compliant (documentation only)
-
-v1.5.1:
-    2015-09-21 - bug fix: incorrect handling of active tasks via set() and setIterations().
-		 		 Thanks to Hannes Morgenstern for catching this one
-
-v1.5.0:
-    2015-09-20 - access to currently executing task (for callback functions)
-    2015-09-20 - pass scheduler as a parameter to the task constructor to append the task to the end of the chain
-    2015-09-20 - option to create a task already enabled
-
-v1.4.1:
-    2015-09-15 - more careful placement of AVR-specific includes for sleep functions (compatibility with DUE)
-                         sleep on idle run is no longer a default and should be explicitly compiled with _TASK_SLEEP_ON_IDLE_RUN defined
-
-v1.0.0:
-    2015-02-24 - Initial release
-    2015-02-28 - added delay() and disableOnLastIteration() functions
-    2015-03-25 - changed scheduler execute() function for a more precise delay calculation:
-                 1. Do not delay if any of the tasks ran (making request for immediate execution redundant)
-                 2. Delay is invoked only if none of the tasks ran
-                 3. Delay is based on the min anticipated wait until next task _AND_ the runtime of execute function itself.
-    2015-05-11 - added  restart() and restartDelayed() functions to restart tasks which are on hold after running all iterations
-    2015-05-19 - completely removed  delay from the scheduler since there are no power saving there. using 1 ms sleep instead
+Changelog is located here: https://github.com/arkhipenko/TaskScheduler/wiki/Changelog
+=====================================================================================

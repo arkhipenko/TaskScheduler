@@ -145,6 +145,12 @@
 //
 // v3.0.2:
 //    2018-11-11 - bug: default constructor is ambiguous when Status Request objects are enabled (github issue #65 & #68)
+//
+// v3.0.3:
+//    2019-06-13 - feature: custom sleep callback method: setSleepMethod() - ability to dynamically control idle sleep for various microcontrollers
+//               - feature: support for MSP430 and MSP432 boards (pull request #75: big thanks to Guillaume Pirou, https://github.com/elominp)
+//               - officially discontinued support for offile documentation in favor of updating the Wiki pages
+
 
 #include <Arduino.h>
 #include "TaskSchedulerDeclarations.h"

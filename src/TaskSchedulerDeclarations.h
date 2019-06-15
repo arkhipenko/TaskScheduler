@@ -264,7 +264,7 @@ class Task {
 
 #ifdef _TASK_TIMEOUT
 	unsigned long            iTimeout;				 // Task overall timeout
-	unsigned long 			 iStarttime;			 // millis at task start time
+	unsigned long 		 iStarttime;			 // millis at task start time
 #endif // _TASK_TIMEOUT
 };
 

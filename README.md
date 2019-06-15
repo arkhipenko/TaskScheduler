@@ -1,6 +1,6 @@
 # Task Scheduler
-### Cooperative multitasking for Arduino microcontrollers
-#### Version 3.0.2: 2018-11-14
+### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
+#### Version 3.0.3: 2019-06-13
 
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:
@@ -13,10 +13,9 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 7. Support for task IDs and Control Points for error handling and watchdog timer
 8. Support for Local Task Storage pointer (allowing use of same callback code for multiple tasks)
 9. Support for layered task prioritization
-10. Support for `std::functions` (`ESP8266` only)
+10. Support for `std::functions` (tested on `ESPx` only)
 11. Overall task timeout
 12. Static and dynamic callback method binding
-13. Support for STM32F1 ARM Cortex-M3 boards
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 
@@ -29,6 +28,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * ESP32
 * Teensy (tested on Teensy 3.5)
 * STM32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
+* MSP430 and MSP432 boards
 ---
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
 ---
@@ -38,7 +38,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 >>>>>>> b36cc818db89430b7564d1c56a668937f6dae6ec
 
-#### For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
+#### For detailed functionality overview please refer to TaskScheduler [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
 
 ### Check out what TaskScheduler can do:
 

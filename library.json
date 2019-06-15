@@ -1,7 +1,7 @@
 {
   "name": "TaskScheduler",
   "keywords": "multitasking, cooperative, event, task, taskscheduler, scheduling",
-  "description": "Cooperative multitasking for Arduino and ESP8266 microcontrollers",
+  "description": "Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers",
   "repository":
   {
     "type": "git",
@@ -16,7 +16,7 @@
       "maintainer": true
     }
   ],
-  "version": "3.0.2",
+  "version": "3.0.3",
   "frameworks": "arduino",
   "platforms": "*"
 }

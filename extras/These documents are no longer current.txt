@@ -1,0 +1,3 @@
+As of March 2018 these offline documents are no longer maintained. 
+For the latest documentation of TaskScheduler please visit:
+https://github.com/arkhipenko/TaskScheduler/wiki
