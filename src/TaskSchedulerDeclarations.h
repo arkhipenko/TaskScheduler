@@ -24,11 +24,13 @@
 // #define _TASK_TIMEOUT           // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
 
+#ifndef _TASK_SCOPE
 #ifdef _TASK_DEBUG
     #define _TASK_SCOPE  public
 #else
     #define _TASK_SCOPE  private
 #endif
+#endif // _TASK_SCOPE
 
 #define TASK_IMMEDIATE          0
 #define TASK_FOREVER         (-1)
