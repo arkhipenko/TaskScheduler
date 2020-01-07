@@ -33,12 +33,9 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
 ---
 ### Changelog is located [here.](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
-<<<<<<< HEAD
-=======
 
->>>>>>> b36cc818db89430b7564d1c56a668937f6dae6ec
 
-#### For detailed functionality overview please refer to TaskScheduler [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
+#### For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
 
 ### Check out what TaskScheduler can do:
 
