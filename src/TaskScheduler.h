@@ -152,7 +152,7 @@
 //               - officially discontinued support for offile documentation in favor of updating the Wiki pages
 //
 // v3.1.0:
-//    2020-01-07 - feture: added 4 cpu load monitoring methods for _TASK_TIMECRITICAL compilation option
+//    2020-01-07 - feature: added 4 cpu load monitoring methods for _TASK_TIMECRITICAL compilation option
 
 
 #include <Arduino.h>
