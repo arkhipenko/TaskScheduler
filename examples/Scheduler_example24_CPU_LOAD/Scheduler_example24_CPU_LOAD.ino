@@ -8,7 +8,7 @@
    Compare the results.
 */
 
-//#define _TASK_SLEEP_ON_IDLE_RUN
+#define _TASK_SLEEP_ON_IDLE_RUN
 #define _TASK_TIMECRITICAL
 #include <TaskScheduler.h>
 
