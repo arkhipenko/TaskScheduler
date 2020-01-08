@@ -294,6 +294,10 @@ class Scheduler {
 
 #ifdef _TASK_TIMECRITICAL
     INLINE bool isOverrun();
+	INLINE void cpuLoadReset();
+	INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
+	INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
+	INLINE unsigned long getCpuLoadTotal();
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
@@ -311,6 +315,12 @@ class Scheduler {
 #ifdef _TASK_PRIORITY
     Scheduler  *iHighPriority;                    // Pointer to a higher priority scheduler
 #endif  // _TASK_PRIORITY
+
+#ifdef _TASK_TIMECRITICAL
+    unsigned long iCPUStart;
+	unsigned long iCPUCycle;
+	unsigned long iCPUIdle;
+#endif  // _TASK_TIMECRITICAL
 };
 
 

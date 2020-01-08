@@ -16,6 +16,7 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 10. Support for `std::functions` (tested on `ESPx` only)
 11. Overall task timeout
 12. Static and dynamic callback method binding
+13. CPU load / idle statistics for time critical applications
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 
@@ -74,4 +75,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 * Interactive Predator Costume with Real-Time Head Tracking Plasma Cannon
     (by arkhipenko: https://www.instructables.com/id/Interactive-Predator-Costume-With-Head-Tracking-Pl/)
+
+* Party Lights LEDs music visualization
+    (by arkhipenko: https://www.instructables.com/id/Portable-Party-Lights/)
     

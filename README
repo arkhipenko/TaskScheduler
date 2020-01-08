@@ -18,6 +18,7 @@ OVERVIEW:
 10. Support for std::functions (tested on ESPx only)
 11. Overall task timeout
 12. Static and dynamic callback method binding
+13. CPU load / idle statistics for time critical applications
 
 Scheduling overhead: between 15 and 18 microseconds per scheduling pass (check the benchmark example).
 
@@ -82,6 +83,13 @@ Check out what TaskScheduler can do:
   Interactive Halloween Pumpkin
     (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
 
+
+  Interactive Predator Costume with Real-Time Head Tracking Plasma Cannon
+    (by arkhipenko: https://www.instructables.com/id/Interactive-Predator-Costume-With-Head-Tracking-Pl/)
+
+
+  Party Lights LEDs music visualization
+    (by arkhipenko: https://www.instructables.com/id/Portable-Party-Lights/)
 
 Changelog is located here: https://github.com/arkhipenko/TaskScheduler/wiki/Changelog
 =====================================================================================

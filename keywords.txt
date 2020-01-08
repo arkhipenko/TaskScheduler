@@ -18,6 +18,7 @@ addTask	KEYWORD2
 allowSleep	KEYWORD2
 Callback	KEYWORD2
 completed	KEYWORD2
+cpuLoadReset	KEYWORD2
 currentLts	KEYWORD2
 currentScheduler	KEYWORD2
 currentTask	KEYWORD2
@@ -35,6 +36,9 @@ forceNextIteration	KEYWORD2
 getControlPoint	KEYWORD2
 getCount	KEYWORD2
 getCount	KEYWORD2
+getCpuLoadCycle	KEYWORD2
+getCpuLoadIdle	KEYWORD2
+getCpuLoadTotal	KEYWORD2
 getId	KEYWORD2
 getInternalStatusRequest	KEYWORD2
 getInterval	KEYWORD2

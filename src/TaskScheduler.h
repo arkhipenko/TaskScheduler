@@ -150,6 +150,9 @@
 //    2019-06-13 - feature: custom sleep callback method: setSleepMethod() - ability to dynamically control idle sleep for various microcontrollers
 //               - feature: support for MSP430 and MSP432 boards (pull request #75: big thanks to Guillaume Pirou, https://github.com/elominp)
 //               - officially discontinued support for offile documentation in favor of updating the Wiki pages
+//
+// v3.1.0:
+//    2020-01-07 - feture: added 4 cpu load monitoring methods for _TASK_TIMECRITICAL compilation option
 
 
 #include <Arduino.h>
@@ -679,6 +682,10 @@ void Scheduler::init() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     allowSleep(true);
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
+
+#ifdef _TASK_TIMECRITICAL
+	cpuLoadReset();
+#endif  // _TASK_TIMECRITICAL
 }
 
 /** Appends task aTask to the tail of the execution chain.
@@ -846,8 +853,19 @@ Task& Scheduler::currentTask() { return *iCurrent; }
 #ifdef _TASK_LTS_POINTER
 void* Scheduler::currentLts() { return iCurrent->iLTS; }
 #endif  // _TASK_LTS_POINTER
+
 #ifdef _TASK_TIMECRITICAL
 bool Scheduler::isOverrun() { return (iCurrent->iOverrun < 0); }
+
+void Scheduler::cpuLoadReset() {
+	iCPUStart = micros();
+	iCPUCycle = 0;
+	iCPUIdle = 0;
+}
+
+unsigned long Scheduler::getCpuLoadTotal() {
+	return (micros() - iCPUStart);
+}
 #endif  // _TASK_TIMECRITICAL
 
 	
@@ -873,6 +891,12 @@ bool Scheduler::execute() {
     register unsigned long m, i;  // millis, interval;
 	unsigned long tStart, tFinish;
 
+#ifdef _TASK_TIMECRITICAL
+	unsigned long tPassStart;
+	unsigned long tTaskStart, tTaskFinish;
+	unsigned long tIdleStart;
+#endif  // _TASK_TIMECRITICAL
+
 	Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
 
@@ -886,6 +910,11 @@ bool Scheduler::execute() {
 #endif  // _TASK_PRIORITY
 
     while (iCurrent) {
+
+#ifdef _TASK_TIMECRITICAL
+		tTaskStart = tTaskFinish = tIdleStart = 0;
+		tPassStart = micros();
+#endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
     // If scheduler for higher priority tasks is set, it's entire chain is executed on every pass of the base scheduler
@@ -949,6 +978,10 @@ bool Scheduler::execute() {
 #endif  // _TASK_TIMECRITICAL
 
                 iCurrent->iDelay = i;
+				
+#ifdef _TASK_TIMECRITICAL
+				tTaskStart = micros();
+#endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_OO_CALLBACKS
                 idleRun = !iCurrent->Callback();
@@ -959,9 +992,19 @@ bool Scheduler::execute() {
                 }
 #endif // _TASK_OO_CALLBACKS
 
+#ifdef _TASK_TIMECRITICAL
+				tTaskFinish = micros();
+#endif  // _TASK_TIMECRITICAL
+
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit
+		
+#ifdef _TASK_TIMECRITICAL
+		iCPUCycle += ( (micros() - tPassStart) - (tTaskFinish - tTaskStart) );
+#endif  // _TASK_TIMECRITICAL
+
         iCurrent = nextTask;
+		
 		
 #if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
         yield();
@@ -972,6 +1015,11 @@ bool Scheduler::execute() {
     tFinish = micros(); // Scheduling pass end time in microseconds.
 	
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+
+#ifdef _TASK_TIMECRITICAL
+	tIdleStart = micros();
+#endif  // _TASK_TIMECRITICAL
+
     if (idleRun && iAllowSleep) {
 		if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 
 			if ( iSleepMethod != NULL ) {
@@ -979,6 +1027,11 @@ bool Scheduler::execute() {
 			}
 		}
     }
+	
+#ifdef _TASK_TIMECRITICAL
+	iCPUIdle += (micros() - tIdleStart);
+#endif  // _TASK_TIMECRITICAL
+
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
     return (idleRun);
