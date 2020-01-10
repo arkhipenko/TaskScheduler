@@ -153,6 +153,9 @@
 //
 // v3.1.0:
 //    2020-01-07 - feature: added 4 cpu load monitoring methods for _TASK_TIMECRITICAL compilation option
+//
+// v3.1.1.:
+//    2020-01-09 - update: more precise CPU load measuring. Ability to define idle sleep threshold for ESP chips
 
 
 #include <Arduino.h>
@@ -892,15 +895,15 @@ bool Scheduler::execute() {
 	unsigned long tStart, tFinish;
 
 #ifdef _TASK_TIMECRITICAL
-	unsigned long tPassStart;
-	unsigned long tTaskStart, tTaskFinish;
-	unsigned long tIdleStart;
+	register unsigned long tPassStart;
+	register unsigned long tTaskStart, tTaskFinish;
+	unsigned long tIdleStart = 0;
 #endif  // _TASK_TIMECRITICAL
 
 	Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
 
-	tStart = micros();  // Scheduling pass start time in microseconds. 
+	tStart = micros();  // Scheduling full pass start time in microseconds. 
 
 #ifdef _TASK_PRIORITY
     // If lower priority scheduler does not have a single task in the chain
@@ -912,8 +915,8 @@ bool Scheduler::execute() {
     while (iCurrent) {
 
 #ifdef _TASK_TIMECRITICAL
-		tTaskStart = tTaskFinish = tIdleStart = 0;
 		tPassStart = micros();
+		tTaskStart = tTaskFinish = 0; 
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
@@ -998,39 +1001,42 @@ bool Scheduler::execute() {
 
             }
         } while (0);    //guaranteed single run - allows use of "break" to exit
-		
-#ifdef _TASK_TIMECRITICAL
-		iCPUCycle += ( (micros() - tPassStart) - (tTaskFinish - tTaskStart) );
-#endif  // _TASK_TIMECRITICAL
 
         iCurrent = nextTask;
 		
 		
+#ifdef _TASK_TIMECRITICAL
+		iCPUCycle += ( (micros() - tPassStart) - (tTaskFinish - tTaskStart) );
+#endif  // _TASK_TIMECRITICAL
+		
 #if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
         yield();
 #endif  // ARDUINO_ARCH_ESPxx
-		
     }
 
     tFinish = micros(); // Scheduling pass end time in microseconds.
-	
-#ifdef _TASK_SLEEP_ON_IDLE_RUN
 
-#ifdef _TASK_TIMECRITICAL
-	tIdleStart = micros();
-#endif  // _TASK_TIMECRITICAL
+
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
 
     if (idleRun && iAllowSleep) {
 		if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 
 			if ( iSleepMethod != NULL ) {
+				
+#ifdef _TASK_TIMECRITICAL
+				tIdleStart = micros();
+#endif  // _TASK_TIMECRITICAL
+
 				(*iSleepMethod)( tFinish-tStart );
+				
+#ifdef _TASK_TIMECRITICAL
+				iCPUIdle += (micros() - tIdleStart);
+#endif  // _TASK_TIMECRITICAL
 			}
 		}
     }
 	
-#ifdef _TASK_TIMECRITICAL
-	iCPUIdle += (micros() - tIdleStart);
-#endif  // _TASK_TIMECRITICAL
+
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 

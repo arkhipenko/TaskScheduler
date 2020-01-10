@@ -31,7 +31,9 @@ void SleepMethod( unsigned long aDuration ) {
 
 #elif defined( ARDUINO_ARCH_ESP8266 )
 
+#ifndef _TASK_ESP8266_DLY_THRESHOLD
 #define _TASK_ESP8266_DLY_THRESHOLD 200L
+#endif
 extern "C" {
 #include "user_interface.h"
 }
@@ -45,7 +47,9 @@ void SleepMethod( unsigned long aDuration ) {
 
 #elif defined( ARDUINO_ARCH_ESP32 )
 
+#ifndef _TASK_ESP32_DLY_THRESHOLD
 #define _TASK_ESP32_DLY_THRESHOLD 200L
+#endif
 #warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
 extern unsigned long tStart, tFinish;
 
