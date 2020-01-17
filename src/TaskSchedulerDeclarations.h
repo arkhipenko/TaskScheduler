@@ -44,10 +44,6 @@ class Scheduler;
     extern Scheduler* iCurrentScheduler;
 #endif // _TASK_PRIORITY
 
-extern unsigned long micros(void);
-extern unsigned long millis(void);
-
-
 #ifdef _TASK_INLINE
 #define INLINE	inline
 #else
