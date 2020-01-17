@@ -154,8 +154,11 @@
 // v3.1.0:
 //    2020-01-07 - feature: added 4 cpu load monitoring methods for _TASK_TIMECRITICAL compilation option
 //
-// v3.1.1.:
+// v3.1.1:
 //    2020-01-09 - update: more precise CPU load measuring. Ability to define idle sleep threshold for ESP chips
+//
+// v3.1.2:
+//    2020-01-17 - bug fix: corrected external forward definitions of millis() and micros
 
 
 #include <Arduino.h>
