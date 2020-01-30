@@ -159,14 +159,19 @@
 //
 // v3.1.2:
 //    2020-01-17 - bug fix: corrected external forward definitions of millis() and micros
+// 
+// v3.1.3:
+//    2020-01-30 - bug fix: _TASK_DEFINE_MILLIS to force forward definition of millis and micros. Not defined by default. 
 
 
 #include <Arduino.h>
 
+#ifdef _TASK_DEFINE_MILLIS
 extern "C" {
     unsigned long micros(void);
     unsigned long millis(void);
 }
+#endif
 
 #include "TaskSchedulerDeclarations.h"
 
@@ -189,6 +194,7 @@ extern "C" {
 // #define _TASK_INLINE            // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT           // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS      // Support for callbacks via inheritance
+// #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
 
  #ifdef _TASK_MICRO_RES
 
