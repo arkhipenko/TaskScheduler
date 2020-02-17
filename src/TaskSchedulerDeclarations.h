@@ -147,7 +147,7 @@ class Task {
 #endif // _TASK_OO_CALLBACKS
 #endif  // _TASK_STATUS_REQUEST
 
-    INLINE ~Task();
+    virtual INLINE ~Task();
 
 #ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout, bool aReset=false);

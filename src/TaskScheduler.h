@@ -162,6 +162,7 @@
 // 
 // v3.1.3:
 //    2020-01-30 - bug fix: _TASK_DEFINE_MILLIS to force forward definition of millis and micros. Not defined by default. 
+//    2020-02-16 - bug fix: add 'virtual' to the Task destructor definition (issue #86)
 
 
 #include <Arduino.h>
