@@ -871,7 +871,9 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
     return ( d );
 }
 
-Task& Scheduler::currentTask() { return *iCurrent; }
+
+Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRICATED. Use the next one instead
+Task* Scheduler::getCurrentTask() { return iCurrent; }
 
 #ifdef _TASK_LTS_POINTER
 void* Scheduler::currentLts() { return iCurrent->iLTS; }
@@ -885,6 +887,7 @@ void Scheduler::cpuLoadReset() {
     iCPUCycle = 0;
     iCPUIdle = 0;
 }
+
 
 unsigned long Scheduler::getCpuLoadTotal() {
     return (micros() - iCPUStart);
@@ -913,25 +916,19 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
 
-#if defined (_TASK_SLEEP_ON_IDLE_RUN) || defined (_TASK_TIMECRITICAL)
-    unsigned long tStart, tFinish;
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+    unsigned long tFinish;
+    unsigned long tStart = micros();
 #endif
 
 #ifdef _TASK_TIMECRITICAL
     register unsigned long tPassStart;
     register unsigned long tTaskStart, tTaskFinish;
-#endif
-
-#if defined (_TASK_SLEEP_ON_IDLE_RUN) && defined (_TASK_TIMECRITICAL)
     unsigned long tIdleStart = 0;
 #endif  // _TASK_TIMECRITICAL
 
-    Task *nextTask;  // support for deleting the task in the onDisable method
+    Task *nextTask;     // support for deleting the task in the onDisable method
     iCurrent = iFirst;
-
-#if defined (_TASK_SLEEP_ON_IDLE_RUN) || defined (_TASK_TIMECRITICAL)
-    tStart = micros();  // Scheduling full pass start time in microseconds. 
-#endif
 
 #ifdef _TASK_PRIORITY
     // If lower priority scheduler does not have a single task in the chain
@@ -1042,12 +1039,9 @@ bool Scheduler::execute() {
 #endif  // ARDUINO_ARCH_ESPxx
     }
 
-#if defined (_TASK_SLEEP_ON_IDLE_RUN) || defined (_TASK_TIMECRITICAL)
-    tFinish = micros(); // Scheduling pass end time in microseconds.
-#endif
-
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+    tFinish = micros(); // Scheduling pass end time in microseconds.
 
     if (idleRun && iAllowSleep) {
         if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 

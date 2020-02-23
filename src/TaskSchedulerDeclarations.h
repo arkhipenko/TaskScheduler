@@ -221,8 +221,8 @@ class Task {
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_EXPOSE_CHAIN
-    INLINE Task&  getPreviousTask() { return (*iPrev); };   // refernce to the previous task in the chain, NULL if first or not set
-    INLINE Task&  getNextTask()     { return (*iNext); };       // refernce to the next task in the chain, NULL if last or not set
+    INLINE Task*  getPreviousTask() { return iPrev; };  // pointer to the previous task in the chain, NULL if first or not set
+    INLINE Task*  getNextTask()     { return iNext; };  // pointer to the next task in the chain, NULL if last or not set
 #endif // _TASK_EXPOSE_CHAIN
 
 
@@ -284,7 +284,8 @@ class Scheduler {
     INLINE void enableAll(bool aRecursive = true);
     INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
     INLINE void startNow(bool aRecursive = true);       // reset ALL active tasks to immediate execution NOW.
-    INLINE Task& currentTask() ;
+    INLINE Task& currentTask() ;                        // DEPRICATED
+    INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -310,8 +311,8 @@ class Scheduler {
 #endif  // _TASK_PRIORITY
 
 #ifdef _TASK_EXPOSE_CHAIN
-    INLINE Task&  getFirstTask() { return (*iFirst); };    // refernce to the previous task in the chain, NULL if first or not set
-    INLINE Task&  getLastTask()  {   return (*iLast); };       // refernce to the next task in the chain, NULL if last or not set
+    INLINE Task*  getFirstTask() { return iFirst; };       // pointer to the previous task in the chain, NULL if first or not set
+    INLINE Task*  getLastTask()  { return iLast;  };       // pointer to the next task in the chain, NULL if last or not set
 #endif // _TASK_EXPOSE_CHAIN
 
   _TASK_SCOPE:

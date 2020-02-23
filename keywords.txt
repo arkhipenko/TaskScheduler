@@ -20,8 +20,6 @@ Callback	KEYWORD2
 completed	KEYWORD2
 cpuLoadReset	KEYWORD2
 currentLts	KEYWORD2
-currentScheduler	KEYWORD2
-currentTask	KEYWORD2
 delay	KEYWORD2
 deleteTask	KEYWORD2
 disable	KEYWORD2
@@ -39,6 +37,7 @@ getCount	KEYWORD2
 getCpuLoadCycle	KEYWORD2
 getCpuLoadIdle	KEYWORD2
 getCpuLoadTotal	KEYWORD2
+getCurrentTask	KEYWORD2
 getFirstTask	KEYWORD2
 getId	KEYWORD2
 getInternalStatusRequest	KEYWORD2
