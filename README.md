@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 3.1.3: 2020-02-16
+#### Version 3.1.4: 2020-02-22
 
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:

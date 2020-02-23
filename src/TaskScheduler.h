@@ -163,7 +163,10 @@
 // v3.1.3:
 //    2020-01-30 - bug fix: _TASK_DEFINE_MILLIS to force forward definition of millis and micros. Not defined by default. 
 //    2020-02-16 - bug fix: add 'virtual' to the Task destructor definition (issue #86)
-
+//
+// v3.1.4:
+//    2020-02-22 - bug: get rid of unnecessary compiler warnings
+//    2020-02-22 - feature: access to the task chain with _TASK_EXPOSE_CHAIN compile option
 
 #include <Arduino.h>
 
@@ -196,6 +199,7 @@ extern "C" {
 // #define _TASK_TIMEOUT           // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS      // Support for callbacks via inheritance
 // #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXPOSE_CHAIN      // Methods to access tasks in the task chain
 
  #ifdef _TASK_MICRO_RES
 
@@ -908,18 +912,26 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
 bool Scheduler::execute() {
     bool     idleRun = true;
     register unsigned long m, i;  // millis, interval;
+
+#if defined (_TASK_SLEEP_ON_IDLE_RUN) || defined (_TASK_TIMECRITICAL)
     unsigned long tStart, tFinish;
+#endif
 
 #ifdef _TASK_TIMECRITICAL
     register unsigned long tPassStart;
     register unsigned long tTaskStart, tTaskFinish;
+#endif
+
+#if defined (_TASK_SLEEP_ON_IDLE_RUN) && defined (_TASK_TIMECRITICAL)
     unsigned long tIdleStart = 0;
 #endif  // _TASK_TIMECRITICAL
 
     Task *nextTask;  // support for deleting the task in the onDisable method
     iCurrent = iFirst;
 
+#if defined (_TASK_SLEEP_ON_IDLE_RUN) || defined (_TASK_TIMECRITICAL)
     tStart = micros();  // Scheduling full pass start time in microseconds. 
+#endif
 
 #ifdef _TASK_PRIORITY
     // If lower priority scheduler does not have a single task in the chain
@@ -1030,7 +1042,9 @@ bool Scheduler::execute() {
 #endif  // ARDUINO_ARCH_ESPxx
     }
 
+#if defined (_TASK_SLEEP_ON_IDLE_RUN) || defined (_TASK_TIMECRITICAL)
     tFinish = micros(); // Scheduling pass end time in microseconds.
+#endif
 
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN

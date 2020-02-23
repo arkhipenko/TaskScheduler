@@ -11,7 +11,7 @@
 // #define _TASK_TIMEOUT           // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
 // #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
-
+// #define _TASK_EXPOSE_CHAIN      // Methods to access tasks in the task chain
 
 #include <TaskScheduler.h>
 

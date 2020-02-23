@@ -18,11 +18,13 @@
 // #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
 // #define _TASK_PRIORITY          // Support for layered scheduling priority
 // #define _TASK_MICRO_RES         // Support for microsecond resolution
-// #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 and ESP32 ONLY)
+// #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
 // #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
-// #define _TASK_INLINE			   // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
+// #define _TASK_INLINE            // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT           // Support for overall task timeout
-// #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
+// #define _TASK_OO_CALLBACKS      // Support for callbacks via inheritance
+// #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXPOSE_CHAIN      // Methods to access tasks in the task chain
 
 class Scheduler;
 
@@ -37,7 +39,7 @@ class Scheduler;
 #define TASK_ONCE               1
 
 #ifdef _TASK_TIMEOUT
-#define TASK_NOTIMEOUT			0
+#define TASK_NOTIMEOUT          0
 #endif
 
 #ifdef _TASK_PRIORITY
@@ -45,7 +47,7 @@ class Scheduler;
 #endif // _TASK_PRIORITY
 
 #ifdef _TASK_INLINE
-#define INLINE	inline
+#define INLINE  inline
 #else
 #define INLINE
 #endif
@@ -215,8 +217,14 @@ class Task {
 
 #ifdef _TASK_LTS_POINTER
     INLINE void  setLtsPointer(void *aPtr) ;
-    void* getLtsPointer() ;
+    INLINE void* getLtsPointer() ;
 #endif  // _TASK_LTS_POINTER
+
+#ifdef _TASK_EXPOSE_CHAIN
+    INLINE Task&  getPreviousTask() { return (*iPrev); };   // refernce to the previous task in the chain, NULL if first or not set
+    INLINE Task&  getNextTask()     { return (*iNext); };       // refernce to the next task in the chain, NULL if last or not set
+#endif // _TASK_EXPOSE_CHAIN
+
 
   _TASK_SCOPE:
     INLINE void reset();
@@ -259,8 +267,8 @@ class Task {
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_TIMEOUT
-	unsigned long            iTimeout;				 // Task overall timeout
-	unsigned long 		 iStarttime;			 // millis at task start time
+    unsigned long            iTimeout;               // Task overall timeout
+    unsigned long            iStarttime;             // millis at task start time
 #endif // _TASK_TIMEOUT
 };
 
@@ -268,7 +276,7 @@ class Scheduler {
   friend class Task;
   public:
     INLINE Scheduler();
-//	~Scheduler();
+//  ~Scheduler();
     INLINE void init();
     INLINE void addTask(Task& aTask);
     INLINE void deleteTask(Task& aTask);
@@ -290,16 +298,21 @@ class Scheduler {
 
 #ifdef _TASK_TIMECRITICAL
     INLINE bool isOverrun();
-	INLINE void cpuLoadReset();
-	INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
-	INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
-	INLINE unsigned long getCpuLoadTotal();
+    INLINE void cpuLoadReset();
+    INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
+    INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
+    INLINE unsigned long getCpuLoadTotal();
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
     INLINE void setHighPriorityScheduler(Scheduler* aScheduler);
     INLINE static Scheduler& currentScheduler() { return *(iCurrentScheduler); };
 #endif  // _TASK_PRIORITY
+
+#ifdef _TASK_EXPOSE_CHAIN
+    INLINE Task&  getFirstTask() { return (*iFirst); };    // refernce to the previous task in the chain, NULL if first or not set
+    INLINE Task&  getLastTask()  {   return (*iLast); };       // refernce to the next task in the chain, NULL if last or not set
+#endif // _TASK_EXPOSE_CHAIN
 
   _TASK_SCOPE:
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
@@ -314,8 +327,8 @@ class Scheduler {
 
 #ifdef _TASK_TIMECRITICAL
     unsigned long iCPUStart;
-	unsigned long iCPUCycle;
-	unsigned long iCPUIdle;
+    unsigned long iCPUCycle;
+    unsigned long iCPUIdle;
 #endif  // _TASK_TIMECRITICAL
 };
 
