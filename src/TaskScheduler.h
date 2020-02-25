@@ -919,12 +919,16 @@ bool Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
     unsigned long tStart = micros();
-#endif
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_TIMECRITICAL
     register unsigned long tPassStart;
     register unsigned long tTaskStart, tTaskFinish;
+
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tIdleStart = 0;
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
+
 #endif  // _TASK_TIMECRITICAL
 
     Task *nextTask;     // support for deleting the task in the onDisable method
