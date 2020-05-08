@@ -47,18 +47,19 @@ void SleepMethod( unsigned long aDuration ) {
 
 #elif defined( ARDUINO_ARCH_ESP32 )
 
+#include <esp_sleep.h>
+
 #ifndef _TASK_ESP32_DLY_THRESHOLD
 #define _TASK_ESP32_DLY_THRESHOLD 200L
 #endif
-#warning _TASK_SLEEP_ON_IDLE_RUN for ESP32 cannot use light sleep mode but a standard delay for 1 ms
 extern unsigned long tStart, tFinish;
+const unsigned long tRem = 1000-_TASK_ESP32_DLY_THRESHOLD;
 
 void SleepMethod( unsigned long aDuration ) {
-//TODO: find a correct light sleep implementation for ESP32
-    // esp_sleep_enable_timer_wakeup(1000); //1 ms
-    // int ret= esp_light_sleep_start();
-      if ( aDuration < _TASK_ESP32_DLY_THRESHOLD) delay(1);   // ESP8266 implementation of delay() uses timers and yield
-
+    if ( aDuration < tRem ) {
+        esp_sleep_enable_timer_wakeup((uint64_t) (1000 - aDuration));
+        esp_light_sleep_start();
+    }
 }
 // ARDUINO_ARCH_ESP32
 

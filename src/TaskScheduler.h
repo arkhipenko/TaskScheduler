@@ -167,6 +167,10 @@
 // v3.1.4:
 //    2020-02-22 - bug: get rid of unnecessary compiler warnings
 //    2020-02-22 - feature: access to the task chain with _TASK_EXPOSE_CHAIN compile option
+//
+// v3.1.5:
+//    2020-05-08 - feature: implemented light sleep for esp32
+
 
 #include <Arduino.h>
 
