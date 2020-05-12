@@ -2,6 +2,8 @@
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
 #### Version 3.1.5: 2020-05-08 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
 
+[![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
+
 ### OVERVIEW:
 A lightweight implementation of cooperative multitasking (task scheduling) supporting:
 1. Periodic task execution, with dynamic execution period in `milliseconds` (default) or `microseconds` (if explicitly enabled) – frequency of execution
