@@ -170,6 +170,9 @@
 //
 // v3.1.5:
 //    2020-05-08 - feature: implemented light sleep for esp32
+//
+// v3.1.6:
+//    2020-05-12 - bug fix: deleteTask and addTask should check task ownership first (Issue #97)
 
 
 #include <Arduino.h>
@@ -721,8 +724,9 @@ void Scheduler::init() {
  */
  void Scheduler::addTask(Task& aTask) {
 
-// Avoid adding task twice to the same scheduler
-    if (aTask.iScheduler == this)
+// If task already belongs to a scheduler, we should not be adding
+// it to this scheduler. It should be deleted from the other scheduler first. 
+    if (aTask.iScheduler != NULL)
         return;
 
     aTask.iScheduler = this;
@@ -745,6 +749,10 @@ void Scheduler::init() {
  * @param &aTask - reference to the task to be deleted from the chain
  */
 void Scheduler::deleteTask(Task& aTask) {
+// Can only delete own tasks
+    if (aTask.iScheduler != this) 
+        return;
+    
     aTask.iScheduler = NULL;
     if (aTask.iPrev == NULL) {
         if (aTask.iNext == NULL) {
