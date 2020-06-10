@@ -74,7 +74,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Adding a timer to XK X6 Transmitter
   https://www.elvinplay.com/adding-a-timer-to-xk-x6-transmitter-en/
 * Arduino Bluetooth remote control + ultrasonic anti-collision car
-  https://www.lizenghai.com/archives/63177.html
+  https://xie.infoq.cn/article/0f27dbbebcc2b99b35132b262
 * WEMOS D1 Mini로 Ad-hoc WIFI network
   https://m.blog.naver.com/sonyi/221330334326
 * [3 Devo](http://3devo.eu/) - Quality 3D printing filament, now made accessible and affordable
