@@ -32,6 +32,13 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Teensy (tested on Teensy 3.5)
 * STM32F1 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 * MSP430 and MSP432 boards
+
+
+
+​                                                 **Don't just take my word for it - try it for yourself on [Wokwi](https://wokwi.com/playground/task-scheduler)**
+
+
+
 ---
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
 ---
@@ -75,7 +82,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 
 * [Houston midi](https://github.com/chaffneue/houston) clock project - TaskScheduler with microseconds resolution
-    
+  
     >by chaffneue:
     >>My first arduino project. It's a multi-master midi controller with a shared clock and
  auto count in behaviour.
