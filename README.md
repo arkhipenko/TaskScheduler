@@ -40,44 +40,72 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 #### For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
 
+### User Feedback:
+
+"I've used https://github.com/arkhipenko/TaskScheduler with great success. Running LED patterns, monitoring button presses, reading data from an accelerometer, auto advancing to the next pattern, reading data from Serial. All at the same time." - [here](https://www.reddit.com/r/FastLED/comments/b3rfzf/wanna_try_some_code_that_is_powerfuldangerous/)
+
+"There are libraries that do this automatically on Arduino too, allowing you to schedule [cooperative] multitasking and sleep the uC between tasks. E.g. https://github.com/arkhipenko/TaskScheduler is really good, I've used it before. You basically queue up a list of task callbacks and a schedule in your `setup()` and then do a call to `tasks.execute()` in `loop()`, which pops off the next task that is due in a queue or sleeps otherwise. It's simple, but much more straightforward than manually using `if millis() - last > delta1... else sleep()` and not as rigid as using the timer ISRs (which really serve a different purpose)." - [here](https://news.ycombinator.com/item?id=14848906)
+
+"I took the controller with me on a business trip and spend the night getting the basic code framework out. It is going to run on top of Arkhipenko’s TaskScheduler. (https://github.com/arkhipenko/TaskScheduler) This should help me isolate any issues between the different control systems while managing the different task’s timing requirements." - [here](https://hackaday.io/project/167479/logs)
+
+"it's really cool and useful, for whenver you want your MCU to do more than 1 task" - [here](https://gitter.im/FastLED/public?at=5947e23dd83c50560c22d5b6)
+
+"I encourage you to use it in the Arduino environment, it allows you to save a lot of time (and code lines) wherever you need to schedule, i.e. run many tasks that should to perform at different frequencies and when we want to have the greatest control over the performance of these tasks and we want good diagnostic of errors." - [here](https://www.elektroda.pl/rtvforum/topic3599980.html)
+
+"arkhipenko/TaskScheduler is still my choice for now, especially when I get my pull request in, so we can have that idle 1 ms sleep feature for free." - [here](http://stm32duinoforum.com/forum/viewtopic_f_18_t_4299.html)
+
+
+
 ### Check out what TaskScheduler can do:
 
+#### Around the world:
+
+* Ninja Timer: Giant 7-Segment Display at Adafruit.com
+  https://learn.adafruit.com/ninja-timer-giant-7-segment-display/timer-code
+* Playing with NeoPixel to create a nice #smartBulb IoT
+  https://www.zerozone.it/linux-e-open-source/giocare-con-i-neopixel-per-realizzare-un-simpatico-smartbulb-iot/16760
+* Adding a timer to XK X6 Transmitter
+  https://www.elvinplay.com/adding-a-timer-to-xk-x6-transmitter-en/
+* Arduino Bluetooth remote control + ultrasonic anti-collision car
+  https://www.lizenghai.com/archives/63177.html
+* WEMOS D1 Mini로 Ad-hoc WIFI network
+  https://m.blog.naver.com/sonyi/221330334326
 * [3 Devo](http://3devo.eu/) - Quality 3D printing filament, now made accessible and affordable
 (http://3devo.eu/license-information/)
 
 
 * [Houston midi](https://github.com/chaffneue/houston) clock project - TaskScheduler with microseconds resolution
+    
     >by chaffneue:
     >>My first arduino project. It's a multi-master midi controller with a shared clock and
-     auto count in behaviour.
-
+ auto count in behaviour.
+	
 	 youtube: https://www.youtube.com/watch?v=QRof550TtXo
 
 
 * [Hackabot Nano](http://hackarobot.com/) by Funnyvale -  Compact Plug and Play Arduino compatible robotic kit
      https://www.kickstarter.com/projects/hackarobot/hackabot-nano-compact-plug-and-play-arduino-robot
+* Discrete Time Systems Wiki - 
+     https://sistemas-en-tiempo-discreto.fandom.com/es/wiki/Tiempo_Real
+
+#### My projects:
+
+* Interactive "Do Not Disturb" sign in a shape of Minecraft Sword (ESP32)
+    (https://www.instructables.com/id/Interactive-Minecraft-Do-Not-Enter-SwordSign-ESP32/)
+* Interactive Predator Costume with Real-Time Head Tracking Plasma Cannon (Teensy, Arduino Nano)
+    (https://www.instructables.com/id/Interactive-Predator-Costume-With-Head-Tracking-Pl/)
+* IoT APIS v2 - Autonomous IoT-enabled Automated Plant Irrigation System (ESP8266)
+    (http://www.instructables.com/id/IoT-APIS-V2-Autonomous-IoT-enabled-Automated-Plant/)
+* APIS - Automated Plant Irrigation System (Arduino Uno)
+    (http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/)
+
+* Party Lights LEDs music visualization (Leaf Maple Mini)
+    (https://www.instructables.com/id/Portable-Party-Lights/)
+* Arduino Nano based Hexbug Scarab Robotic Spider (Arduino Nano)
+    (http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider/)
+* Wave your hand to control OWI Robotic Arm... no strings attached (Arduino Uno and Nano)
+    (http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/)
 
 
-* Arduino Nano based Hexbug Scarab Robotic Spider
-    (by arkhipenko: http://www.instructables.com/id/Arduino-Nano-based-Hexbug-Scarab-Robotic-Spider/)
-
-* Wave your hand to control OWI Robotic Arm... no strings attached
-    (by arkhipenko: http://www.instructables.com/id/Wave-your-hand-to-control-OWI-Robotic-Arm-no-strin/)
-
-
-* APIS - Automated Plant Irrigation System
-    (by arkhipenko: http://www.instructables.com/id/APIS-Automated-Plant-Irrigation-System/)
-
-
-* IoT APIS v2 - Autonomous IoT-enabled Automated Plant Irrigation System
-    (by arkhipenko: http://www.instructables.com/id/IoT-APIS-V2-Autonomous-IoT-enabled-Automated-Plant/)
-
-* Interactive Halloween Pumpkin
-    (by arkhipenko: http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
-
-* Interactive Predator Costume with Real-Time Head Tracking Plasma Cannon
-    (by arkhipenko: https://www.instructables.com/id/Interactive-Predator-Costume-With-Head-Tracking-Pl/)
-
-* Party Lights LEDs music visualization
-    (by arkhipenko: https://www.instructables.com/id/Portable-Party-Lights/)
-    
+* Interactive Halloween Pumpkin (Arduino Uno)
+    (http://www.instructables.com/id/Interactive-Halloween-Pumpkin/)
