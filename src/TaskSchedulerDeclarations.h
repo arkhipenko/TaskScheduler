@@ -280,10 +280,16 @@ class Scheduler {
     INLINE void init();
     INLINE void addTask(Task& aTask);
     INLINE void deleteTask(Task& aTask);
+#ifdef _TASK_PRIORITY
     INLINE void disableAll(bool aRecursive = true);
     INLINE void enableAll(bool aRecursive = true);
-    INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
     INLINE void startNow(bool aRecursive = true);       // reset ALL active tasks to immediate execution NOW.
+#else
+    INLINE void disableAll();
+    INLINE void enableAll();
+    INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
+#endif
+    INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
     INLINE Task& currentTask() ;                        // DEPRICATED
     INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task

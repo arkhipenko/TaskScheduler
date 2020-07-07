@@ -1,3 +1,42 @@
+/*
+    Your code description here
+    (c) you, 20XX
+    All rights reserved.
+
+    Functionality: 
+    
+    Version log:
+    
+    20XX-MM-DD:
+        v1.0.0  - Initial release
+        
+*/
+// ==== DEFINES ===================================================================================
+
+// ==== Debug and Test options ==================
+#define _DEBUG_
+//#define _TEST_
+
+//===== Debugging macros ========================
+#ifdef _DEBUG_
+#define SerialD Serial
+#define _PM(a) SerialD.print(millis()); SerialD.print(": "); SerialD.println(a)
+#define _PP(a) SerialD.print(a)
+#define _PL(a) SerialD.println(a)
+#define _PX(a) SerialD.println(a, HEX)
+#else
+#define _PM(a)
+#define _PP(a)
+#define _PL(a)
+#define _PX(a)
+#endif
+
+
+
+
+// ==== INCLUDES ==================================================================================
+
+// ==== Uncomment desired compile options =================================
 // #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
 // #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between tasks if no callback methods were invoked during the pass
 // #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
@@ -12,30 +51,19 @@
 // #define _TASK_OO_CALLBACKS      // Support for dynamic callback method binding
 // #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXPOSE_CHAIN      // Methods to access tasks in the task chain
-
 #include <TaskScheduler.h>
 
-// Debug and Test options
-#define _DEBUG_
-//#define _TEST_
-
-#ifdef _DEBUG_
-#define _PP(a) Serial.print(a);
-#define _PL(a) Serial.println(a);
-#else
-#define _PP(a)
-#define _PL(a)
-#endif
 
 
-// Scheduler
+// ==== GLOBALS ===================================================================================
+// ==== Scheduler ==============================
 Scheduler ts;
 
 void task1Callback();
 void task2Callback();
 
+// ==== Scheduling defines (cheat sheet) =====================
 /*
-  Scheduling defines:
   TASK_MILLISECOND
   TASK_SECOND
   TASK_MINUTE
@@ -46,10 +74,21 @@ void task2Callback();
   TASK_NOTIMEOUT
 */
 
+// ==== Task definitions ========================
 Task t1 (100 * TASK_MILLISECOND, TASK_FOREVER, &task1Callback, &ts, true);
 Task t2 (TASK_IMMEDIATE, 100, &task2Callback, &ts, true);
 
 
+
+// ==== CODE ======================================================================================
+
+/**************************************************************************/
+/*!
+    @brief    Standard Arduino SETUP method - initialize sketch
+    @param    none
+    @returns  none
+*/
+/**************************************************************************/
 void setup() {
   // put your setup code here, to run once:
 #if defined(_DEBUG_) || defined(_TEST_)
@@ -59,21 +98,43 @@ void setup() {
 #endif
 }
 
+
+/**************************************************************************/
+/*!
+    @brief    Standard Arduino LOOP method - using with TaskScheduler there 
+              should be nothing here but ts.execute()
+    @param    none
+    @returns  none
+*/
+/**************************************************************************/
 void loop() {
   ts.execute();
 }
 
 
+/**************************************************************************/
+/*!
+    @brief    Callback method of task1 - explain
+    @param    none
+    @returns  none
+*/
+/**************************************************************************/
 void task1Callback() {
-_PP(millis());
-_PL(": task1Callback()");
-
+_PM("task1Callback()");
+//  task code
 }
 
-void task2Callback() {
-_PP(millis());
-_PL(": task2Callb()");
 
+/**************************************************************************/
+/*!
+    @brief    Callback method of task2 - explain
+    @param    none
+    @returns  none
+*/
+/**************************************************************************/
+void task2Callback() {
+_PM("task2Callback()");
+//  task code
 }
 
 

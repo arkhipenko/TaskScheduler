@@ -173,6 +173,9 @@
 //
 // v3.1.6:
 //    2020-05-12 - bug fix: deleteTask and addTask should check task ownership first (Issue #97)
+//
+// v3.1.7:
+//    2020-07-07 - warning fix: unused parameter 'aRecursive' (Issue #99)
 
 
 #include <Arduino.h>
@@ -786,7 +789,11 @@ void Scheduler::deleteTask(Task& aTask) {
  * task remaining active is an error processing task
  * @param aRecursive - if true, tasks of the higher priority chains are disabled as well recursively
  */
+#ifdef _TASK_PRIORITY
 void Scheduler::disableAll(bool aRecursive) {
+#else
+void Scheduler::disableAll() {
+#endif
     Task    *current = iFirst;
     while (current) {
         current->disable();
@@ -802,7 +809,11 @@ void Scheduler::disableAll(bool aRecursive) {
 /** Enables all the tasks in the execution chain
  * @param aRecursive - if true, tasks of the higher priority chains are enabled as well recursively
  */
- void Scheduler::enableAll(bool aRecursive) {
+#ifdef _TASK_PRIORITY
+void Scheduler::enableAll(bool aRecursive) {
+#else
+void Scheduler::enableAll() {
+#endif    
     Task    *current = iFirst;
     while (current) {
         current->enable();
@@ -835,19 +846,15 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 void Scheduler::allowSleep(bool aState) {
     iAllowSleep = aState;
-
-#ifdef ARDUINO_ARCH_ESP8266
-    wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
-#endif  // ARDUINO_ARCH_ESP8266
-
-#ifdef ARDUINO_ARCH_ESP32
-    // TO-DO; find a suitable replacement for ESP32 if possible.
-#endif  // ARDUINO_ARCH_ESP32
 }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
+#ifdef _TASK_PRIORITY
 void Scheduler::startNow( bool aRecursive ) {
+#else
+void Scheduler::startNow() {
+#endif
     unsigned long t = _TASK_TIME_FUNCTION();
 
     iCurrent = iFirst;
