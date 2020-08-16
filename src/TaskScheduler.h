@@ -404,6 +404,10 @@ void Task::reset() {
     iScheduler = NULL;
     iRunCounter = 0;
 
+#ifdef _TASK_SCHEDULING_OPTIONS
+    iOption = TASK_SCHEDULE;
+#endif  // _TASK_SCHEDULING_OPTIONS
+
 #ifdef _TASK_TIMECRITICAL
     iOverrun = 0;
     iStartDelay = 0;
@@ -1018,7 +1022,29 @@ bool Scheduler::execute() {
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
                 iCurrent->iRunCounter++;
+#ifdef _TASK_SCHEDULING_OPTIONS
+                switch (iCurrent->iOption) {
+                  case TASK_INTERVAL:
+                    iCurrent->iPreviousMillis = m;
+                    break;
+                    
+                  case TASK_SCHEDULE_NC:
+                    iCurrent->iPreviousMillis += iCurrent->iDelay; 
+                    {
+                        long ov = (long) ( iCurrent->iPreviousMillis + i - m );
+                        if ( ov < 0 ) {
+                            long ii = i == 0 ? 1 : i;
+                            iCurrent->iPreviousMillis += ((m - iCurrent->iPreviousMillis) / ii) * ii;
+                        }
+                    }
+                    break;
+                    
+                  default:
+                    iCurrent->iPreviousMillis += iCurrent->iDelay;
+                }
+#else
                 iCurrent->iPreviousMillis += iCurrent->iDelay;
+#endif  // _TASK_SCHEDULING_OPTIONS
 
 #ifdef _TASK_TIMECRITICAL
     // Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero.
