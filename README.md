@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 3.1.7: 2020-07-07 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
+#### Version 3.2.0: 2020-08-16 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
 
@@ -19,6 +19,7 @@ A lightweight implementation of cooperative multitasking (task scheduling) suppo
 11. Overall task timeout
 12. Static and dynamic callback method binding
 13. CPU load / idle statistics for time critical applications
+14. Scheduling options with priotity for original schedule (with and without catchup) and interval
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 

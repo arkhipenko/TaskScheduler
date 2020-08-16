@@ -176,6 +176,9 @@
 //
 // v3.1.7:
 //    2020-07-07 - warning fix: unused parameter 'aRecursive' (Issue #99)
+//
+// v3.2.0:
+//    2020-08-16 - feature: scheduling options
 
 
 #include <Arduino.h>
