@@ -11,22 +11,27 @@
 // The following "defines" control library functionality at compile time,
 // and should be used in the main sketch depending on the functionality required
 //
-// #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
-// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
-// #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
-// #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
-// #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
-// #define _TASK_PRIORITY          // Support for layered scheduling priority
-// #define _TASK_MICRO_RES         // Support for microsecond resolution
-// #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
-// #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
-// #define _TASK_INLINE            // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-// #define _TASK_TIMEOUT           // Support for overall task timeout
-// #define _TASK_OO_CALLBACKS      // Support for callbacks via inheritance
-// #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
-// #define _TASK_EXPOSE_CHAIN      // Methods to access tasks in the task chain
+// #define _TASK_TIMECRITICAL           // Enable monitoring scheduling overruns
+// #define _TASK_SLEEP_ON_IDLE_RUN      // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
+// #define _TASK_STATUS_REQUEST         // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
+// #define _TASK_WDT_IDS                // Compile with support for wdt control points and task ids
+// #define _TASK_LTS_POINTER            // Compile with support for local task storage pointer
+// #define _TASK_PRIORITY               // Support for layered scheduling priority
+// #define _TASK_MICRO_RES              // Support for microsecond resolution
+// #define _TASK_STD_FUNCTION           // Support for std::function (ESP8266 ONLY)
+// #define _TASK_DEBUG                  // Make all methods and variables public for debug purposes
+// #define _TASK_INLINE                 // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
+// #define _TASK_TIMEOUT                // Support for overall task timeout
+// #define _TASK_OO_CALLBACKS           // Support for callbacks via inheritance
+// #define _TASK_DEFINE_MILLIS          // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXPOSE_CHAIN           // Methods to access tasks in the task chain
+// #define _TASK_SCHEDULING_OPTIONS     // Support for multiple scheduling options
 
 class Scheduler;
+
+#define TASK_SCHEDULE       0   // default
+#define TASK_SCHEDULE_NC    1   // schedule + no catch-ups (always in the future)
+#define TASK_INTERVAL       2   // interval (always in the future)
 
 #ifdef _TASK_DEBUG
     #define _TASK_SCOPE  public
@@ -170,6 +175,11 @@ class Task {
     INLINE bool disable();
     INLINE bool isEnabled();
 
+#ifdef _TASK_SCHEDULING_OPTIONS
+    INLINE unsigned int getSchedulingOption() { return iOption; }
+    INLINE void setSchedulingOption(unsigned int aOption) {  iOption = aOption; }
+#endif  //_TASK_SCHEDULING_OPTIONS
+
 #ifdef _TASK_OO_CALLBACKS
     INLINE void set(unsigned long aInterval, long aIterations);
 #else
@@ -234,6 +244,10 @@ class Task {
     volatile unsigned long    iDelay;                // actual delay until next execution (usually equal iInterval)
     volatile unsigned long    iPreviousMillis;       // previous invocation time (millis).  Next invocation = iPreviousMillis + iInterval.  Delayed tasks will "catch up"
 
+#ifdef _TASK_SCHEDULING_OPTIONS
+    unsigned int              iOption;               // scheduling option
+#endif  // _TASK_SCHEDULING_OPTIONS
+
 #ifdef _TASK_TIMECRITICAL
     volatile long             iOverrun;              // negative if task is "catching up" to it's schedule (next invocation time is already in the past)
     volatile long             iStartDelay;           // actual execution of the task's callback method was delayed by this number of millis
@@ -280,10 +294,16 @@ class Scheduler {
     INLINE void init();
     INLINE void addTask(Task& aTask);
     INLINE void deleteTask(Task& aTask);
+#ifdef _TASK_PRIORITY
     INLINE void disableAll(bool aRecursive = true);
     INLINE void enableAll(bool aRecursive = true);
-    INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
     INLINE void startNow(bool aRecursive = true);       // reset ALL active tasks to immediate execution NOW.
+#else
+    INLINE void disableAll();
+    INLINE void enableAll();
+    INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
+#endif
+    INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
     INLINE Task& currentTask() ;                        // DEPRICATED
     INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task

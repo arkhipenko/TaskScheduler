@@ -173,6 +173,12 @@
 //
 // v3.1.6:
 //    2020-05-12 - bug fix: deleteTask and addTask should check task ownership first (Issue #97)
+//
+// v3.1.7:
+//    2020-07-07 - warning fix: unused parameter 'aRecursive' (Issue #99)
+//
+// v3.2.0:
+//    2020-08-16 - feature: scheduling options
 
 
 #include <Arduino.h>
@@ -400,6 +406,10 @@ void Task::reset() {
     iNext = NULL;
     iScheduler = NULL;
     iRunCounter = 0;
+
+#ifdef _TASK_SCHEDULING_OPTIONS
+    iOption = TASK_SCHEDULE;
+#endif  // _TASK_SCHEDULING_OPTIONS
 
 #ifdef _TASK_TIMECRITICAL
     iOverrun = 0;
@@ -786,7 +796,11 @@ void Scheduler::deleteTask(Task& aTask) {
  * task remaining active is an error processing task
  * @param aRecursive - if true, tasks of the higher priority chains are disabled as well recursively
  */
+#ifdef _TASK_PRIORITY
 void Scheduler::disableAll(bool aRecursive) {
+#else
+void Scheduler::disableAll() {
+#endif
     Task    *current = iFirst;
     while (current) {
         current->disable();
@@ -802,7 +816,11 @@ void Scheduler::disableAll(bool aRecursive) {
 /** Enables all the tasks in the execution chain
  * @param aRecursive - if true, tasks of the higher priority chains are enabled as well recursively
  */
- void Scheduler::enableAll(bool aRecursive) {
+#ifdef _TASK_PRIORITY
+void Scheduler::enableAll(bool aRecursive) {
+#else
+void Scheduler::enableAll() {
+#endif    
     Task    *current = iFirst;
     while (current) {
         current->enable();
@@ -835,19 +853,15 @@ void Scheduler::setHighPriorityScheduler(Scheduler* aScheduler) {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 void Scheduler::allowSleep(bool aState) {
     iAllowSleep = aState;
-
-#ifdef ARDUINO_ARCH_ESP8266
-    wifi_set_sleep_type( iAllowSleep ? LIGHT_SLEEP_T : NONE_SLEEP_T );
-#endif  // ARDUINO_ARCH_ESP8266
-
-#ifdef ARDUINO_ARCH_ESP32
-    // TO-DO; find a suitable replacement for ESP32 if possible.
-#endif  // ARDUINO_ARCH_ESP32
 }
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
+#ifdef _TASK_PRIORITY
 void Scheduler::startNow( bool aRecursive ) {
+#else
+void Scheduler::startNow() {
+#endif
     unsigned long t = _TASK_TIME_FUNCTION();
 
     iCurrent = iFirst;
@@ -1011,7 +1025,29 @@ bool Scheduler::execute() {
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
                 iCurrent->iRunCounter++;
+#ifdef _TASK_SCHEDULING_OPTIONS
+                switch (iCurrent->iOption) {
+                  case TASK_INTERVAL:
+                    iCurrent->iPreviousMillis = m;
+                    break;
+                    
+                  case TASK_SCHEDULE_NC:
+                    iCurrent->iPreviousMillis += iCurrent->iDelay; 
+                    {
+                        long ov = (long) ( iCurrent->iPreviousMillis + i - m );
+                        if ( ov < 0 ) {
+                            long ii = i == 0 ? 1 : i;
+                            iCurrent->iPreviousMillis += ((m - iCurrent->iPreviousMillis) / ii) * ii;
+                        }
+                    }
+                    break;
+                    
+                  default:
+                    iCurrent->iPreviousMillis += iCurrent->iDelay;
+                }
+#else
                 iCurrent->iPreviousMillis += iCurrent->iDelay;
+#endif  // _TASK_SCHEDULING_OPTIONS
 
 #ifdef _TASK_TIMECRITICAL
     // Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero.
