@@ -18,7 +18,7 @@ You mostly do not need to worry about pitfalls of concurrent processing (races, 
 
 _“Everybody who learns concurrency thinks they understand it, ends up finding mysterious races they thought weren’t possible, and discovers that they didn’t actually understand it yet after all.”_ **Herb Sutter, chair of the ISO C++ standards committee, Microsoft.**
 
-Main features:
+**Main features:**
 1. Periodic task execution, with dynamic execution period in `milliseconds` (default) or `microseconds` (if explicitly enabled) – frequency of execution
 2. Number of iterations (limited or infinite number of iterations)
 3. Execution of tasks in predefined sequence
