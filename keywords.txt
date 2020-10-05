@@ -14,6 +14,7 @@ Task	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
+abort	KEYWORD2
 addTask	KEYWORD2
 allowSleep	KEYWORD2
 Callback	KEYWORD2

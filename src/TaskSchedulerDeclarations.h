@@ -173,6 +173,7 @@ class Task {
     INLINE void delay(unsigned long aDelay=0);
     INLINE void forceNextIteration();
     INLINE bool disable();
+    INLINE void abort();
     INLINE bool isEnabled();
 
 #ifdef _TASK_SCHEDULING_OPTIONS

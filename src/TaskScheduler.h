@@ -179,6 +179,9 @@
 //
 // v3.2.0:
 //    2020-08-16 - feature: scheduling options
+//
+// v3.2.1:
+//    2020-10-04 - feature: Task.abort method. Stop task execution without calling OnDisable(). 
 
 
 #include <Arduino.h>
@@ -644,13 +647,22 @@ bool Task::disable() {
     return (previousEnabled);
 }
 
+/** Aborts task execution
+ * Task will no longer be executed by the scheduler AND ondisable method will not be called
+ */
+
+void Task::abort() {
+    iStatus.enabled = false;
+    iStatus.inonenable = false;
+}
+
 /** Restarts task
  * Task will run number of iterations again
  */
 
 void Task::restart() {
-    enable();
     iIterations = iSetIterations;
+    enable();
 }
 
 /** Restarts task delayed
