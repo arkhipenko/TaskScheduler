@@ -119,9 +119,9 @@ typedef bool (*TaskOnEnable)();
 typedef struct  {
     bool  enabled    : 1;           // indicates that task is enabled or not.
     bool  inonenable : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
-
+    bool  canceled   : 1;           // indication that tast has been canceled prior to normal end of all iterations or regular call to disable()
 #ifdef _TASK_STATUS_REQUEST
-    uint8_t  waiting : 2;        // indication if task is waiting on the status request
+    uint8_t  waiting : 2;           // indication if task is waiting on the status request
 #endif
 
 #ifdef _TASK_TIMEOUT
@@ -164,17 +164,19 @@ class Task {
     INLINE bool timedOut();
 #endif
 
-    INLINE void enable();
+    INLINE bool enable();
     INLINE bool enableIfNot();
-    INLINE void enableDelayed(unsigned long aDelay=0);
-    INLINE void restart();
-    INLINE void restartDelayed(unsigned long aDelay=0);
+    INLINE bool enableDelayed(unsigned long aDelay=0);
+    INLINE bool restart();
+    INLINE bool restartDelayed(unsigned long aDelay=0);
 
     INLINE void delay(unsigned long aDelay=0);
     INLINE void forceNextIteration();
     INLINE bool disable();
     INLINE void abort();
+    INLINE void cancel();
     INLINE bool isEnabled();
+    INLINE bool canceled();
 
 #ifdef _TASK_SCHEDULING_OPTIONS
     INLINE unsigned int getSchedulingOption() { return iOption; }
@@ -213,8 +215,8 @@ class Task {
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_STATUS_REQUEST
-    INLINE void waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
-    INLINE void waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+    INLINE bool waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+    INLINE bool waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
     INLINE StatusRequest* getStatusRequest() ;
     INLINE StatusRequest* getInternalStatusRequest() ;
 #endif  // _TASK_STATUS_REQUEST
