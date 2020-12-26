@@ -512,6 +512,7 @@ void Task::yieldOnce (TaskCallback aCallback) {
 bool Task::enable() {
     if (iScheduler) { // activation without active scheduler does not make sense
         iRunCounter = 0;
+        iStatus.canceled = false;
 
 #ifdef _TASK_OO_CALLBACKS
         if ( !iStatus.inonenable ) {
@@ -546,7 +547,6 @@ bool Task::enable() {
 #ifdef _TASK_STATUS_REQUEST
             iMyStatusRequest.setWaiting();
 #endif // _TASK_STATUS_REQUEST
-            iStatus.canceled = false;
         }
         return iStatus.enabled;
     }
