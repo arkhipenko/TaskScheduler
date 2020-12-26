@@ -18,6 +18,8 @@ abort	KEYWORD2
 addTask	KEYWORD2
 allowSleep	KEYWORD2
 Callback	KEYWORD2
+cancel	KEYWORD2
+canceled	KEYWORD2
 completed	KEYWORD2
 cpuLoadReset	KEYWORD2
 currentLts	KEYWORD2
