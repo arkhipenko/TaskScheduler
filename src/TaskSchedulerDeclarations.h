@@ -11,21 +11,21 @@
 // The following "defines" control library functionality at compile time,
 // and should be used in the main sketch depending on the functionality required
 //
-// #define _TASK_TIMECRITICAL           // Enable monitoring scheduling overruns
-// #define _TASK_SLEEP_ON_IDLE_RUN      // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
-// #define _TASK_STATUS_REQUEST         // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
-// #define _TASK_WDT_IDS                // Compile with support for wdt control points and task ids
-// #define _TASK_LTS_POINTER            // Compile with support for local task storage pointer
-// #define _TASK_PRIORITY               // Support for layered scheduling priority
-// #define _TASK_MICRO_RES              // Support for microsecond resolution
-// #define _TASK_STD_FUNCTION           // Support for std::function (ESP8266 ONLY)
-// #define _TASK_DEBUG                  // Make all methods and variables public for debug purposes
-// #define _TASK_INLINE                 // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-// #define _TASK_TIMEOUT                // Support for overall task timeout
-// #define _TASK_OO_CALLBACKS           // Support for callbacks via inheritance
-// #define _TASK_DEFINE_MILLIS          // Force forward declaration of millis() and micros() "C" style
-// #define _TASK_EXPOSE_CHAIN           // Methods to access tasks in the task chain
-// #define _TASK_SCHEDULING_OPTIONS     // Support for multiple scheduling options
+// #define _TASK_TIMECRITICAL       // Enable monitoring scheduling overruns
+// #define _TASK_SLEEP_ON_IDLE_RUN  // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
+// #define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
+// #define _TASK_WDT_IDS            // Compile with support for wdt control points and task ids
+// #define _TASK_LTS_POINTER        // Compile with support for local task storage pointer
+// #define _TASK_PRIORITY           // Support for layered scheduling priority
+// #define _TASK_MICRO_RES          // Support for microsecond resolution
+// #define _TASK_STD_FUNCTION       // Support for std::function (ESP8266 ONLY)
+// #define _TASK_DEBUG              // Make all methods and variables public for debug purposes
+// #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
+// #define _TASK_TIMEOUT            // Support for overall task timeout
+// #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
+// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
+// #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
 
 class Scheduler;
 
@@ -119,9 +119,9 @@ typedef bool (*TaskOnEnable)();
 typedef struct  {
     bool  enabled    : 1;           // indicates that task is enabled or not.
     bool  inonenable : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
-
+    bool  canceled   : 1;           // indication that tast has been canceled prior to normal end of all iterations or regular call to disable()
 #ifdef _TASK_STATUS_REQUEST
-    uint8_t  waiting : 2;        // indication if task is waiting on the status request
+    uint8_t  waiting : 2;           // indication if task is waiting on the status request
 #endif
 
 #ifdef _TASK_TIMEOUT
@@ -164,16 +164,19 @@ class Task {
     INLINE bool timedOut();
 #endif
 
-    INLINE void enable();
+    INLINE bool enable();
     INLINE bool enableIfNot();
-    INLINE void enableDelayed(unsigned long aDelay=0);
-    INLINE void restart();
-    INLINE void restartDelayed(unsigned long aDelay=0);
+    INLINE bool enableDelayed(unsigned long aDelay=0);
+    INLINE bool restart();
+    INLINE bool restartDelayed(unsigned long aDelay=0);
 
     INLINE void delay(unsigned long aDelay=0);
     INLINE void forceNextIteration();
     INLINE bool disable();
+    INLINE void abort();
+    INLINE void cancel();
     INLINE bool isEnabled();
+    INLINE bool canceled();
 
 #ifdef _TASK_SCHEDULING_OPTIONS
     INLINE unsigned int getSchedulingOption() { return iOption; }
@@ -212,8 +215,8 @@ class Task {
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_STATUS_REQUEST
-    INLINE void waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
-    INLINE void waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+    INLINE bool waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+    INLINE bool waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
     INLINE StatusRequest* getStatusRequest() ;
     INLINE StatusRequest* getInternalStatusRequest() ;
 #endif  // _TASK_STATUS_REQUEST

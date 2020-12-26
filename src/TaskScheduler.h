@@ -179,7 +179,16 @@
 //
 // v3.2.0:
 //    2020-08-16 - feature: scheduling options
-
+//
+// v3.2.1:
+//    2020-10-04 - feature: Task.abort method. Stop task execution without calling OnDisable(). 
+//
+// v3.2.2:
+//    2020-12-14 - feature: enable and restart methods return true if task enabled 
+//                 feature: Task.cancel() method - disable task with a cancel flag (could be used for alt. path
+//                          processing in the onDisable method.
+//                 feature: Task.cancelled() method - indicates that task was disabled with a cancel() method.
+//
 
 #include <Arduino.h>
 
@@ -199,20 +208,21 @@ extern "C" {
 // The following "defines" control library functionality at compile time,
 // and should be used in the main sketch depending on the functionality required
 //
-// #define _TASK_TIMECRITICAL      // Enable monitoring scheduling overruns
-// #define _TASK_SLEEP_ON_IDLE_RUN // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
-// #define _TASK_STATUS_REQUEST    // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
-// #define _TASK_WDT_IDS           // Compile with support for wdt control points and task ids
-// #define _TASK_LTS_POINTER       // Compile with support for local task storage pointer
-// #define _TASK_PRIORITY          // Support for layered scheduling priority
-// #define _TASK_MICRO_RES         // Support for microsecond resolution
-// #define _TASK_STD_FUNCTION      // Support for std::function (ESP8266 ONLY)
-// #define _TASK_DEBUG             // Make all methods and variables public for debug purposes
-// #define _TASK_INLINE            // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-// #define _TASK_TIMEOUT           // Support for overall task timeout
-// #define _TASK_OO_CALLBACKS      // Support for callbacks via inheritance
-// #define _TASK_DEFINE_MILLIS     // Force forward declaration of millis() and micros() "C" style
-// #define _TASK_EXPOSE_CHAIN      // Methods to access tasks in the task chain
+// #define _TASK_TIMECRITICAL       // Enable monitoring scheduling overruns
+// #define _TASK_SLEEP_ON_IDLE_RUN  // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
+// #define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
+// #define _TASK_WDT_IDS            // Compile with support for wdt control points and task ids
+// #define _TASK_LTS_POINTER        // Compile with support for local task storage pointer
+// #define _TASK_PRIORITY           // Support for layered scheduling priority
+// #define _TASK_MICRO_RES          // Support for microsecond resolution
+// #define _TASK_STD_FUNCTION       // Support for std::function (ESP8266 ONLY)
+// #define _TASK_DEBUG              // Make all methods and variables public for debug purposes
+// #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
+// #define _TASK_TIMEOUT            // Support for overall task timeout
+// #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
+// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
+// #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
 
  #ifdef _TASK_MICRO_RES
 
@@ -349,24 +359,26 @@ void StatusRequest::signalComplete(int aStatus) {
  *  @param: aStatusRequest - a pointer for the StatusRequest to wait for.
  *  If aStatusRequest is NULL, request for waiting is ignored, and the waiting task is not enabled.
  */
-void Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
+bool Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
     iStatusRequest = aStatusRequest;
     if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
         setInterval(aInterval);
         iStatus.waiting = _TASK_SR_NODELAY;  // no delay
-        enable();
+        return enable();
     }
+    return false;
 }
 
-void Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
+bool Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval, long aIterations) {
     iStatusRequest = aStatusRequest;
     if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
         if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
         iStatus.waiting = _TASK_SR_DELAY;  // with delay equal to the current interval
-        enable();
+        return enable();
     }
+    return false;
 }
 #endif  // _TASK_STATUS_REQUEST
 
@@ -400,6 +412,7 @@ void Task::setOnDisable(TaskOnDisable aCallback) { iOnDisable = aCallback; }
 void Task::reset() {
     iStatus.enabled = false;
     iStatus.inonenable = false;
+    iStatus.canceled = false;
     iPreviousMillis = 0;
     iInterval = iDelay = 0;
     iPrev = NULL;
@@ -496,9 +509,10 @@ void Task::yieldOnce (TaskCallback aCallback) {
  *  schedules it for execution as soon as possible,
  *  and resets the RunCounter back to zero
  */
-void Task::enable() {
+bool Task::enable() {
     if (iScheduler) { // activation without active scheduler does not make sense
         iRunCounter = 0;
+        iStatus.canceled = false;
 
 #ifdef _TASK_OO_CALLBACKS
         if ( !iStatus.inonenable ) {
@@ -529,12 +543,14 @@ void Task::enable() {
             resetTimeout();
 #endif // _TASK_TIMEOUT
 
-#ifdef _TASK_STATUS_REQUEST
         if ( iStatus.enabled ) {
+#ifdef _TASK_STATUS_REQUEST
             iMyStatusRequest.setWaiting();
-        }
 #endif // _TASK_STATUS_REQUEST
+        }
+        return iStatus.enabled;
     }
+    return false;
 }
 
 /** Enables the task only if it was not enabled already
@@ -549,9 +565,10 @@ bool Task::enableIfNot() {
 /** Enables the task
  * and schedules it for execution after a delay = aInterval
  */
-void Task::enableDelayed(unsigned long aDelay) {
+bool Task::enableDelayed(unsigned long aDelay) {
     enable();
     delay(aDelay);
+    return iStatus.enabled;
 }
 
 #ifdef _TASK_TIMEOUT
@@ -644,21 +661,42 @@ bool Task::disable() {
     return (previousEnabled);
 }
 
+/** Aborts task execution
+ * Task will no longer be executed by the scheduler AND ondisable method will not be called
+ */
+void Task::abort() {
+    iStatus.enabled = false;
+    iStatus.inonenable = false;
+}
+
+
+/** Cancels task execution
+ * Task will no longer be executed by the scheduler. Ondisable method will be called after 'canceled' flag is set
+ */
+void Task::cancel() {
+    iStatus.canceled = true;
+    disable();
+}
+
+bool Task::canceled() {
+    return iStatus.canceled;
+}
+
 /** Restarts task
  * Task will run number of iterations again
  */
 
-void Task::restart() {
-    enable();
+bool Task::restart() {
     iIterations = iSetIterations;
+    return enable();
 }
 
 /** Restarts task delayed
  * Task will run number of iterations again
  */
-void Task::restartDelayed(unsigned long aDelay) {
-    enableDelayed(aDelay);
+bool Task::restartDelayed(unsigned long aDelay) {
     iIterations = iSetIterations;
+    return enableDelayed(aDelay);
 }
 
 bool Task::isFirstIteration() { return (iRunCounter <= 1); }
