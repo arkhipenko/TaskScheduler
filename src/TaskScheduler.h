@@ -667,6 +667,7 @@ bool Task::disable() {
 void Task::abort() {
     iStatus.enabled = false;
     iStatus.inonenable = false;
+    iStatus.canceled = true;
 }
 
 
@@ -978,7 +979,7 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
 
 bool Scheduler::execute() {
     bool     idleRun = true;
-    register unsigned long m, i;  // millis, interval;
+    unsigned long m, i;  // millis, interval;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
@@ -986,8 +987,8 @@ bool Scheduler::execute() {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_TIMECRITICAL
-    register unsigned long tPassStart;
-    register unsigned long tTaskStart, tTaskFinish;
+    unsigned long tPassStart;
+    unsigned long tTaskStart, tTaskFinish;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tIdleStart = 0;
