@@ -189,6 +189,9 @@
 //                          processing in the onDisable method.
 //                 feature: Task.cancelled() method - indicates that task was disabled with a cancel() method.
 //
+// v3.2.3:
+//    2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11 
+//                 feature: add STM32 as a platform supporting _TASK_STD_FUNCTION. (PR #105)
 
 #include <Arduino.h>
 
@@ -244,7 +247,7 @@ extern "C" {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32)
+#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32) && !defined (ARDUINO_ARCH_STM32)
 #ifdef _TASK_STD_FUNCTION
     #error Support for std::function only for ESP8266 or ESP32 architecture
 #undef _TASK_STD_FUNCTION
