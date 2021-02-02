@@ -1078,7 +1078,7 @@ bool Scheduler::execute() {
                     {
                         long ov = (long) ( iCurrent->iPreviousMillis + i - m );
                         if ( ov < 0 ) {
-                            long ii = i == 0 ? 1 : i;
+                            long ii = i ? i : 1;
                             iCurrent->iPreviousMillis += ((m - iCurrent->iPreviousMillis) / ii) * ii;
                         }
                     }
