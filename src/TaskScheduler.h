@@ -192,6 +192,11 @@
 // v3.2.3:
 //    2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11 
 //                 feature: add STM32 as a platform supporting _TASK_STD_FUNCTION. (PR #105)
+//
+// v3.3.0:
+//    2021-05-11 - feature: Timeout() methods for StatusRequest objects 
+
+
 
 #include <Arduino.h>
 
@@ -330,7 +335,14 @@ StatusRequest::StatusRequest()
     iStatus = 0;
 }
 
-void StatusRequest::setWaiting(unsigned int aCount) { iCount = aCount; iStatus = 0; }
+void StatusRequest::setWaiting(unsigned int aCount) { 
+  iCount = aCount; 
+  iStatus = 0; 
+#ifdef _TASK_TIMEOUT
+  iStarttime = _TASK_TIME_FUNCTION();
+#endif  //  #ifdef _TASK_TIMEOUT
+}
+
 bool StatusRequest::pending() { return (iCount != 0); }
 bool StatusRequest::completed() { return (iCount == 0); }
 int StatusRequest::getStatus() { return iStatus; }
@@ -383,6 +395,19 @@ bool Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
     }
     return false;
 }
+
+#ifdef _TASK_TIMEOUT
+void StatusRequest::resetTimeout() {
+    iStarttime = _TASK_TIME_FUNCTION();
+}
+
+long StatusRequest::untilTimeout() {
+    if ( iTimeout ) {
+        return ( (long) (iStarttime + iTimeout) - (long) _TASK_TIME_FUNCTION() );
+    }
+    return -1;
+}
+#endif  // _TASK_TIMEOUT
 #endif  // _TASK_STATUS_REQUEST
 
 bool Task::isEnabled() { return iStatus.enabled; }
@@ -1052,6 +1077,12 @@ bool Scheduler::execute() {
     // Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to
     // how they were placed into waiting state (waitFor or waitForDelayed)
                 if ( iCurrent->iStatus.waiting ) {
+#ifdef _TASK_TIMEOUT
+                    StatusRequest *sr = iCurrent->iStatusRequest;
+                    if ( sr->iTimeout && (m - sr->iStarttime > sr->iTimeout) ) {
+                      sr->signalComplete(TASK_SR_TIMEOUT);
+                    }
+#endif // _TASK_TIMEOUT
                     if ( (iCurrent->iStatusRequest)->pending() ) break;
                     if (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) {
                         iCurrent->iPreviousMillis = m - (iCurrent->iDelay = i);
