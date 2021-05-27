@@ -189,6 +189,14 @@
 //                          processing in the onDisable method.
 //                 feature: Task.cancelled() method - indicates that task was disabled with a cancel() method.
 //
+// v3.2.3:
+//    2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11 
+//                 feature: add STM32 as a platform supporting _TASK_STD_FUNCTION. (PR #105)
+//
+// v3.3.0:
+//    2021-05-11 - feature: Timeout() methods for StatusRequest objects 
+
+
 
 #include <Arduino.h>
 
@@ -244,7 +252,7 @@ extern "C" {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32)
+#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32) && !defined (ARDUINO_ARCH_STM32)
 #ifdef _TASK_STD_FUNCTION
     #error Support for std::function only for ESP8266 or ESP32 architecture
 #undef _TASK_STD_FUNCTION
@@ -327,7 +335,14 @@ StatusRequest::StatusRequest()
     iStatus = 0;
 }
 
-void StatusRequest::setWaiting(unsigned int aCount) { iCount = aCount; iStatus = 0; }
+void StatusRequest::setWaiting(unsigned int aCount) { 
+  iCount = aCount; 
+  iStatus = 0; 
+#ifdef _TASK_TIMEOUT
+  iStarttime = _TASK_TIME_FUNCTION();
+#endif  //  #ifdef _TASK_TIMEOUT
+}
+
 bool StatusRequest::pending() { return (iCount != 0); }
 bool StatusRequest::completed() { return (iCount == 0); }
 int StatusRequest::getStatus() { return iStatus; }
@@ -380,6 +395,19 @@ bool Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
     }
     return false;
 }
+
+#ifdef _TASK_TIMEOUT
+void StatusRequest::resetTimeout() {
+    iStarttime = _TASK_TIME_FUNCTION();
+}
+
+long StatusRequest::untilTimeout() {
+    if ( iTimeout ) {
+        return ( (long) (iStarttime + iTimeout) - (long) _TASK_TIME_FUNCTION() );
+    }
+    return -1;
+}
+#endif  // _TASK_TIMEOUT
 #endif  // _TASK_STATUS_REQUEST
 
 bool Task::isEnabled() { return iStatus.enabled; }
@@ -667,6 +695,7 @@ bool Task::disable() {
 void Task::abort() {
     iStatus.enabled = false;
     iStatus.inonenable = false;
+    iStatus.canceled = true;
 }
 
 
@@ -978,7 +1007,7 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
 
 bool Scheduler::execute() {
     bool     idleRun = true;
-    register unsigned long m, i;  // millis, interval;
+    unsigned long m, i;  // millis, interval;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
@@ -986,8 +1015,8 @@ bool Scheduler::execute() {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_TIMECRITICAL
-    register unsigned long tPassStart;
-    register unsigned long tTaskStart, tTaskFinish;
+    unsigned long tPassStart;
+    unsigned long tTaskStart, tTaskFinish;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tIdleStart = 0;
@@ -1048,6 +1077,12 @@ bool Scheduler::execute() {
     // Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to
     // how they were placed into waiting state (waitFor or waitForDelayed)
                 if ( iCurrent->iStatus.waiting ) {
+#ifdef _TASK_TIMEOUT
+                    StatusRequest *sr = iCurrent->iStatusRequest;
+                    if ( sr->iTimeout && (m - sr->iStarttime > sr->iTimeout) ) {
+                      sr->signalComplete(TASK_SR_TIMEOUT);
+                    }
+#endif // _TASK_TIMEOUT
                     if ( (iCurrent->iStatusRequest)->pending() ) break;
                     if (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) {
                         iCurrent->iPreviousMillis = m - (iCurrent->iDelay = i);
@@ -1074,7 +1109,7 @@ bool Scheduler::execute() {
                     {
                         long ov = (long) ( iCurrent->iPreviousMillis + i - m );
                         if ( ov < 0 ) {
-                            long ii = i == 0 ? 1 : i;
+                            long ii = i ? i : 1;
                             iCurrent->iPreviousMillis += ((m - iCurrent->iPreviousMillis) / ii) * ii;
                         }
                     }

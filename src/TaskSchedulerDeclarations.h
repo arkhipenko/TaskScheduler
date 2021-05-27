@@ -77,10 +77,17 @@ class Scheduler;
 
 #ifdef _TASK_STATUS_REQUEST
 
+#define TASK_SR_OK          0
+#define TASK_SR_ERROR       (-1)
+#define TASK_SR_TIMEOUT     (-99)
+ 
 #define _TASK_SR_NODELAY    1
 #define _TASK_SR_DELAY      2
 
+class Scheduler;
+
 class StatusRequest {
+  friend class Scheduler;
   public:
     INLINE StatusRequest();
     INLINE void setWaiting(unsigned int aCount = 1);
@@ -90,10 +97,22 @@ class StatusRequest {
     INLINE bool completed();
     INLINE int getStatus();
     INLINE int getCount();
+    
+#ifdef _TASK_TIMEOUT
+    INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
+    INLINE unsigned long getTimeout() { return iTimeout; };
+    INLINE void resetTimeout();
+    INLINE long untilTimeout();
+#endif
 
   _TASK_SCOPE:
     unsigned int  iCount;          // number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
     int           iStatus;         // status of the last completed request. negative = error;  zero = OK; positive = OK with a specific status
+
+#ifdef _TASK_TIMEOUT
+    unsigned long            iTimeout;               // Task overall timeout
+    unsigned long            iStarttime;             // millis at task start time
+#endif // _TASK_TIMEOUT
 };
 #endif  // _TASK_STATUS_REQUEST
 
@@ -125,12 +144,10 @@ typedef struct  {
 #endif
 
 #ifdef _TASK_TIMEOUT
-    bool  timeout    : 1;           // indication if task is waiting on the status request
+    bool  timeout    : 1;           // indication if task timed out
 #endif
 
 } __task_status;
-
-class Scheduler;
 
 
 class Task {
