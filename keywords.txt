@@ -64,10 +64,12 @@ isLastIteration	KEYWORD2
 isOverrun	KEYWORD2
 OnDisable	KEYWORD2
 OnEnable	KEYWORD2
+pause	KEYWORD2
 pending	KEYWORD2
 resetTimeout	KEYWORD2
 restart	KEYWORD2
 restartDelayed	KEYWORD2
+resume	KEYWORD2
 set	KEYWORD2
 setCallback	KEYWORD2
 setControlPoint	KEYWORD2
