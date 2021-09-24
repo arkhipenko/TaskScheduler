@@ -1,5 +1,5 @@
 /*
-   An example of using scheduler's customer sleep callback method
+   An example of using scheduler's custom sleep callback method
 
    An empty loop is executed for 10 seconds with a 10 ms. interval
    The first time it is excuted with an empty sleep callback, and
@@ -71,7 +71,7 @@ void tEmptyOff();
 bool tDelayOn();
 void tDelayOff();
 
-// sleep methods prototypes
+// Sleep methods prototypes
 void sEmpty(unsigned long aT);
 void sDelay(unsigned long aT);
 
