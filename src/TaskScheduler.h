@@ -195,6 +195,10 @@
 //
 // v3.3.0:
 //    2021-05-11 - feature: Timeout() methods for StatusRequest objects 
+//
+// v3.4.0:
+//    2021-07-14 - feature: ability to Enable/Disable and Pause/Resume scheduling 
+//               - feature: optional use of external millis/micros methods 
 
 
 
@@ -228,17 +232,18 @@ extern "C" {
 // #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT            // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
-// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
 // #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
+// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 
  #ifdef _TASK_MICRO_RES
 
  #undef _TASK_SLEEP_ON_IDLE_RUN     // SLEEP_ON_IDLE has only millisecond resolution
- #define _TASK_TIME_FUNCTION() micros()
+ #define _TASK_TIME_FUNCTION() _task_micros()
 
  #else
- #define _TASK_TIME_FUNCTION() millis()
+ #define _TASK_TIME_FUNCTION() _task_millis()
 
  #endif  // _TASK_MICRO_RES
 
@@ -270,6 +275,10 @@ extern "C" {
 
 // ------------------ TaskScheduler implementation --------------------
 
+#ifndef _TASK_EXTERNAL_TIME
+static uint32_t _task_millis() {return millis();}
+static uint32_t _task_micros() {return micros();}
+#endif  //  _TASK_EXTERNAL_TIME
 
 /** Constructor, uses default values for the parameters
  * so could be called with no parameters.
@@ -782,6 +791,9 @@ void Scheduler::init() {
     iLast = NULL;
     iCurrent = NULL;
 
+    iPaused = false;
+    iEnabled = true;  
+
 #ifdef _TASK_PRIORITY
     iHighPriority = NULL;
 #endif  // _TASK_PRIORITY
@@ -1006,6 +1018,7 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
  */
 
 bool Scheduler::execute() {
+  
     bool     idleRun = true;
     unsigned long m, i;  // millis, interval;
 
@@ -1034,7 +1047,11 @@ bool Scheduler::execute() {
         iCurrentScheduler = this;
 #endif  // _TASK_PRIORITY
 
-    while (iCurrent) {
+    //  each scheduled is enabled/disabled individually, so check iEnabed only
+    //  after the higher priority scheduler has been invoked.
+    if ( !iEnabled ) return true; //  consider this to be an idle run
+
+    while (!iPaused && iCurrent) {
 
 #ifdef _TASK_TIMECRITICAL
         tPassStart = micros();

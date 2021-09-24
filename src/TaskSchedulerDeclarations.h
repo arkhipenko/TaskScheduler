@@ -23,9 +23,10 @@
 // #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT            // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
-// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
 // #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
+// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 
 class Scheduler;
 
@@ -57,6 +58,10 @@ class Scheduler;
 #define INLINE
 #endif
 
+#ifdef _TASK_EXTERNAL_TIME
+#define _task_millis()  external_millis()
+#define _task_micros()  external_micros()
+#endif  //  _TASK_EXTERNAL_TIME
 
 #ifndef _TASK_MICRO_RES
 
@@ -314,6 +319,10 @@ class Scheduler {
     INLINE void init();
     INLINE void addTask(Task& aTask);
     INLINE void deleteTask(Task& aTask);
+    INLINE void pause() { iPaused = true; };
+    INLINE void resume() { iPaused = false; };
+    INLINE void enable() { iEnabled = true; };
+    INLINE void disable() { iEnabled = false; };
 #ifdef _TASK_PRIORITY
     INLINE void disableAll(bool aRecursive = true);
     INLINE void enableAll(bool aRecursive = true);
@@ -358,6 +367,7 @@ class Scheduler {
   _TASK_SCOPE:
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
+    bool       iPaused, iEnabled;
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     bool        iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
