@@ -201,6 +201,8 @@
 //               - feature: optional use of external millis/micros methods 
 
 
+#ifndef _TASKSCHEDULER_H_
+#define _TASKSCHEDULER_H_
 
 #include <Arduino.h>
 
@@ -212,9 +214,6 @@ extern "C" {
 #endif
 
 #include "TaskSchedulerDeclarations.h"
-
-#ifndef _TASKSCHEDULER_H_
-#define _TASKSCHEDULER_H_
 
 // ----------------------------------------
 // The following "defines" control library functionality at compile time,
