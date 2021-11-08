@@ -190,7 +190,7 @@
 //                 feature: Task.cancelled() method - indicates that task was disabled with a cancel() method.
 //
 // v3.2.3:
-//    2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11 
+//    2021-01-01 - feature: discontinued use of 'register' keyword. Deprecated in C++ 11 
 //                 feature: add STM32 as a platform supporting _TASK_STD_FUNCTION. (PR #105)
 //
 // v3.3.0:
@@ -265,7 +265,7 @@ extern "C" {
 #endif // ARDUINO_ARCH_ESP8266
 
 #ifdef _TASK_WDT_IDS
-    static unsigned int __task_id_counter = 0; // global task ID counter for assiging task IDs automatically.
+    static unsigned int __task_id_counter = 0; // global task ID counter for assigning task IDs automatically.
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_PRIORITY
@@ -366,7 +366,7 @@ StatusRequest* Task::getInternalStatusRequest() { return &iMyStatusRequest; }
 
 /** Signals completion of the StatusRequest by one of the participating events
  *  @param: aStatus - if provided, sets the return code of the StatusRequest: negative = error, 0 (default) = OK, positive = OK with a specific status code
- *  Negative status will complete Status Request fully (since an error occured).
+ *  Negative status will complete Status Request fully (since an error occurred).
  *  @return: true, if StatusRequest is complete, false otherwise (still waiting for other events)
  */
 bool StatusRequest::signal(int aStatus) {
@@ -403,7 +403,7 @@ bool Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
     iStatusRequest = aStatusRequest;
     if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
-        if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
+        if ( aInterval ) setInterval(aInterval);  // For the delayed version only set the interval if it was not a zero
         iStatus.waiting = _TASK_SR_DELAY;  // with delay equal to the current interval
         return enable();
     }
@@ -714,7 +714,7 @@ void Task::abort() {
 
 
 /** Cancels task execution
- * Task will no longer be executed by the scheduler. Ondisable method will be called after 'canceled' flag is set
+ * Task will no longer be executed by the scheduler. The ondisable method will be called after 'canceled' flag is set
  */
 void Task::cancel() {
     iStatus.canceled = true;
@@ -789,7 +789,7 @@ Scheduler::~Scheduler() {
 }
 */
 
-/** Initializes all internal varaibles
+/** Initializes all internal variables
  */
 void Scheduler::init() {
     iFirst = NULL;
@@ -982,7 +982,7 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
 }
 
 
-Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRICATED. Use the next one instead
+Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRECATED. Use the next one instead
 Task* Scheduler::getCurrentTask() { return iCurrent; }
 
 #ifdef _TASK_LTS_POINTER

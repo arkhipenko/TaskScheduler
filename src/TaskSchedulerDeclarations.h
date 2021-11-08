@@ -143,7 +143,7 @@ typedef bool (*TaskOnEnable)();
 typedef struct  {
     bool  enabled    : 1;           // indicates that task is enabled or not.
     bool  inonenable : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
-    bool  canceled   : 1;           // indication that tast has been canceled prior to normal end of all iterations or regular call to disable()
+    bool  canceled   : 1;           // indication that task has been canceled prior to normal end of all iterations or regular call to disable()
 #ifdef _TASK_STATUS_REQUEST
     uint8_t  waiting : 2;           // indication if task is waiting on the status request
 #endif
@@ -333,7 +333,7 @@ class Scheduler {
     INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
 #endif
     INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
-    INLINE Task& currentTask() ;                        // DEPRICATED
+    INLINE Task& currentTask() ;                        // DEPRECATED
     INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task
 
