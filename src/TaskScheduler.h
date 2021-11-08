@@ -276,10 +276,13 @@ extern "C" {
 // ------------------ TaskScheduler implementation --------------------
 
 #ifndef _TASK_EXTERNAL_TIME
-static uint32_t _task_millis() {return millis();}
+
 #ifdef _TASK_MICRO_RES
 static uint32_t _task_micros() {return micros();}
+#else
+static uint32_t _task_millis() {return millis();}
 #endif  //  _TASK_MICRO_RES
+
 #endif  //  _TASK_EXTERNAL_TIME
 
 /** Constructor, uses default values for the parameters
