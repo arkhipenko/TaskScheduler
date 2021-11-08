@@ -93,7 +93,7 @@ StatusRequest* Task::getInternalStatusRequest() { return &iMyStatusRequest; }
 
 /** Signals completion of the StatusRequest by one of the participating events
  *  @param: aStatus - if provided, sets the return code of the StatusRequest: negative = error, 0 (default) = OK, positive = OK with a specific status code
- *  Negative status will complete Status Request fully (since an error occured).
+ *  Negative status will complete Status Request fully (since an error occurred).
  *  @return: true, if StatusRequest is complete, false otherwise (still waiting for other events)
  */
 bool StatusRequest::signal(int aStatus) {
@@ -130,7 +130,7 @@ bool Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
     iStatusRequest = aStatusRequest;
     if ( iStatusRequest != NULL ) { // assign internal StatusRequest var and check if it is not NULL
         setIterations(aIterations);
-        if ( aInterval ) setInterval(aInterval);  // For the dealyed version only set the interval if it was not a zero
+        if ( aInterval ) setInterval(aInterval);  // For the delayed version only set the interval if it was not a zero
         iStatus.waiting = _TASK_SR_DELAY;  // with delay equal to the current interval
         return enable();
     }
@@ -441,7 +441,7 @@ void Task::abort() {
 
 
 /** Cancels task execution
- * Task will no longer be executed by the scheduler. Ondisable method will be called after 'canceled' flag is set
+ * Task will no longer be executed by the scheduler. The ondisable method will be called after 'canceled' flag is set
  */
 void Task::cancel() {
     iStatus.canceled = true;
@@ -516,7 +516,7 @@ Scheduler::~Scheduler() {
 }
 */
 
-/** Initializes all internal varaibles
+/** Initializes all internal variables
  */
 void Scheduler::init() {
     iFirst = NULL;
@@ -709,7 +709,7 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
 }
 
 
-Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRICATED. Use the next one instead
+Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRECATED. Use the next one instead
 Task* Scheduler::getCurrentTask() { return iCurrent; }
 
 #ifdef _TASK_LTS_POINTER

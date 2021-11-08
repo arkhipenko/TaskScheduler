@@ -190,7 +190,7 @@
 //                 feature: Task.cancelled() method - indicates that task was disabled with a cancel() method.
 //
 // v3.2.3:
-//    2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11 
+//    2021-01-01 - feature: discontinued use of 'register' keyword. Deprecated in C++ 11 
 //                 feature: add STM32 as a platform supporting _TASK_STD_FUNCTION. (PR #105)
 //
 // v3.3.0:
@@ -264,7 +264,7 @@ extern "C" {
 #endif // ARDUINO_ARCH_ESP8266
 
 #ifdef _TASK_WDT_IDS
-    static unsigned int __task_id_counter = 0; // global task ID counter for assiging task IDs automatically.
+    static unsigned int __task_id_counter = 0; // global task ID counter for assigning task IDs automatically.
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_PRIORITY
