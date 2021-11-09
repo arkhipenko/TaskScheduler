@@ -100,8 +100,8 @@ class StatusRequest {
     INLINE void signalComplete(int aStatus = 0);
     INLINE bool pending();
     INLINE bool completed();
-    INLINE int getStatus();
-    INLINE int getCount();
+    INLINE int  getStatus();
+    INLINE int  getCount();
     
 #ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
@@ -193,6 +193,7 @@ class Task {
     INLINE bool restartDelayed(unsigned long aDelay=0);
 
     INLINE void delay(unsigned long aDelay=0);
+    INLINE void adjust(long aInterval);
     INLINE void forceNextIteration();
     INLINE bool disable();
     INLINE void abort();

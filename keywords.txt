@@ -16,6 +16,7 @@ Task	KEYWORD1
 
 abort	KEYWORD2
 addTask	KEYWORD2
+adjust	KEYWORD2
 allowSleep	KEYWORD2
 Callback	KEYWORD2
 cancel	KEYWORD2

@@ -199,6 +199,13 @@
 // v3.4.0:
 //    2021-07-14 - feature: ability to Enable/Disable and Pause/Resume scheduling 
 //               - feature: optional use of external millis/micros methods 
+//
+// v3.5.0:
+//    2021-11-01 - feature: adjust(long aInterval) method - adjust execution schedule: 
+//                 + aInterval - shift schedule forward (later)
+//                 - aInterval - shift schedule backwards (earlier)
+//
+//
 
 
 
@@ -643,10 +650,23 @@ bool Task::timedOut() {
  * if aDelay is zero, delays for the original scheduling interval from now
  */
 void Task::delay(unsigned long aDelay) {
-//  if (!aDelay) aDelay = iInterval;
     iDelay = aDelay ? aDelay : iInterval;
-    iPreviousMillis = _TASK_TIME_FUNCTION(); // - iInterval + aDelay;
+    iPreviousMillis = _TASK_TIME_FUNCTION(); 
 }
+
+/** Adjusts Task execution with aInterval (if task is enabled).
+ */
+void Task::adjust(long aInterval) {
+    if ( aInterval == 0 ) return;  //  nothing to do for a zero
+    if ( aInterval < 0 ) {
+      iPreviousMillis += aInterval;
+    }
+    else {
+      iDelay += aInterval;  //  we have to adjust delay because adjusting iPreviousMillis might push
+                            //  it into the future beyond current millis() and cause premature trigger
+    }
+}
+
 
 /** Schedules next iteration of Task for execution immediately (if enabled)
  * leaves task enabled or disabled
@@ -969,7 +989,7 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
     if ( !aTask.isEnabled() )
         return (-1);    // cannot be determined
 
-    long d = (long) aTask.iDelay - ( (long) ((_TASK_TIME_FUNCTION() - aTask.iPreviousMillis)) );
+    long d = (long) aTask.iDelay - ( (long) (_TASK_TIME_FUNCTION() - aTask.iPreviousMillis) );
 
     if ( d < 0 )
         return (0); // Task will run as soon as possible
