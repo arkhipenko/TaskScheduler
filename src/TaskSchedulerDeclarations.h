@@ -27,6 +27,7 @@
 // #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
 // #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
+// #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
 
 class Scheduler;
 
@@ -100,8 +101,8 @@ class StatusRequest {
     INLINE void signalComplete(int aStatus = 0);
     INLINE bool pending();
     INLINE bool completed();
-    INLINE int getStatus();
-    INLINE int getCount();
+    INLINE int  getStatus();
+    INLINE int  getCount();
     
 #ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
@@ -141,17 +142,16 @@ typedef bool (*TaskOnEnable)();
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 typedef struct  {
-    bool  enabled    : 1;           // indicates that task is enabled or not.
-    bool  inonenable : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
-    bool  canceled   : 1;           // indication that tast has been canceled prior to normal end of all iterations or regular call to disable()
+    bool  enabled       : 1;           // indicates that task is enabled or not.
+    bool  inonenable    : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
+    bool  canceled      : 1;           // indication that tast has been canceled prior to normal end of all iterations or regular call to disable()
 #ifdef _TASK_STATUS_REQUEST
-    uint8_t  waiting : 2;           // indication if task is waiting on the status request
+    uint8_t  waiting    : 2;           // indication if task is waiting on the status request
 #endif
 
 #ifdef _TASK_TIMEOUT
-    bool  timeout    : 1;           // indication if task timed out
+    bool  timeout       : 1;           // indication if task timed out
 #endif
-
 } __task_status;
 
 
@@ -193,6 +193,7 @@ class Task {
     INLINE bool restartDelayed(unsigned long aDelay=0);
 
     INLINE void delay(unsigned long aDelay=0);
+    INLINE void adjust(long aInterval);
     INLINE void forceNextIteration();
     INLINE bool disable();
     INLINE void abort();
@@ -309,6 +310,11 @@ class Task {
     unsigned long            iTimeout;               // Task overall timeout
     unsigned long            iStarttime;             // millis at task start time
 #endif // _TASK_TIMEOUT
+
+
+#ifdef _TASK_THREAD_SAFE
+    volatile uint8_t          iMutex;                // a mutex to pause scheduling during chages to the task
+#endif
 };
 
 class Scheduler {
@@ -365,15 +371,15 @@ class Scheduler {
 #endif // _TASK_EXPOSE_CHAIN
 
   _TASK_SCOPE:
-    Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
+    Task          *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
-    bool       iPaused, iEnabled;
+    volatile bool iPaused, iEnabled;
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-    bool        iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
+    bool          iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_PRIORITY
-    Scheduler  *iHighPriority;                    // Pointer to a higher priority scheduler
+    Scheduler*    iHighPriority;                    // Pointer to a higher priority scheduler
 #endif  // _TASK_PRIORITY
 
 #ifdef _TASK_TIMECRITICAL
