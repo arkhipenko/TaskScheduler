@@ -1,6 +1,6 @@
 /*
 Cooperative multitasking library for Arduino
-Copyright (c) 2015-2019 Anatoli Arkhipenko
+Copyright (c) 2015-2022 Anatoli Arkhipenko
 
 Changelog:
 v1.0.0:
@@ -209,6 +209,9 @@ v3.5.0:
 v3.6.0:
    2021-11-01 - feature: _TASK_THREAD_SAFE compile option for multi-core systems or running under RTOS 
 
+v3.6.1:
+   2022-06-28 - bug: Internal Status Request of the canceled and aborted tasks complete with respective error code
+              - feature: TASK_SR_ABORT code causes Tasks waiting on this Status Request to be aborted as well
 
 */
 
@@ -668,7 +671,7 @@ bool Task::enable() {
         iPreviousMillis = _TASK_TIME_FUNCTION() - (iDelay = iInterval);
 
 #ifdef _TASK_TIMEOUT
-            resetTimeout();
+        resetTimeout();
 #endif // _TASK_TIMEOUT
 
         if ( iStatus.enabled ) {
@@ -880,6 +883,9 @@ void Task::abort() {
     iStatus.enabled = false;
     iStatus.inonenable = false;
     iStatus.canceled = true;
+#ifdef _TASK_STATUS_REQUEST
+    iMyStatusRequest.signalComplete(TASK_SR_ABORT);
+#endif
 }
 
 
@@ -888,6 +894,9 @@ void Task::abort() {
  */
 void Task::cancel() {
     iStatus.canceled = true;
+#ifdef _TASK_STATUS_REQUEST
+    iMyStatusRequest.signalComplete(TASK_SR_ABORT);
+#endif
     disable();
 }
 
@@ -1308,6 +1317,10 @@ bool Scheduler::execute() {
                     }
 #endif // _TASK_TIMEOUT
                     if ( (iCurrent->iStatusRequest)->pending() ) break;
+                    if ( (iCurrent->iStatusRequest)->iStatus == TASK_SR_ABORT ) {
+                      iCurrent->abort();
+                      break;
+                    }
                     if (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) {
                         iCurrent->iPreviousMillis = m - (iCurrent->iDelay = i);
                     }

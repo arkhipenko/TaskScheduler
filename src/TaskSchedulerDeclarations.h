@@ -1,5 +1,5 @@
 // Cooperative multitasking library for Arduino
-// Copyright (c) 2015-2019 Anatoli Arkhipenko
+// Copyright (c) 2015-2022 Anatoli Arkhipenko
 
 #include <stddef.h>
 #include <stdint.h>
@@ -85,7 +85,9 @@ class Scheduler;
 
 #define TASK_SR_OK          0
 #define TASK_SR_ERROR       (-1)
-#define TASK_SR_TIMEOUT     (-99)
+#define TASK_SR_CANCEL      (-32766)
+#define TASK_SR_ABORT       (-32767)
+#define TASK_SR_TIMEOUT     (-32768)
  
 #define _TASK_SR_NODELAY    1
 #define _TASK_SR_DELAY      2
@@ -113,7 +115,7 @@ class StatusRequest {
 
   _TASK_SCOPE:
     unsigned int  iCount;          // number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
-    int           iStatus;         // status of the last completed request. negative = error;  zero = OK; positive = OK with a specific status
+    int           iStatus;         // status of the last completed request. negative = error;  zero = OK; positive = OK with a specific status (see TASK_SR_ constants)
 
 #ifdef _TASK_TIMEOUT
     unsigned long            iTimeout;               // Task overall timeout
