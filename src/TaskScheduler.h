@@ -296,11 +296,11 @@ static uint32_t _task_micros() {return micros();}
  * so could be called with no parameters.
  */
 #ifdef _TASK_OO_CALLBACKS
-Task::Task( unsigned long aInterval, long aIterations, Scheduler* aScheduler, bool aEnable ) {
+Task::Task( unsigned long aInterval, long aIterations, Scheduler* aScheduler, bool aEnable, bool selfdestruct) : _selfdestruct(selfdestruct) {
     reset();
     set(aInterval, aIterations);
 #else
-Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, Scheduler* aScheduler, bool aEnable, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable ) {
+Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, Scheduler* aScheduler, bool aEnable, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable, bool selfdestruct) : _selfdestruct(selfdestruct) {
     reset();
     set(aInterval, aIterations, aCallback, aOnEnable, aOnDisable);
 #endif
@@ -319,7 +319,8 @@ Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, S
  *  prior to being deleted.
  */
 Task::~Task() {
-    disable();
+    if(iStatus.enabled)
+        disable();
     if (iScheduler)
         iScheduler->deleteTask(*this);
 }
@@ -333,11 +334,11 @@ Task::~Task() {
 
 
 #ifdef _TASK_OO_CALLBACKS
-Task::Task( Scheduler* aScheduler ) {
+Task::Task( Scheduler* aScheduler ) : _selfdestruct(false) {
     reset();
     set(TASK_IMMEDIATE, TASK_ONCE);
 #else
-Task::Task( TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable ) {
+Task::Task( TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable ) : _selfdestruct(false) {
     reset();
     set(TASK_IMMEDIATE, TASK_ONCE, aCallback, aOnEnable, aOnDisable);
 #endif // _TASK_OO_CALLBACKS
@@ -845,7 +846,6 @@ void Task::setInterval (unsigned long aInterval) {
  * Task will no longer be executed by the scheduler
  * Returns status of the task before disable was called (i.e., if the task was already disabled)
  */
-
 bool Task::disable() {
     bool previousEnabled = iStatus.enabled;
     iStatus.enabled = false;
@@ -1282,6 +1282,8 @@ bool Scheduler::execute() {
     // Disable task on last iteration:
                 if (iCurrent->iIterations == 0) {
                     iCurrent->disable();
+                    if (iCurrent->_selfdestruct)
+                        delete iCurrent;
                     break;
                 }
                 m = _TASK_TIME_FUNCTION();
@@ -1292,6 +1294,8 @@ bool Scheduler::execute() {
                 if ( iCurrent->iTimeout && (m - iCurrent->iStarttime > iCurrent->iTimeout) ) {
                     iCurrent->iStatus.timeout = true;
                     iCurrent->disable();
+                    if (iCurrent->_selfdestruct)
+                        delete iCurrent;
                     break;
                 }
 #endif // _TASK_TIMEOUT

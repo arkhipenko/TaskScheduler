@@ -160,9 +160,9 @@ class Task {
   public:
 
 #ifdef _TASK_OO_CALLBACKS
-    INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false);
+    INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false, bool selfdestruct = false);
 #else
-    INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+    INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL, bool selfdestruct = false);
 #endif // _TASK_OO_CALLBACKS
 
 
@@ -315,6 +315,8 @@ class Task {
 #ifdef _TASK_THREAD_SAFE
     volatile uint8_t          iMutex;                // a mutex to pause scheduling during chages to the task
 #endif
+
+    const bool               _selfdestruct;          // indicates that Task will be destructed after last iteration
 };
 
 class Scheduler {
