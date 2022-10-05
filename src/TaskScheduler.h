@@ -212,6 +212,11 @@ v3.6.0:
 v3.6.1:
    2022-06-28 - bug: Internal Status Request of the canceled and aborted tasks complete with respective error code
               - feature: TASK_SR_ABORT code causes Tasks waiting on this Status Request to be aborted as well
+              
+v3.6.2:
+   2022-10-04 - feature: added TScheduler.hpp and TSchedulerDeclarations.hpp - a workaround for conflicting declarations (e.g., nRF52840 using Adafruit Core).
+                using namespace TS (credit: https://github.com/vortigont)
+   
 
 */
 
@@ -644,6 +649,10 @@ bool Task::enable() {
 
         iRunCounter = 0;
         iStatus.canceled = false;
+        
+#ifdef _TASK_STATUS_REQUEST
+        iMyStatusRequest.setWaiting();
+#endif // _TASK_STATUS_REQUEST]
 
 #ifdef _TASK_OO_CALLBACKS
         if ( !iStatus.inonenable ) {
@@ -674,11 +683,11 @@ bool Task::enable() {
         resetTimeout();
 #endif // _TASK_TIMEOUT
 
-        if ( iStatus.enabled ) {
 #ifdef _TASK_STATUS_REQUEST
-            iMyStatusRequest.setWaiting();
-#endif // _TASK_STATUS_REQUEST
+        if ( !iStatus.enabled ) {
+            iMyStatusRequest.signalComplete();
         }
+#endif // _TASK_STATUS_REQUEST
 
 #ifdef _TASK_THREAD_SAFE
         iMutex--;

@@ -80,7 +80,6 @@ class Scheduler;
 
 #endif  // _TASK_MICRO_RES
 
-
 #ifdef _TASK_STATUS_REQUEST
 
 #define TASK_SR_OK          0
@@ -91,8 +90,6 @@ class Scheduler;
  
 #define _TASK_SR_NODELAY    1
 #define _TASK_SR_DELAY      2
-
-class Scheduler;
 
 class StatusRequest {
   friend class Scheduler;
