@@ -10,6 +10,7 @@ Scheduler	KEYWORD1
 StatusRequest	KEYWORD1
 Task	KEYWORD1
 TS	KEYWORD1
+TaskScheduler	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)

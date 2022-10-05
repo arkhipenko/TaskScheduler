@@ -40,7 +40,7 @@
 #endif
 
 // Scheduler
-TS::Scheduler ts;
+TaskScheduler ts;
 
 /*
    Approach 1: LED is driven by the boolean variable; false = OFF, true = ON
