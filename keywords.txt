@@ -11,6 +11,10 @@ StatusRequest	KEYWORD1
 Task	KEYWORD1
 TS	KEYWORD1
 TaskScheduler	KEYWORD1
+TsScheduler	KEYWORD1
+TsStatusRequest	KEYWORD1
+TsTask	KEYWORD1
+TsTaskScheduler	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -56,6 +60,7 @@ getOverrun	KEYWORD2
 getPreviousTask	KEYWORD2
 getRunCounter	KEYWORD2
 getSchedulingOption	KEYWORD2
+getSelfDestruct	KEYWORD2
 getStartDelay	KEYWORD2
 getStatus	KEYWORD2
 getStatusRequest	KEYWORD2
@@ -84,6 +89,7 @@ setLtsPointer	KEYWORD2
 setOnDisable	KEYWORD2
 setOnEnable	KEYWORD2
 setSchedulingOption	KEYWORD2
+setSelfDestruct	KEYWORD2
 setSleepMethod	KEYWORD2
 setTimeout	KEYWORD2
 setWaiting	KEYWORD2
@@ -119,6 +125,7 @@ _TASK_SCHEDULING_OPTIONS	LITERAL1
 _TASK_DEFINE_MILLIS	LITERAL1
 _TASK_EXTERNAL_TIME	LITERAL1
 _TASK_THREAD_SAFE	LITERAL1
+_TASK_SELF_DESTRUCT	LITERAL1
 SleepCallback	LITERAL1
 TASK_FOREVER	LITERAL1
 TASK_HOUR	LITERAL1

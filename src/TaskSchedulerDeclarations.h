@@ -28,6 +28,7 @@
 // #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 // #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
+// #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
 
 class Scheduler;
 
@@ -143,14 +144,18 @@ typedef bool (*TaskOnEnable)();
 typedef struct  {
     bool  enabled       : 1;           // indicates that task is enabled or not.
     bool  inonenable    : 1;           // indicates that task execution is inside OnEnable method (preventing infinite loops)
-    bool  canceled      : 1;           // indication that tast has been canceled prior to normal end of all iterations or regular call to disable()
+    bool  canceled      : 1;           // indication that task has been canceled prior to normal end of all iterations or regular call to disable()
+#ifdef _TASK_SELF_DESTRUCT
+    bool  selfdestruct  : 1;           // indication that task has been requested to self-destruct on disable
+    bool  sd_request    : 1;           // request for scheduler to delete task object and take task out of the queue
+#endif  // _TASK_SELF_DESTRUCT
 #ifdef _TASK_STATUS_REQUEST
     uint8_t  waiting    : 2;           // indication if task is waiting on the status request
-#endif
+#endif  // _TASK_STATUS_REQUEST
 
 #ifdef _TASK_TIMEOUT
     bool  timeout       : 1;           // indication if task timed out
-#endif
+#endif  //  _TASK_TIMEOUT
 } __task_status;
 
 
@@ -159,9 +164,19 @@ class Task {
   public:
 
 #ifdef _TASK_OO_CALLBACKS
-    INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false);
+    INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false
+#ifdef _TASK_SELF_DESTRUCT
+    , bool aSelfDestruct=false);
 #else
-    INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+    );
+#endif  // #ifdef _TASK_SELF_DESTRUCT
+#else
+    INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL
+#ifdef _TASK_SELF_DESTRUCT
+  , bool aSelfDestruct=false);
+#else
+  );
+#endif  // #ifdef _TASK_SELF_DESTRUCT
 #endif // _TASK_OO_CALLBACKS
 
 
@@ -214,7 +229,12 @@ class Task {
     INLINE unsigned long getInterval();
     INLINE void setIterations(long aIterations);
     INLINE long getIterations();
-    INLINE unsigned long getRunCounter() ;
+    INLINE unsigned long getRunCounter();
+    
+#ifdef _TASK_SELF_DESTRUCT
+    INLINE void setSelfDestruct(bool aSelfDestruct=true) { iStatus.selfdestruct = aSelfDestruct; }
+    INLINE bool getSelfDestruct() { return iStatus.selfdestruct; }
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
 
 #ifdef _TASK_OO_CALLBACKS
     virtual INLINE bool Callback() =0;  // return true if run was "productive - this will disable sleep on the idle run for next pass

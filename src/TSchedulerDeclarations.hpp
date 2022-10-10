@@ -16,7 +16,10 @@ namespace TS{
 #include "TaskSchedulerDeclarations.h"
 }
 
-using TaskScheduler = TS::Scheduler;
-using SleepCallback = TS::SleepCallback;
-using Task = TS::Task;
-using StatusRequest = TS::StatusRequest;
+using TsScheduler = TS::Scheduler;
+using TsTask = TS::Task;
+using TsStatusRequest = TS::StatusRequest;
+using TsSleepCallback = TS::SleepCallback;
+using TsTaskCallback = TS::TaskCallback;
+using TsTaskOnDisable = TS::TaskOnDisable;
+using TsTaskOnEnable = TS::TaskOnEnable;

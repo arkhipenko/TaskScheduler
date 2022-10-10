@@ -217,6 +217,10 @@ v3.6.2:
    2022-10-04 - feature: added TScheduler.hpp and TSchedulerDeclarations.hpp - a workaround for conflicting declarations (e.g., nRF52840 using Adafruit Core).
                 using namespace TS (credit: https://github.com/vortigont)
    
+v3.7.0:
+   2022-10-10 - feature: added ability for Task to "self-destruct" on disable. Useful for dynamic task management.
+                Added updated example 19 for this functionality. Updated the Sketch Template
+                (Thanks, https://github.com/vortigont for the idea).
 
 */
 
@@ -256,6 +260,7 @@ extern "C" {
 // #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 // #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
+// #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
 
  #ifdef _TASK_MICRO_RES
 
@@ -304,15 +309,29 @@ static uint32_t _task_micros() {return micros();}
  * so could be called with no parameters.
  */
 #ifdef _TASK_OO_CALLBACKS
-Task::Task( unsigned long aInterval, long aIterations, Scheduler* aScheduler, bool aEnable ) {
+Task::Task( unsigned long aInterval, long aIterations, Scheduler* aScheduler, bool aEnable
+#ifdef _TASK_SELF_DESTRUCT
+, bool aSelfDestruct ) {
+#else 
+  ) {
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
     reset();
     set(aInterval, aIterations);
 #else
-Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, Scheduler* aScheduler, bool aEnable, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable ) {
+Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, Scheduler* aScheduler, bool aEnable, TaskOnEnable aOnEnable, TaskOnDisable aOnDisable
+#ifdef _TASK_SELF_DESTRUCT
+, bool aSelfDestruct ) {
+#else
+  ) {
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
     reset();
     set(aInterval, aIterations, aCallback, aOnEnable, aOnDisable);
 #endif
 
+#ifdef _TASK_SELF_DESTRUCT
+    setSelfDestruct(aSelfDestruct);
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
+    
     if (aScheduler) aScheduler->addTask(*this);
 
 #ifdef _TASK_WDT_IDS
@@ -327,9 +346,8 @@ Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, S
  *  prior to being deleted.
  */
 Task::~Task() {
-    disable();
-    if (iScheduler)
-        iScheduler->deleteTask(*this);
+    if ( this->isEnabled() ) disable();
+    if (iScheduler) iScheduler->deleteTask(*this);
 }
 
 
@@ -538,6 +556,11 @@ void Task::reset() {
 #ifdef _TASK_THREAD_SAFE
     iMutex = 0;
 #endif  // _TASK_THREAD_SAFE
+
+#ifdef _TASK_SELF_DESTRUCT
+    iStatus.sd_request = false;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
+
 }
 
 /** Explicitly set Task execution parameters
@@ -882,6 +905,10 @@ bool Task::disable() {
 #ifdef _TASK_STATUS_REQUEST
     iMyStatusRequest.signalComplete();
 #endif
+
+#ifdef _TASK_SELF_DESTRUCT
+    if ( getSelfDestruct() ) iStatus.sd_request = true;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
     return (previousEnabled);
 }
 
@@ -895,6 +922,10 @@ void Task::abort() {
 #ifdef _TASK_STATUS_REQUEST
     iMyStatusRequest.signalComplete(TASK_SR_ABORT);
 #endif
+
+#ifdef _TASK_SELF_DESTRUCT
+    if ( getSelfDestruct() ) iStatus.sd_request = true;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
 }
 
 
@@ -1089,10 +1120,15 @@ void Scheduler::disableAll() {
 
     iEnabled = false;
     
-    Task    *current = iFirst;
+    Task*    current = iFirst;
+    Task*    next;
     while (current) {
+        next = current->iNext;
         current->disable();
-        current = current->iNext;
+#ifdef _TASK_SELF_DESTRUCT
+        if ( current->iStatus.sd_request ) delete iCurrent;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
+        current = next;
     }
 
 #ifdef _TASK_PRIORITY
@@ -1300,6 +1336,9 @@ bool Scheduler::execute() {
     // Disable task on last iteration:
                 if (iCurrent->iIterations == 0) {
                     iCurrent->disable();
+#ifdef _TASK_SELF_DESTRUCT
+                    if ( iCurrent->iStatus.sd_request ) delete iCurrent;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
                     break;
                 }
                 m = _TASK_TIME_FUNCTION();
@@ -1310,6 +1349,9 @@ bool Scheduler::execute() {
                 if ( iCurrent->iTimeout && (m - iCurrent->iStarttime > iCurrent->iTimeout) ) {
                     iCurrent->iStatus.timeout = true;
                     iCurrent->disable();
+#ifdef _TASK_SELF_DESTRUCT
+                    if ( iCurrent->iStatus.sd_request ) delete iCurrent;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
                     break;
                 }
 #endif // _TASK_TIMEOUT

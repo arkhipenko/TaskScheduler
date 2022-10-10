@@ -3,8 +3,7 @@
     Test case:
       Main task runs every 100 milliseconds 100 times and in 50% cases generates a task object
       which runs 1 to 10 times with 100 ms to 5 s interval, and then destroyed.
-      Garbage collection deletes all the tasks which have finished (enabled in their respective
-      OnDisable methods)
+      Self-destruct feature takes care of the task deletion after tasks complete
 
       This sketch uses the following libraries:
        - FreeMemory library: https://github.com/McNeight/MemoryFree
@@ -12,10 +11,10 @@
 */
 
 #define _TASK_WDT_IDS // To enable task unique IDs
-#define _TASK_SLEEP_ON_IDLE_RUN  // Compile with support for entering IDLE SLEEP state for 1 ms if not tasks are scheduled to run
+#define _TASK_SLEEP_ON_IDLE_RUN // Compile with support for entering IDLE SLEEP state for 1 ms if not tasks are scheduled to run
 #define _TASK_LTS_POINTER       // Compile with support for Local Task Storage pointer
+#define _TASK_SELF_DESTRUCT     // Enable tasks to "self-destruct" after disable
 #include <TaskScheduler.h>
-#include <QueueArray.h>
 
 int freeMemory();
 
@@ -42,15 +41,12 @@ void GC();
 
 // Statis task
 Task tMain(100 * TASK_MILLISECOND, 100, &MainLoop, &ts, true);
-Task tGarbageCollection(200 * TASK_MILLISECOND, TASK_FOREVER, &GC, &ts, false);
-
 
 void Iteration();
 bool OnEnable();
 void OnDisable();
 
 int noOfTasks = 0;
-QueueArray <Task*> toDelete;
 
 void MainLoop() {
   Serial.print(millis()); Serial.print("\t");
@@ -62,7 +58,7 @@ void MainLoop() {
     // Generating another task
     long p = random(100, 5001); // from 100 ms to 5 seconds
     long j = random(1, 11); // from 1 to 10 iterations)
-    Task *t = new Task(p, j, Iteration, &ts, false, OnEnable, OnDisable);
+    Task *t = new Task(p, j, Iteration, &ts, false, OnEnable, OnDisable, true); // enable self-destruct
 
     Serial.print(F("Generated a new task:\t")); Serial.print(t->getId()); Serial.print(F("\tInt, Iter = \t"));
     Serial.print(p); Serial.print(", "); Serial.print(j);
@@ -93,11 +89,10 @@ bool OnEnable() {
 void OnDisable() {
   Task *t = &ts.currentTask();
   unsigned int tid = t->getId();
-  toDelete.push(t);
-  tGarbageCollection.enableIfNot();
 
   Serial.print(millis()); Serial.print("\t");
   Serial.print("Task N"); Serial.print(tid); Serial.println(F("\tfinished"));
+  Serial.print(F("\tNo of tasks=")); Serial.println(--noOfTasks);
 }
 
 /**
@@ -117,21 +112,10 @@ void setup() {
   Serial.println();
 }
 
-void GC() {
-  if ( toDelete.isEmpty() ) {
-    tGarbageCollection.disable();
-    return;
-  }
-  Task *t = toDelete.pop();
-  Serial.print(millis()); Serial.print("\t");
-  Serial.print("Task N"); Serial.print(t->getId()); Serial.println(F("\tdestroyed"));
-  Serial.print("Free mem="); Serial.print(freeMemory());
-  Serial.print(F("\tNo of tasks=")); Serial.println(--noOfTasks);
-  delete t;
-}
-
 void loop() {
   ts.execute();
+  if ( millis() > 5000 && noOfTasks == 0 ) {
+      Serial.print(F("\tFree mem=")); Serial.println(freeMemory());
+      while(1);
+  }
 }
-
-

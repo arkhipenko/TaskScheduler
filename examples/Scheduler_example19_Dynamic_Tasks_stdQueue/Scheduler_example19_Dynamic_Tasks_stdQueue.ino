@@ -14,8 +14,10 @@
 #define _TASK_WDT_IDS // To enable task unique IDs
 #define _TASK_SLEEP_ON_IDLE_RUN  // Compile with support for entering IDLE SLEEP state for 1 ms if not tasks are scheduled to run
 #define _TASK_LTS_POINTER       // Compile with support for Local Task Storage pointer
+
 #include <TaskScheduler.h>
-#include <QueueArray.h>
+
+#include <queue>
 
 int freeMemory();
 
@@ -50,7 +52,7 @@ bool OnEnable();
 void OnDisable();
 
 int noOfTasks = 0;
-QueueArray <Task*> toDelete;
+std::queue <Task*> toDelete;
 
 void MainLoop() {
   Serial.print(millis()); Serial.print("\t");
@@ -118,11 +120,11 @@ void setup() {
 }
 
 void GC() {
-  if ( toDelete.isEmpty() ) {
+  if ( toDelete.empty() ) {
     tGarbageCollection.disable();
     return;
   }
-  Task *t = toDelete.pop();
+  Task *t = toDelete.front(); toDelete.pop();
   Serial.print(millis()); Serial.print("\t");
   Serial.print("Task N"); Serial.print(t->getId()); Serial.println(F("\tdestroyed"));
   Serial.print("Free mem="); Serial.print(freeMemory());
@@ -133,5 +135,3 @@ void GC() {
 void loop() {
   ts.execute();
 }
-
-

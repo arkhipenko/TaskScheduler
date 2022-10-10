@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 3.6.2: 2022-10-04 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
+#### Version 3.7.0: 2022-10-10 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)[![xscode](https://img.shields.io/badge/Available%20on-xs%3Acode-blue?style=?style=plastic&logo=appveyor&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////////VXz1bAAAAAJ0Uk5T/wDltzBKAAAAlUlEQVR42uzXSwqAMAwE0Mn9L+3Ggtgkk35QwcnSJo9S+yGwM9DCooCbgn4YrJ4CIPUcQF7/XSBbx2TEz4sAZ2q1RAECBAiYBlCtvwN+KiYAlG7UDGj59MViT9hOwEqAhYCtAsUZvL6I6W8c2wcbd+LIWSCHSTeSAAECngN4xxIDSK9f4B9t377Wd7H5Nt7/Xz8eAgwAvesLRjYYPuUAAAAASUVORK5CYII=)](https://xscode.com/arkhipenko/TaskScheduler)
 
@@ -34,7 +34,8 @@ _“Everybody who learns concurrency and thinks they understand it, ends up find
 13. CPU load / idle statistics for time critical applications
 14. Scheduling options with priority for original schedule (with and without catchup) and interval
 15. Ability to pause/resume and enable/disable scheduling
-15. Thread-safe scheduling while running under preemptive scheduler (i. e., FreeRTOS)
+16. Thread-safe scheduling while running under preemptive scheduler (i. e., FreeRTOS)
+17. Optional self-destruction of dynamically created tasks upon disable
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 
@@ -43,7 +44,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Arduino Nano
 * Arduino Micro
 * ATtiny85
-* ESP8266 (Node MCU v2.0)
+* ESP8266
 * ESP32
 * Teensy (tested on Teensy 3.5)
 * nRF52 (tested on nRF52832)
