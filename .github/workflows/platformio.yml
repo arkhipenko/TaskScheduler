@@ -1,0 +1,57 @@
+name: PlatformIO
+
+on:
+  push:
+    branches: [ master, cibuilder ]
+    paths:
+    - '**.ino'
+    - '**.cpp'
+    - '**.hpp'
+    - '**.h'
+    - '**.c'
+    - '**.ini'
+    - '**.yml'
+
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 2
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: PIO Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+          #restore-keys: |
+          #  ${{ runner.os }}-pio
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install Platformio
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+          #platformio pkg update
+      - name: PIO Build
+        run: |
+          pwd
+          find examples -type f -name '*.ino' -exec sh -c 'mv "$1" "${1%.ino}.cpp"' _ {} \;
+          mkdir lib && mv src ./lib/
+          platformio run -c platformio_ci.ini
+          #platformio ci --lib ./src -c platformio_ci.ini examples
+          #platformio ci --lib ./src -c platformio_ci.ini -e avr_ci ${{ matrix.avr }}
+          #platformio ci --lib ./src -c platformio_ci.ini -e esp32_ci ${{ matrix.esp32 }}
+        #env:
+        #  PLATFORMIO_CI_SRC: ${{ matrix.avr }}
