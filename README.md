@@ -81,6 +81,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 "arkhipenko/TaskScheduler is still my choice for now, especially when I get my pull request in, so we can have that idle 1 ms sleep feature for free." - [here](http://stm32duinoforum.com/forum/viewtopic_f_18_t_4299.html)
 
+"The difference with milis is basically that you don’t have to be using logics to manage the executions, but the module itself does it. This will allow us to make code more readable and easier to maintain. In addition, we must take into account the extra functions it provides, such as saving energy when not in use, or changing settings dynamically." - [here](https://www.electrosoftcloud.com/en/arduino-taskscheduler-no-more-millis-or-delay/)
 
 
 ### Check out what TaskScheduler can do:
