@@ -1,6 +1,6 @@
 /*
 Cooperative multitasking library for Arduino
-Copyright (c) 2015-2022 Anatoli Arkhipenko
+Copyright (c) 2015-2023 Anatoli Arkhipenko
 
 Changelog:
 v1.0.0:
@@ -221,6 +221,9 @@ v3.7.0:
    2022-10-10 - feature: added ability for Task to "self-destruct" on disable. Useful for dynamic task management.
                 Added updated example 19 for this functionality. Updated the Sketch Template
                 (Thanks, https://github.com/vortigont for the idea).
+
+v3.8.0:
+   2023-01-24 - feature: added setIntervalNodelay() method to dynamically adjust current interval
 
 */
 
@@ -876,6 +879,51 @@ void Task::setInterval (unsigned long aInterval) {
 #endif  // _TASK_THREAD_SAFE
 }
 
+/** Sets the execution interval without delaying the task
+ * Task state does not change
+ * If Task is disabled, it would remain so
+ * @param aInterval - new execution interval
+ */
+void Task::setIntervalNodelay (unsigned long aInterval, unsigned int aOption) {
+#ifdef _TASK_THREAD_SAFE
+    iMutex++;
+#endif  // _TASK_THREAD_SAFE
+
+// #define TASK_INTERVAL_KEEP      0
+// #define TASK_INTERVAL_RECALC    1
+// #define TASK_INTERVAL_RESET     2
+
+    switch (aOption) {
+      case TASK_INTERVAL_RECALC:
+      {
+          int32_t d = aInterval - iInterval;
+          // change the delay proportionally
+          iDelay += d;
+          iInterval = aInterval;
+          break;
+      } 
+      case TASK_INTERVAL_RESET:
+          iInterval = aInterval;
+          iDelay = aInterval;
+          break;
+          
+      default:
+//      case TASK_INTERVAL_KEEP:
+          if ( iInterval == iDelay ) {
+              iInterval = aInterval;
+              iDelay = aInterval;
+          }
+          else {
+              iInterval = aInterval;
+          }
+          break;
+    }
+
+#ifdef _TASK_THREAD_SAFE
+    iMutex--;
+#endif  // _TASK_THREAD_SAFE
+}
+
 /** Disables task
  * Task will no longer be executed by the scheduler
  * Returns status of the task before disable was called (i.e., if the task was already disabled)
@@ -1382,6 +1430,9 @@ bool Scheduler::execute() {
                 }
 #endif  // _TASK_STATUS_REQUEST
 
+                // this is the main scheduling decision point
+                // if the interval between current time and previous invokation time is less than the current delay - task should NOT be activated yet.
+                // this is millis-rollover-safe way of scheduling
                 if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) break;
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task

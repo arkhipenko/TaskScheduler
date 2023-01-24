@@ -1,5 +1,5 @@
 // Cooperative multitasking library for Arduino
-// Copyright (c) 2015-2022 Anatoli Arkhipenko
+// Copyright (c) 2015-2023 Anatoli Arkhipenko
 
 #include <stddef.h>
 #include <stdint.h>
@@ -42,9 +42,15 @@ class Scheduler;
     #define _TASK_SCOPE  private
 #endif
 
+//  task scheduling iteration common options
 #define TASK_IMMEDIATE          0
 #define TASK_FOREVER         (-1)
 #define TASK_ONCE               1
+
+//  options for setIntervalNodelay() method
+#define TASK_INTERVAL_KEEP      0
+#define TASK_INTERVAL_RECALC    1
+#define TASK_INTERVAL_RESET     2
 
 #ifdef _TASK_TIMEOUT
 #define TASK_NOTIMEOUT          0
@@ -226,6 +232,7 @@ class Task {
     INLINE void set(unsigned long aInterval, long aIterations, TaskCallback aCallback,TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
 #endif // _TASK_OO_CALLBACKS
     INLINE void setInterval(unsigned long aInterval);
+    INLINE void setIntervalNodelay(unsigned long aInterval, unsigned int aOption = TASK_INTERVAL_KEEP);
     INLINE unsigned long getInterval();
     INLINE void setIterations(long aIterations);
     INLINE long getIterations();
