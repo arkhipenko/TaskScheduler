@@ -225,6 +225,9 @@ v3.7.0:
 v3.8.0:
    2023-01-24 - feature: added setIntervalNodelay() method to dynamically adjust current interval
 
+v3.8.1:
+   2023-05-11 - bug: conditional compile options missing from *.hpp files (Adafruit support)
+
 */
 
 

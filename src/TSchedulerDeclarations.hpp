@@ -18,8 +18,12 @@ namespace TS{
 
 using TsScheduler = TS::Scheduler;
 using TsTask = TS::Task;
+#ifdef _TASK_STATUS_REQUEST
 using TsStatusRequest = TS::StatusRequest;
+#endif
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
 using TsSleepCallback = TS::SleepCallback;
+#endif
 using TsTaskCallback = TS::TaskCallback;
 using TsTaskOnDisable = TS::TaskOnDisable;
 using TsTaskOnEnable = TS::TaskOnEnable;
