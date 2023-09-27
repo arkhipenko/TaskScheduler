@@ -29,6 +29,8 @@
 // #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 // #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
 // #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
+// #define _TASK_TICKLESS           // Enable support for tickless sleep on FreeRTOS
+// #define _TASK_DO_NOT_YIELD       // Disable yield() method in execute()
 
 class Scheduler;
 
@@ -86,6 +88,12 @@ class Scheduler;
 #define TASK_HOUR     3600000000UL
 
 #endif  // _TASK_MICRO_RES
+
+#ifdef _TASK_TICKLESS
+#define _TASK_NEXTRUN_UNDEFINED 0b0
+#define _TASK_NEXTRUN_IMMEDIATE 0b1
+#define _TASK_NEXTRUN_TIMED     0x10
+#endif  //  _TASK_TICKLESS
 
 #ifdef _TASK_STATUS_REQUEST
 
@@ -364,7 +372,11 @@ class Scheduler {
     INLINE void enableAll();
     INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
 #endif
+#ifdef _TASK_TICKLESS
+    INLINE bool execute(unsigned long* aNextRun);                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
+#else
     INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
+#endif
     INLINE Task& currentTask() ;                        // DEPRICATED
     INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task
@@ -413,6 +425,11 @@ class Scheduler {
     unsigned long iCPUCycle;
     unsigned long iCPUIdle;
 #endif  // _TASK_TIMECRITICAL
+
+#ifdef _TASK_TICKLESS
+    unsigned long iNextRun;
+    unsigned int  iNextRunDetermined;
+#endif
 };
 
 

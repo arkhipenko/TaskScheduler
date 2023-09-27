@@ -228,6 +228,10 @@ v3.8.0:
 v3.8.1:
    2023-05-11 - bug: conditional compile options missing from *.hpp files (Adafruit support)
 
+v3.8.2:
+   2023-09-27 - feature: _TASK_TICKLESS - support for tickless execution under FreeRTOS
+              - feature: _TASK_DO_NOT_YIELD - ability to disable yield() in execute() method
+
 */
 
 
@@ -267,6 +271,9 @@ extern "C" {
 // #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 // #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
 // #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
+// #define _TASK_TICKLESS           // Enable support for tickless sleep under FreeRTOS
+// #define _TASK_DO_NOT_YIELD       // Disable yield() method in execute()
+
 
  #ifdef _TASK_MICRO_RES
 
@@ -308,7 +315,9 @@ extern "C" {
 
 #ifndef _TASK_EXTERNAL_TIME
 static uint32_t _task_millis() {return millis();}
+#ifdef _TASK_MICRO_RES
 static uint32_t _task_micros() {return micros();}
+#endif  //  _TASK_MICRO_RES
 #endif  //  _TASK_EXTERNAL_TIME
 
 /** Constructor, uses default values for the parameters
@@ -1323,17 +1332,19 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
  * by running task more frequently
  */
 
+#ifdef _TASK_TICKLESS
+bool Scheduler::execute(unsigned long* aNextRun) {
+#else
 bool Scheduler::execute() {
+#endif
   
     bool     idleRun = true;
     unsigned long m, i;  // millis, interval;
 
-#ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
-    unsigned long tStart = micros();
-#endif  // _TASK_SLEEP_ON_IDLE_RUN
+    unsigned long tStart;
 
-#ifdef _TASK_TIMECRITICAL
+#if defined(_TASK_TIMECRITICAL)
     unsigned long tPassStart;
     unsigned long tTaskStart, tTaskFinish;
 
@@ -1357,9 +1368,18 @@ bool Scheduler::execute() {
     //  after the higher priority scheduler has been invoked.
     if ( !iEnabled ) return true; //  consider this to be an idle run
 
+    // scheduling pass starts
+    tStart = micros();
+
+#ifdef _TASK_TICKLESS
+    iNextRun = UINT32_MAX;  // we do not know yet if we can tell when next run will be
+    iNextRunDetermined = _TASK_NEXTRUN_UNDEFINED;
+#endif
+
+
     while (!iPaused && iCurrent) {
 
-#ifdef _TASK_TIMECRITICAL
+#if defined(_TASK_TIMECRITICAL)
         tPassStart = micros();
         tTaskStart = tTaskFinish = 0; 
 #endif  // _TASK_TIMECRITICAL
@@ -1412,6 +1432,13 @@ bool Scheduler::execute() {
     // Otherwise, continue with execution as usual.  Tasks waiting to StatusRequest need to be rescheduled according to
     // how they were placed into waiting state (waitFor or waitForDelayed)
                 if ( iCurrent->iStatus.waiting ) {
+
+#ifdef _TASK_TICKLESS
+    // if there is a task waiting on a status request we are obligated to run continously
+    // because event can trigger at any point at time. 
+    iNextRunDetermined |= _TASK_NEXTRUN_IMMEDIATE; // immediate
+#endif
+
 #ifdef _TASK_TIMEOUT
                     StatusRequest *sr = iCurrent->iStatusRequest;
                     if ( sr->iTimeout && (m - sr->iStarttime > sr->iTimeout) ) {
@@ -1436,7 +1463,26 @@ bool Scheduler::execute() {
                 // this is the main scheduling decision point
                 // if the interval between current time and previous invokation time is less than the current delay - task should NOT be activated yet.
                 // this is millis-rollover-safe way of scheduling
-                if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) break;
+                if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) {
+#ifdef _TASK_TICKLESS
+                // catch the reamining time until invocation as next time this should run
+                // this does not handle millis rollover well - so for the rollover situation (once every 47 days)
+                // we will require immediate execution
+                    unsigned long nextrun = iCurrent->iDelay + iCurrent->iPreviousMillis;
+                    // nextrun should be after current millis() (except rollover)
+                    // nextrun should be sooner than previously determined
+                    if ( nextrun > m && nextrun < iNextRun ) { 
+                        iNextRun = nextrun;
+                        iNextRunDetermined |= _TASK_NEXTRUN_TIMED; // next run timed
+                    }
+#endif  //  _TASK_TICKLESS                   
+                    break;
+                }
+
+
+#ifdef _TASK_TICKLESS
+                iNextRunDetermined |= _TASK_NEXTRUN_IMMEDIATE; // next run timed
+#endif  
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
                 iCurrent->iRunCounter++;
@@ -1473,8 +1519,8 @@ bool Scheduler::execute() {
 #endif  // _TASK_TIMECRITICAL
 
                 iCurrent->iDelay = i;
-                
-#ifdef _TASK_TIMECRITICAL
+
+#if defined(_TASK_TIMECRITICAL)
                 tTaskStart = micros();
 #endif  // _TASK_TIMECRITICAL
 
@@ -1487,7 +1533,7 @@ bool Scheduler::execute() {
                 }
 #endif // _TASK_OO_CALLBACKS
 
-#ifdef _TASK_TIMECRITICAL
+#if defined(_TASK_TIMECRITICAL)
                 tTaskFinish = micros();
 #endif  // _TASK_TIMECRITICAL
 
@@ -1501,14 +1547,27 @@ bool Scheduler::execute() {
         iCPUCycle += ( (micros() - tPassStart) - (tTaskFinish - tTaskStart) );
 #endif  // _TASK_TIMECRITICAL
         
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
+#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32) 
+#if !defined(_TASK_DO_NOT_YIELD)
         yield();
-#endif  // ARDUINO_ARCH_ESPxx
+#endif  //  _TASK_DO_NOT_YIELD
+#endif  //  ARDUINO_ARCH_ESPxx
     }
 
+    tFinish = micros(); // Scheduling pass end time in microseconds.
+
+#ifdef _TASK_TICKLESS
+    if ( aNextRun ) {
+        *aNextRun = 0;  // next iteration should be immediate by default
+        // if the pass was "idle" and there are tasks scheduled
+        if ( idleRun && iNextRunDetermined & _TASK_NEXTRUN_TIMED ) {
+            m = millis();
+            if ( iNextRun > m ) *aNextRun = ( iNextRun - m );
+        }
+    }
+#endif 
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-    tFinish = micros(); // Scheduling pass end time in microseconds.
 
     if (idleRun && iAllowSleep) {
         if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 
