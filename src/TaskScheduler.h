@@ -1560,10 +1560,14 @@ bool Scheduler::execute() {
     if ( aNextRun ) {
         *aNextRun = 0;  // next iteration should be immediate by default
         // if the pass was "idle" and there are tasks scheduled
-        if ( idleRun && iNextRunDetermined & _TASK_NEXTRUN_TIMED ) {
-            m = millis();
-            if ( iNextRun > m ) *aNextRun = ( iNextRun - m );
-        }
+        do {
+          if ( !idleRun ) break;
+          if ( (iNextRunDetermined & _TASK_NEXTRUN_IMMEDIATE) ) break;
+          if ( iNextRunDetermined == _TASK_NEXTRUN_UNDEFINED ) break;
+          m = millis();
+          if ( iNextRun <= m) break;
+          *aNextRun = ( iNextRun - m );
+        } while (0);
     }
 #endif 
 
