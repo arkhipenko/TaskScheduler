@@ -232,6 +232,10 @@ v3.8.2:
    2023-09-27 - feature: _TASK_TICKLESS - support for tickless execution under FreeRTOS
               - feature: _TASK_DO_NOT_YIELD - ability to disable yield() in execute() method
 
+v3.8.3:
+   2023-09-29 - feature: _TASK_TICKLESS - change in approach for backwards compatibility
+              - feature: added scheduler stats for total/active/invoked tasks per each pass
+
 */
 
 
@@ -1332,23 +1336,18 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
  * by running task more frequently
  */
 
-#ifdef _TASK_TICKLESS
-bool Scheduler::execute(unsigned long* aNextRun) {
-#else
 bool Scheduler::execute() {
-#endif
   
     bool     idleRun = true;
     unsigned long m, i;  // millis, interval;
-
-    unsigned long tFinish;
-    unsigned long tStart;
 
 #if defined(_TASK_TIMECRITICAL)
     unsigned long tPassStart;
     unsigned long tTaskStart, tTaskFinish;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+    unsigned long tFinish;
+    unsigned long tStart;
     unsigned long tIdleStart = 0;
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
@@ -1356,6 +1355,10 @@ bool Scheduler::execute() {
 
     Task *nextTask;     // support for deleting the task in the onDisable method
     iCurrent = iFirst;
+
+    iActiveTasks = 0;
+    iTotalTasks = 0;
+    iInvokedTasks = 0;
 
 #ifdef _TASK_PRIORITY
     // If lower priority scheduler does not have a single task in the chain
@@ -1368,16 +1371,20 @@ bool Scheduler::execute() {
     //  after the higher priority scheduler has been invoked.
     if ( !iEnabled ) return true; //  consider this to be an idle run
 
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
     // scheduling pass starts
     tStart = micros();
+#endif
 
 #ifdef _TASK_TICKLESS
-    iNextRun = UINT32_MAX;  // we do not know yet if we can tell when next run will be
-    iNextRunDetermined = _TASK_NEXTRUN_UNDEFINED;
+    unsigned long nr = UINT32_MAX;  // we do not know yet if we can tell when next run will be
+    unsigned int  nrd = _TASK_NEXTRUN_UNDEFINED;
 #endif
 
 
     while (!iPaused && iCurrent) {
+
+        iTotalTasks++;
 
 #if defined(_TASK_TIMECRITICAL)
         tPassStart = micros();
@@ -1392,6 +1399,7 @@ bool Scheduler::execute() {
         nextTask = iCurrent->iNext;
         do {
             if ( iCurrent->iStatus.enabled ) {
+                iActiveTasks++;
 
 #ifdef _TASK_THREAD_SAFE
             //  this task is in the scheduling state and should not be invoked
@@ -1436,7 +1444,7 @@ bool Scheduler::execute() {
 #ifdef _TASK_TICKLESS
     // if there is a task waiting on a status request we are obligated to run continously
     // because event can trigger at any point at time. 
-    iNextRunDetermined |= _TASK_NEXTRUN_IMMEDIATE; // immediate
+    nrd |= _TASK_NEXTRUN_IMMEDIATE; // immediate
 #endif
 
 #ifdef _TASK_TIMEOUT
@@ -1471,9 +1479,9 @@ bool Scheduler::execute() {
                     unsigned long nextrun = iCurrent->iDelay + iCurrent->iPreviousMillis;
                     // nextrun should be after current millis() (except rollover)
                     // nextrun should be sooner than previously determined
-                    if ( nextrun > m && nextrun < iNextRun ) { 
-                        iNextRun = nextrun;
-                        iNextRunDetermined |= _TASK_NEXTRUN_TIMED; // next run timed
+                    if ( nextrun > m && nextrun < nr ) { 
+                        nr = nextrun;
+                        nrd |= _TASK_NEXTRUN_TIMED; // next run timed
                     }
 #endif  //  _TASK_TICKLESS                   
                     break;
@@ -1481,7 +1489,7 @@ bool Scheduler::execute() {
 
 
 #ifdef _TASK_TICKLESS
-                iNextRunDetermined |= _TASK_NEXTRUN_IMMEDIATE; // next run timed
+                nrd |= _TASK_NEXTRUN_IMMEDIATE; // next run timed
 #endif  
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations--;  // do not decrement (-1) being a signal of never-ending task
@@ -1530,6 +1538,7 @@ bool Scheduler::execute() {
                 if ( iCurrent->iCallback ) {
                     iCurrent->iCallback();
                     idleRun = false;
+                    iInvokedTasks++;
                 }
 #endif // _TASK_OO_CALLBACKS
 
@@ -1554,21 +1563,21 @@ bool Scheduler::execute() {
 #endif  //  ARDUINO_ARCH_ESPxx
     }
 
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
     tFinish = micros(); // Scheduling pass end time in microseconds.
+#endif
 
 #ifdef _TASK_TICKLESS
-    if ( aNextRun ) {
-        *aNextRun = 0;  // next iteration should be immediate by default
-        // if the pass was "idle" and there are tasks scheduled
-        do {
-          if ( !idleRun ) break;
-          if ( (iNextRunDetermined & _TASK_NEXTRUN_IMMEDIATE) ) break;
-          if ( iNextRunDetermined == _TASK_NEXTRUN_UNDEFINED ) break;
-          m = millis();
-          if ( iNextRun <= m) break;
-          *aNextRun = ( iNextRun - m );
-        } while (0);
-    }
+    iNextRun = 0;  // next iteration should be immediate by default
+    // if the pass was "idle" and there are tasks scheduled
+    do {
+        if ( !idleRun ) break;
+        if ( (nrd & _TASK_NEXTRUN_IMMEDIATE) ) break;
+        if ( nrd == _TASK_NEXTRUN_UNDEFINED ) break;
+        m = millis();
+        if ( nr <= m) break;
+        iNextRun = ( nr - m );
+    } while (0);
 #endif 
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN

@@ -372,14 +372,19 @@ class Scheduler {
     INLINE void enableAll();
     INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
 #endif
-#ifdef _TASK_TICKLESS
-    INLINE bool execute(unsigned long* aNextRun);                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
-#else
+
     INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
-#endif
+
     INLINE Task& currentTask() ;                        // DEPRICATED
     INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
     INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task
+
+    INLINE unsigned long getActiveTasks() { return iActiveTasks; }
+    INLINE unsigned long getTotalTasks() { return iTotalTasks; }
+    INLINE unsigned long getInvokedTasks() { return iInvokedTasks; }
+#ifdef _TASK_TICKLESS
+    INLINE unsigned long getNextRun() { return iNextRun; }
+#endif
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     INLINE void allowSleep(bool aState = true);
@@ -412,6 +417,10 @@ class Scheduler {
     Task          *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
     volatile bool iPaused, iEnabled;
+    unsigned long iActiveTasks;
+    unsigned long iTotalTasks;
+    unsigned long iInvokedTasks;
+
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     bool          iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
@@ -428,7 +437,6 @@ class Scheduler {
 
 #ifdef _TASK_TICKLESS
     unsigned long iNextRun;
-    unsigned int  iNextRunDetermined;
 #endif
 };
 

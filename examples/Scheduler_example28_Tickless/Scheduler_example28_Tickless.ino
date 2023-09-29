@@ -89,11 +89,14 @@ void setup () {
 
 unsigned long nr = 0;
 void loop () {
-  runner.execute(&nr);
+  runner.execute();
+  nr = runner.getNextRun();
   if ( nr ) {
-    Serial.print("Next run in ");
-    Serial.print(nr);
-    Serial.println(" ms");
-    delay(nr-1);
+    Serial.println("TS stats:");
+    Serial.print("\tTotal   tasks: "); Serial.println(runner.getTotalTasks() );
+    Serial.print("\tActive  tasks: "); Serial.println(runner.getActiveTasks() );
+    Serial.print("\tInvoked tasks: "); Serial.println(runner.getInvokedTasks() );
+    Serial.print("Next scheduling pass in "); Serial.print(nr); Serial.println(" ms");
+    delay(nr);
   }
 }
