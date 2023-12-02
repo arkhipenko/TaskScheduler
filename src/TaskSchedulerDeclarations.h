@@ -99,10 +99,10 @@ class StatusRequest {
     INLINE void setWaiting(unsigned int aCount = 1);
     INLINE bool signal(int aStatus = 0);
     INLINE void signalComplete(int aStatus = 0);
-    INLINE bool pending();
-    INLINE bool completed();
-    INLINE int  getStatus();
-    INLINE int  getCount();
+    INLINE bool pending() const;
+    INLINE bool completed() const;
+    INLINE int  getStatus() const;
+    INLINE int  getCount() const;
     
 #ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
@@ -195,9 +195,9 @@ class Task {
 #ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout, bool aReset=false);
     INLINE void resetTimeout();
-    INLINE unsigned long getTimeout();
-    INLINE long untilTimeout();
-    INLINE bool timedOut();
+    INLINE unsigned long getTimeout() const;
+    INLINE long untilTimeout() const;
+    INLINE bool timedOut() const;
 #endif
 
     INLINE bool enable();
@@ -212,11 +212,11 @@ class Task {
     INLINE bool disable();
     INLINE void abort();
     INLINE void cancel();
-    INLINE bool isEnabled();
-    INLINE bool canceled();
+    INLINE bool isEnabled() const;
+    INLINE bool canceled() const;
 
 #ifdef _TASK_SCHEDULING_OPTIONS
-    INLINE unsigned int getSchedulingOption() { return iOption; }
+    INLINE unsigned int getSchedulingOption() const { return iOption; }
     INLINE void setSchedulingOption(unsigned int aOption) {  iOption = aOption; }
 #endif  //_TASK_SCHEDULING_OPTIONS
 
@@ -226,14 +226,14 @@ class Task {
     INLINE void set(unsigned long aInterval, long aIterations, TaskCallback aCallback,TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
 #endif // _TASK_OO_CALLBACKS
     INLINE void setInterval(unsigned long aInterval);
-    INLINE unsigned long getInterval();
+    INLINE unsigned long getInterval() const;
     INLINE void setIterations(long aIterations);
-    INLINE long getIterations();
-    INLINE unsigned long getRunCounter();
+    INLINE long getIterations() const;
+    INLINE unsigned long getRunCounter() const;
     
 #ifdef _TASK_SELF_DESTRUCT
     INLINE void setSelfDestruct(bool aSelfDestruct=true) { iStatus.selfdestruct = aSelfDestruct; }
-    INLINE bool getSelfDestruct() { return iStatus.selfdestruct; }
+    INLINE bool getSelfDestruct() const { return iStatus.selfdestruct; }
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
 
 #ifdef _TASK_OO_CALLBACKS
@@ -248,12 +248,12 @@ class Task {
     INLINE void yieldOnce(TaskCallback aCallback);
 #endif // _TASK_OO_CALLBACKS
 
-    INLINE bool isFirstIteration() ;
-    INLINE bool isLastIteration() ;
+    INLINE bool isFirstIteration() const;
+    INLINE bool isLastIteration() const;
 
 #ifdef _TASK_TIMECRITICAL
-    INLINE long getOverrun() ;
-    INLINE long getStartDelay() ;
+    INLINE long getOverrun() const ;
+    INLINE long getStartDelay() const ;
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_STATUS_REQUEST
@@ -265,14 +265,14 @@ class Task {
 
 #ifdef _TASK_WDT_IDS
     INLINE void setId(unsigned int aID) ;
-    INLINE unsigned int getId() ;
+    INLINE unsigned int getId() const;
     INLINE void setControlPoint(unsigned int aPoint) ;
-    INLINE unsigned int getControlPoint() ;
+    INLINE unsigned int getControlPoint() const ;
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_LTS_POINTER
     INLINE void  setLtsPointer(void *aPtr) ;
-    INLINE void* getLtsPointer() ;
+    INLINE void* getLtsPointer();
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_EXPOSE_CHAIN
@@ -372,11 +372,11 @@ class Scheduler {
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_TIMECRITICAL
-    INLINE bool isOverrun();
+    INLINE bool isOverrun() const;
     INLINE void cpuLoadReset();
-    INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
-    INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
-    INLINE unsigned long getCpuLoadTotal();
+    INLINE unsigned long getCpuLoadCycle() const { return iCPUCycle; };
+    INLINE unsigned long getCpuLoadIdle() const { return iCPUIdle; };
+    INLINE unsigned long getCpuLoadTotal() const;
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
