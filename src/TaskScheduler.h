@@ -390,10 +390,10 @@ void StatusRequest::setWaiting(unsigned int aCount) {
 #endif  //  #ifdef _TASK_TIMEOUT
 }
 
-bool StatusRequest::pending() { return (iCount != 0); }
-bool StatusRequest::completed() { return (iCount == 0); }
-int StatusRequest::getStatus() { return iStatus; }
-int StatusRequest::getCount() { return iCount; }
+bool StatusRequest::pending() const { return (iCount != 0); }
+bool StatusRequest::completed() const { return (iCount == 0); }
+int StatusRequest::getStatus() const { return iStatus; }
+int StatusRequest::getCount() const { return iCount; }
 StatusRequest* Task::getStatusRequest() { return iStatusRequest; }
 StatusRequest* Task::getInternalStatusRequest() { return &iMyStatusRequest; }
 
@@ -481,13 +481,13 @@ long StatusRequest::untilTimeout() {
 #endif  // _TASK_TIMEOUT
 #endif  // _TASK_STATUS_REQUEST
 
-bool Task::isEnabled() { return iStatus.enabled; }
+bool Task::isEnabled() const { return iStatus.enabled; }
 
-unsigned long Task::getInterval() { return iInterval; }
+unsigned long Task::getInterval() const { return iInterval; }
 
-long Task::getIterations() { return iIterations; }
+long Task::getIterations() const { return iIterations; }
 
-unsigned long Task::getRunCounter() { return iRunCounter; }
+unsigned long Task::getRunCounter() const { return iRunCounter; }
 
 #ifdef _TASK_OO_CALLBACKS
 
@@ -784,18 +784,18 @@ void Task::resetTimeout() {
 #endif  // _TASK_THREAD_SAFE
 }
 
-unsigned long Task::getTimeout() {
+unsigned long Task::getTimeout() const {
     return iTimeout;
 }
 
-long Task::untilTimeout() {
+long Task::untilTimeout() const {
     if ( iTimeout ) {
         return ( (long) (iStarttime + iTimeout) - (long) _TASK_TIME_FUNCTION() );
     }
     return -1;
 }
 
-bool Task::timedOut() {
+bool Task::timedOut() const {
     return iStatus.timeout;
 }
 
@@ -940,7 +940,7 @@ void Task::cancel() {
     disable();
 }
 
-bool Task::canceled() {
+bool Task::canceled() const {
     return iStatus.canceled;
 }
 
@@ -961,14 +961,14 @@ bool Task::restartDelayed(unsigned long aDelay) {
     return enableDelayed(aDelay);
 }
 
-bool Task::isFirstIteration() { return (iRunCounter <= 1); }
+bool Task::isFirstIteration() const { return (iRunCounter <= 1); }
 
-bool Task::isLastIteration() { return (iIterations == 0); }
+bool Task::isLastIteration() const { return (iIterations == 0); }
 
 #ifdef _TASK_TIMECRITICAL
 
-long Task::getOverrun() { return iOverrun; }
-long Task::getStartDelay() { return iStartDelay; }
+long Task::getOverrun() const { return iOverrun; }
+long Task::getStartDelay() const { return iStartDelay; }
 
 #endif  // _TASK_TIMECRITICAL
 
@@ -976,16 +976,16 @@ long Task::getStartDelay() { return iStartDelay; }
 #ifdef _TASK_WDT_IDS
 
 void Task::setId(unsigned int aID) { iTaskID = aID; }
-unsigned int Task::getId() { return iTaskID; }
+unsigned int Task::getId() const { return iTaskID; }
 void Task::setControlPoint(unsigned int aPoint) { iControlPoint = aPoint; }
-unsigned int Task::getControlPoint() { return iControlPoint; }
+unsigned int Task::getControlPoint() const { return iControlPoint; }
 
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_LTS_POINTER
 
 void  Task::setLtsPointer(void *aPtr) { iLTS = aPtr; }
-void* Task::getLtsPointer() { return iLTS; }
+void* Task::getLtsPointer() const { return iLTS; }
 
 #endif  // _TASK_LTS_POINTER
 
@@ -1240,7 +1240,7 @@ void* Scheduler::currentLts() { return iCurrent->iLTS; }
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_TIMECRITICAL
-bool Scheduler::isOverrun() { return (iCurrent->iOverrun < 0); }
+bool Scheduler::isOverrun() const { return (iCurrent->iOverrun < 0); }
 
 void Scheduler::cpuLoadReset() {
     iCPUStart = micros();
@@ -1249,7 +1249,7 @@ void Scheduler::cpuLoadReset() {
 }
 
 
-unsigned long Scheduler::getCpuLoadTotal() {
+unsigned long Scheduler::getCpuLoadTotal() const {
     return (micros() - iCPUStart);
 }
 #endif  // _TASK_TIMECRITICAL
