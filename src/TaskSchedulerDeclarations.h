@@ -69,8 +69,12 @@ class Scheduler;
 #endif
 
 #ifdef _TASK_EXTERNAL_TIME
+uint32_t external_millis();
 #define _task_millis()  external_millis()
+#ifdef _TASK_MICRO_RES
+uint32_t external_micros();
 #define _task_micros()  external_micros()
+#endif  //  _TASK_MICRO_RES
 #endif  //  _TASK_EXTERNAL_TIME
 
 #ifndef _TASK_MICRO_RES

@@ -14,7 +14,10 @@
  *  Task1 disables Task3 on its last iteration and changed Task2 to run every 1/2 seconds
  *  At the end Task2 is the only task running every 1/2 seconds
  */
- 
+
+#define _TASK_SLEEP_ON_IDLE_RUN  // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
+#define _TASK_TICKLESS           // Enable support for tickless sleep on FreeRTOS
+#define _TASK_DO_NOT_YIELD       // Disable yield() method in execute() 
  
 #include <TaskScheduler.h>
 
