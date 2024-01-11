@@ -1341,13 +1341,16 @@ bool Scheduler::execute() {
     bool     idleRun = true;
     unsigned long m, i;  // millis, interval;
 
+#ifdef _TASK_SLEEP_ON_IDLE_RUN
+    unsigned long tFinish;
+    unsigned long tStart;
+#endif  // _TASK_SLEEP_ON_IDLE_RUN
+
 #if defined(_TASK_TIMECRITICAL)
     unsigned long tPassStart;
     unsigned long tTaskStart, tTaskFinish;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-    unsigned long tFinish;
-    unsigned long tStart;
     unsigned long tIdleStart = 0;
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
