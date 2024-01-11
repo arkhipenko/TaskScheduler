@@ -1547,6 +1547,9 @@ bool Scheduler::execute() {
 #endif  // _TASK_TIMECRITICAL
 
             }
+#ifdef _TASK_SELF_DESTRUCT
+            else if ( iCurrent->iStatus.sd_request ) delete iCurrent;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
         } while (0);    //guaranteed single run - allows use of "break" to exit
 
         iCurrent = nextTask;

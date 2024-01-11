@@ -42,6 +42,8 @@ void GC();
 // Statis task
 Task tMain(100 * TASK_MILLISECOND, 100, &MainLoop, &ts, true);
 
+long maxIterations = 0;
+
 void Iteration();
 bool OnEnable();
 void OnDisable();
@@ -58,6 +60,7 @@ void MainLoop() {
     // Generating another task
     long p = random(100, 5001); // from 100 ms to 5 seconds
     long j = random(1, 11); // from 1 to 10 iterations)
+    maxIterations = (j>maxIterations) ? j : maxIterations;
     Task *t = new Task(p, j, Iteration, &ts, false, OnEnable, OnDisable, true); // enable self-destruct
 
     Serial.print(F("Generated a new task:\t")); Serial.print(t->getId()); Serial.print(F("\tInt, Iter = \t"));
@@ -79,6 +82,11 @@ void Iteration() {
   Serial.print("Task N"); Serial.print(t.getId()); Serial.print(F("\tcurrent iteration: "));
   int i = t.getRunCounter();
   Serial.println(i);
+
+  if (i + 1 >= maxIterations) {
+    t.disable();
+    maxIterations *= 2; // self-disable exactly one task
+  }
 }
 
 bool OnEnable() {
