@@ -1190,7 +1190,7 @@ void Scheduler::disableAll() {
         next = current->iNext;
         current->disable();
 #ifdef _TASK_SELF_DESTRUCT
-        if ( current->iStatus.sd_request ) delete iCurrent;
+        if ( current->iStatus.sd_request ) delete current;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
         current = next;
     }

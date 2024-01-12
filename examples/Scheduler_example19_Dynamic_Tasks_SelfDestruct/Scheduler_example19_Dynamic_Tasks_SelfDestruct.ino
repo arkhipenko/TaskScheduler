@@ -114,7 +114,8 @@ void setup() {
 
 void loop() {
   ts.execute();
-  if ( millis() > 5000 && noOfTasks == 0 ) {
+  if ( millis() > 5000 && noOfTasks == 5 ) {
+      ts.disableAll();
       Serial.print(F("\tFree mem=")); Serial.println(freeMemory());
       while(1);
   }
