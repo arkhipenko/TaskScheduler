@@ -236,6 +236,11 @@ v3.8.3:
    2023-09-29 - feature: _TASK_TICKLESS - change in approach for backwards compatibility
               - feature: added scheduler stats for total/active/invoked tasks per each pass
 
+v3.8.4:
+   2024-01-13 - bug: (git issue #180): the variables tStart and tFinish are required if sleep support is enabled, 
+                independent of _TASK_TIMECRITICAL. however, they were guarded by _TASK_TIMECRITICAL as well.
+              - bug: (git issue #181): delete manually disable tasks with self-destruct flag
+              - bug: (git issue #182): correct deletion of self-destruct 'current' task in disableAll()
 */
 
 
@@ -1190,7 +1195,7 @@ void Scheduler::disableAll() {
         next = current->iNext;
         current->disable();
 #ifdef _TASK_SELF_DESTRUCT
-        if ( current->iStatus.sd_request ) delete iCurrent;
+        if ( current->iStatus.sd_request ) delete current;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
         current = next;
     }
@@ -1344,6 +1349,7 @@ bool Scheduler::execute() {
 #if defined(_TASK_TIMECRITICAL)
     unsigned long tPassStart;
     unsigned long tTaskStart, tTaskFinish;
+#endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
@@ -1351,7 +1357,6 @@ bool Scheduler::execute() {
     unsigned long tIdleStart = 0;
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
-#endif  // _TASK_TIMECRITICAL
 
     Task *nextTask;     // support for deleting the task in the onDisable method
     iCurrent = iFirst;
@@ -1547,6 +1552,9 @@ bool Scheduler::execute() {
 #endif  // _TASK_TIMECRITICAL
 
             }
+#ifdef _TASK_SELF_DESTRUCT
+            else if ( iCurrent->iStatus.sd_request ) delete iCurrent;
+#endif  //  #ifdef _TASK_SELF_DESTRUCT
         } while (0);    //guaranteed single run - allows use of "break" to exit
 
         iCurrent = nextTask;

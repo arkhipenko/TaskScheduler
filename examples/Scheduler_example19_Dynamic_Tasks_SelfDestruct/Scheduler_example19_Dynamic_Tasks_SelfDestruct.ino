@@ -4,6 +4,7 @@
       Main task runs every 100 milliseconds 100 times and in 50% cases generates a task object
       which runs 1 to 10 times with 100 ms to 5 s interval, and then destroyed.
       Self-destruct feature takes care of the task deletion after tasks complete
+      Last 5 tasks are deleted with disableAll() scheduler method as a test
 
       This sketch uses the following libraries:
        - FreeMemory library: https://github.com/McNeight/MemoryFree
@@ -47,6 +48,7 @@ bool OnEnable();
 void OnDisable();
 
 int noOfTasks = 0;
+long maxIterations = 0;
 
 void MainLoop() {
   Serial.print(millis()); Serial.print("\t");
@@ -58,6 +60,7 @@ void MainLoop() {
     // Generating another task
     long p = random(100, 5001); // from 100 ms to 5 seconds
     long j = random(1, 11); // from 1 to 10 iterations)
+    maxIterations = ( j > maxIterations ) ? j : maxIterations;
     Task *t = new Task(p, j, Iteration, &ts, false, OnEnable, OnDisable, true); // enable self-destruct
 
     Serial.print(F("Generated a new task:\t")); Serial.print(t->getId()); Serial.print(F("\tInt, Iter = \t"));
@@ -79,6 +82,11 @@ void Iteration() {
   Serial.print("Task N"); Serial.print(t.getId()); Serial.print(F("\tcurrent iteration: "));
   int i = t.getRunCounter();
   Serial.println(i);
+  
+  if (i >= maxIterations) {
+    t.disable();
+    maxIterations *= 2; // self-disable exactly one task
+  }
 }
 
 bool OnEnable() {
@@ -114,7 +122,8 @@ void setup() {
 
 void loop() {
   ts.execute();
-  if ( millis() > 5000 && noOfTasks == 0 ) {
+  if ( millis() > 5000 && noOfTasks <= 5 ) {
+      ts.disableAll();
       Serial.print(F("\tFree mem=")); Serial.println(freeMemory());
       while(1);
   }
