@@ -237,10 +237,10 @@ v3.8.3:
               - feature: added scheduler stats for total/active/invoked tasks per each pass
 
 v3.8.4:
-   2024-01-13 - bug: (git issue #180): the variables tStart and tFinish are required if sleep support is enabled, 
+   2024-01-13 - bug: (git PR #180): the variables tStart and tFinish are required if sleep support is enabled, 
                 independent of _TASK_TIMECRITICAL. however, they were guarded by _TASK_TIMECRITICAL as well.
-              - bug: (git issue #181): delete manually disable tasks with self-destruct flag
-              - bug: (git issue #182): correct deletion of self-destruct 'current' task in disableAll()
+              - bug: (git PR #181): delete manually disable tasks with self-destruct flag
+              - bug: (git PR #182): correct deletion of self-destruct 'current' task in disableAll()
 */
 
 
