@@ -2,7 +2,7 @@
  * TaskScheduler Test sketch - Showing how to use std::function
  * to get acces to variables from within the task callback function 
  * 
- * Support for std::function is only available for ESP8266 architecture
+ * Support for std::function is only available for ESP8266, ESP32, STM32 architectures
  */
 #define _TASK_SLEEP_ON_IDLE_RUN
 #define _TASK_STD_FUNCTION   // Compile with support for std::function 
