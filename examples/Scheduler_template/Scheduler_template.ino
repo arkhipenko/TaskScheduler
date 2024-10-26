@@ -41,6 +41,7 @@
 // The following "defines" control library functionality at compile time,
 // and should be used in the main sketch depending on the functionality required
 // Should be defined BEFORE #include <TaskScheduler.h>  !!!
+// In PlatformIO - better define those as build_flags in platformio.ini file
 //
 // #define _TASK_TIMECRITICAL       // Enable monitoring scheduling overruns
 // #define _TASK_SLEEP_ON_IDLE_RUN  // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
@@ -56,10 +57,13 @@
 // #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
 // #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
 // #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
-// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
-// #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
-// #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
 // #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
+// #define _TASK_TICKLESS           // Enable support for tickless sleep on FreeRTOS
+// #define _TASK_DO_NOT_YIELD       // Disable yield() method in execute() for ESP chips
+// #define _TASK_ISR_SUPPORT        // for esp chips - place control methods in IRAM
+// #define _TASK_NON_ARDUINO        // for non-arduino use
+// #define _TASK_HEADER_AND_CPP     // compile CPP file (non-Arduino IDE platforms)
+// #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
 
 #include <TaskScheduler.h>
 

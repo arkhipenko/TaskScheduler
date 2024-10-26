@@ -28,8 +28,6 @@
 // #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
 // #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
 // #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
-// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
-// #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 // #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
 // #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
 #include <TaskScheduler.h>

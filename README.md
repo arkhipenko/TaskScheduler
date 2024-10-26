@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 3.9.0: 2024-08-14 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
+#### Version 4.0.0: 2024-10-26 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)[![xscode](https://img.shields.io/badge/Available%20on-xs%3Acode-blue?style=?style=plastic&logo=appveyor&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////////VXz1bAAAAAJ0Uk5T/wDltzBKAAAAlUlEQVR42uzXSwqAMAwE0Mn9L+3Ggtgkk35QwcnSJo9S+yGwM9DCooCbgn4YrJ4CIPUcQF7/XSBbx2TEz4sAZ2q1RAECBAiYBlCtvwN+KiYAlG7UDGj59MViT9hOwEqAhYCtAsUZvL6I6W8c2wcbd+LIWSCHSTeSAAECngN4xxIDSK9f4B9t377Wd7H5Nt7/Xz8eAgwAvesLRjYYPuUAAAAASUVORK5CYII=)](https://xscode.com/arkhipenko/TaskScheduler)
 
@@ -37,6 +37,8 @@ _“Everybody who learns concurrency and thinks they understand it, ends up find
 16. Thread-safe scheduling while running under preemptive scheduler (i. e., FreeRTOS)
 17. Optional self-destruction of dynamically created tasks upon disable
 18. Support for "tickless" execution under FreeRTOS (continous sleep until next scheduled task invocation)
+19. Support for both Arduino IDE stype (headers only) and PlatformIO style (Header + CPP files)
+20. Support for non-Arduino platforms
 
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 
@@ -52,7 +54,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * nRF52 Adafruit Core (tested on nRF52840 with v3.6.2 workround)
 * STM32 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 * MSP430 and MSP432 boards
-* Raspberry Pi (requires external `Arduino.h` and `millis()` implementation)
+* Raspberry Pi (requires external `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
 
 
 

@@ -4,108 +4,82 @@
    as I can think of. So, here we go.
 
    Tested on:
-   - Bluefruit nRF52840
+   - ESP32
+
+   This example is compiled without Arduino.h in TS header. 
 */
 
+#include <TaskSchedulerDeclarations.h>
 
-// ----------------------------------------
-// The following "defines" control library functionality at compile time,
-// and should be used in the main sketch depending on the functionality required
-//
-// #define _TASK_TIMECRITICAL       // Enable monitoring scheduling overruns
-#define _TASK_SLEEP_ON_IDLE_RUN  // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
-#define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
-// #define _TASK_WDT_IDS            // Compile with support for wdt control points and task ids
-// #define _TASK_LTS_POINTER        // Compile with support for local task storage pointer
-// #define _TASK_PRIORITY           // Support for layered scheduling priority
-// #define _TASK_MICRO_RES          // Support for microsecond resolution
-// #define _TASK_STD_FUNCTION       // Support for std::function (ESP8266 ONLY)
-// #define _TASK_DEBUG              // Make all methods and variables public for debug purposes
-// #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
-// #define _TASK_TIMEOUT            // Support for overall task timeout
-// #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
-// #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
-// #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
-// #define _TASK_THREAD_SAFE        // Enable additional checking for thread safety
-// #define _TASK_SELF_DESTRUCT      // Enable tasks to "self-destruct" after disable
-
-#include <TScheduler.hpp>
-
-// Debug and Test options
-//#define _DEBUG_
-//#define _TEST_
-
-#ifdef _DEBUG_
-#define _PP(a) Serial.print(a);
-#define _PL(a) Serial.println(a);
-#else
-#define _PP(a)
-#define _PL(a)
-#endif
-
-// LED_BUILTIN  13
-#if defined( ARDUINO_ARCH_ESP32 )
-#define LED_BUILTIN  23 // esp32 dev2 kit does not have LED
-#endif
+#include <Arduino.h>
+#include "main.h"
+#include "led.h"
 
 // Scheduler
-TsScheduler ts;
+Scheduler ts;
+
+
+// Comment the following 3 functions out to observer errors due to missing Arduino.h
+unsigned long _task_millis() {
+  return xTaskGetTickCount();
+}
+
+unsigned long _task_micros() {
+  return (unsigned long) (esp_timer_get_time());
+}
+
+void _task_yield() {
+  portYIELD();
+}
 
 /*
    Approach 1: LED is driven by the boolean variable; false = OFF, true = ON
 */
-#define PERIOD1 500
-#define DURATION 10000
 void blink1CB();
-TsTask tBlink1 ( PERIOD1 * TASK_MILLISECOND, DURATION / PERIOD1, &blink1CB, &ts, true );
+Task tBlink1 ( PERIOD1 * TASK_MILLISECOND, DURATION / PERIOD1, &blink1CB, &ts, true );
 
 /*
-   Approac 2: two callback methods: one turns ON, another turns OFF
+   Approach 2: two callback methods: one turns ON, another turns OFF
 */
-#define PERIOD2 400
 void blink2CB_ON();
 void blink2CB_OFF();
-TsTask tBlink2 ( PERIOD2 * TASK_MILLISECOND, DURATION / PERIOD2, &blink2CB_ON, &ts, false );
+Task tBlink2 ( PERIOD2 * TASK_MILLISECOND, DURATION / PERIOD2, &blink2CB_ON, &ts, false );
 
 /*
    Approach 3: Use RunCounter
 */
-#define PERIOD3 300
 void blink3CB();
-TsTask tBlink3 (PERIOD3 * TASK_MILLISECOND, DURATION / PERIOD3, &blink3CB, &ts, false);
+Task tBlink3 (PERIOD3 * TASK_MILLISECOND, DURATION / PERIOD3, &blink3CB, &ts, false);
 
 /*
    Approach 4: Use status request objects to pass control from one task to the other
 */
-#define PERIOD4 200
 bool blink41OE();
 void blink41();
 void blink42();
 void blink42OD();
-TsTask tBlink4On  ( PERIOD4 * TASK_MILLISECOND, TASK_ONCE, blink41, &ts, false, &blink41OE );
-TsTask tBlink4Off ( PERIOD4 * TASK_MILLISECOND, TASK_ONCE, blink42, &ts, false, NULL, &blink42OD );
+Task tBlink4On  ( PERIOD4 * TASK_MILLISECOND, TASK_ONCE, blink41, &ts, false, &blink41OE );
+Task tBlink4Off ( PERIOD4 * TASK_MILLISECOND, TASK_ONCE, blink42, &ts, false, NULL, &blink42OD );
 
 
 /*
    Approach 5: Two interleaving tasks
 */
-#define PERIOD5 600
 bool blink51OE();
 void blink51();
 void blink52();
 void blink52OD();
-TsTask tBlink5On  ( 600 * TASK_MILLISECOND, DURATION / PERIOD5, &blink51, &ts, false, &blink51OE );
-TsTask tBlink5Off ( 600 * TASK_MILLISECOND, DURATION / PERIOD5, &blink52, &ts, false, NULL, &blink52OD );
+Task tBlink5On  ( 600 * TASK_MILLISECOND, DURATION / PERIOD5, &blink51, &ts, false, &blink51OE );
+Task tBlink5Off ( 600 * TASK_MILLISECOND, DURATION / PERIOD5, &blink52, &ts, false, NULL, &blink52OD );
 
 
 /*
    Approach 6: RunCounter-based with random intervals
 */
-#define PERIOD6 300
 void blink6CB();
 bool blink6OE();
 void blink6OD();
-TsTask tBlink6 ( PERIOD6 * TASK_MILLISECOND, DURATION / PERIOD6, &blink6CB, &ts, false, &blink6OE, &blink6OD );
+Task tBlink6 ( PERIOD6 * TASK_MILLISECOND, DURATION / PERIOD6, &blink6CB, &ts, false, &blink6OE, &blink6OD );
 
 void setup() {
   // put your setup code here, to run once:
@@ -121,14 +95,6 @@ void setup() {
 
 void loop() {
   ts.execute();
-}
-
-inline void LEDOn() {
-  digitalWrite( LED_BUILTIN, HIGH );
-}
-
-inline void LEDOff() {
-  digitalWrite( LED_BUILTIN, LOW );
 }
 
 // === 1 =======================================
@@ -221,7 +187,7 @@ void blink41() {
   //  _PP(millis());
   //  _PL(": blink41");
   LEDOn();
-  TsStatusRequest* r = tBlink4On.getInternalStatusRequest();
+  StatusRequest* r = tBlink4On.getInternalStatusRequest();
   tBlink4Off.waitForDelayed( r );
   counter++;
 }
@@ -230,7 +196,7 @@ void blink42() {
   //  _PP(millis());
   //  _PL(": blink42");
   LEDOff();
-  TsStatusRequest* r = tBlink4Off.getInternalStatusRequest();
+  StatusRequest* r = tBlink4Off.getInternalStatusRequest();
   tBlink4On.waitForDelayed( r );
   counter++;
 }

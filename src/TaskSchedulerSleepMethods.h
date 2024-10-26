@@ -56,10 +56,11 @@ extern unsigned long tStart, tFinish;
 const unsigned long tRem = 1000-_TASK_ESP32_DLY_THRESHOLD;
 
 void SleepMethod( unsigned long aDuration ) {
-    if ( aDuration < tRem ) {
-        esp_sleep_enable_timer_wakeup((uint64_t) (1000 - aDuration));
-        esp_light_sleep_start();
-    }
+    // === NOT IMPLEMENTED ===
+    // if ( aDuration < tRem ) {
+    //     esp_sleep_enable_timer_wakeup((uint64_t) (1000 - aDuration));
+    //     esp_light_sleep_start();
+    // }
 }
 // ARDUINO_ARCH_ESP32
 
