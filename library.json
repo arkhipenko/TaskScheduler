@@ -16,7 +16,7 @@
       "maintainer": true
     }
   ],
-  "version": "3.8.5",
+  "version": "3.9.0",
   "frameworks": "arduino",
   "platforms": "*"
 }

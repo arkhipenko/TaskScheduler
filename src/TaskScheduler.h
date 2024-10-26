@@ -1,6 +1,6 @@
 /*
 Cooperative multitasking library for Arduino
-Copyright (c) 2015-2023 Anatoli Arkhipenko
+Copyright (c) 2015-2024 Anatoli Arkhipenko
 
 Changelog:
 v1.0.0:
@@ -245,10 +245,23 @@ v3.8.4:
 v3.8.5:
    2024-06-17 - updated volatile compound statements after C++20 deprecated compound assignment on volatiles 
 
+v3.9.0:
+   2024-08-14 - _TASK_ISR_SUPPORT compile option (espressif chips only) - allow placing a few control methods into IRAM to be used in ISRs
+                list of IRAM-enabled methods:
+                    StatusRequest::signal
+                    StatusRequest::signalComplete
+                    Task::enable
+                    Task::enableIfNot
+                    Task::enableDelayed
+                    Task::restart
+                    Task::restartDelayed
+                    Task::delay
+                    Task::forceNextIteration
+
 */
 
 
-#include <Arduino.h>
+#include "TaskSchedulerDeclarations.h"
 
 #ifdef _TASK_DEFINE_MILLIS
 extern "C" {
@@ -257,7 +270,6 @@ extern "C" {
 }
 #endif
 
-#include "TaskSchedulerDeclarations.h"
 
 #ifndef _TASKSCHEDULER_H_
 #define _TASKSCHEDULER_H_
@@ -430,7 +442,7 @@ StatusRequest* Task::getInternalStatusRequest() { return &iMyStatusRequest; }
  *  Negative status will complete Status Request fully (since an error occured).
  *  @return: true, if StatusRequest is complete, false otherwise (still waiting for other events)
  */
-bool StatusRequest::signal(int aStatus) {
+bool __TASK_IRAM StatusRequest::signal(int aStatus) {
     if ( iCount) {  // do not update the status request if it was already completed
         if (iCount > 0)  --iCount;
         if ( (iStatus = aStatus) < 0 ) iCount = 0;   // if an error is reported, the status is requested to be completed immediately
@@ -438,7 +450,7 @@ bool StatusRequest::signal(int aStatus) {
     return (iCount == 0);
 }
 
-void StatusRequest::signalComplete(int aStatus) {
+void __TASK_IRAM StatusRequest::signalComplete(int aStatus) {
     if (iCount) { // do not update the status request if it was already completed
         iCount = 0;
         iStatus = aStatus;
@@ -692,7 +704,7 @@ void Task::yieldOnce (TaskCallback aCallback) {
  *  schedules it for execution as soon as possible,
  *  and resets the RunCounter back to zero
  */
-bool Task::enable() {
+bool __TASK_IRAM Task::enable() {
     if (iScheduler) { // activation without active scheduler does not make sense
 
 #ifdef _TASK_THREAD_SAFE
@@ -754,7 +766,7 @@ bool Task::enable() {
 /** Enables the task only if it was not enabled already
  * Returns previous state (true if was already enabled, false if was not)
  */
-bool Task::enableIfNot() {
+bool __TASK_IRAM Task::enableIfNot() {
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex + 1;
 #endif  // _TASK_THREAD_SAFE
@@ -772,7 +784,7 @@ bool Task::enableIfNot() {
 /** Enables the task
  * and schedules it for execution after a delay = aInterval
  */
-bool Task::enableDelayed(unsigned long aDelay) {
+bool __TASK_IRAM Task::enableDelayed(unsigned long aDelay) {
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex + 1;
 #endif  // _TASK_THREAD_SAFE
@@ -837,7 +849,7 @@ bool Task::timedOut() {
  * leaves task enabled or disabled
  * if aDelay is zero, delays for the original scheduling interval from now
  */
-void Task::delay(unsigned long aDelay) {
+void __TASK_IRAM Task::delay(unsigned long aDelay) {
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex + 1;
 #endif  // _TASK_THREAD_SAFE
@@ -876,7 +888,7 @@ void Task::adjust(long aInterval) {
  * leaves task enabled or disabled
  * Task's original schedule is shifted, and all subsequent iterations will continue from this point in time
  */
-void Task::forceNextIteration() {
+void __TASK_IRAM Task::forceNextIteration() {
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex + 1;
 #endif  // _TASK_THREAD_SAFE
@@ -1024,7 +1036,7 @@ bool Task::canceled() {
  * Task will run number of iterations again
  */
 
-bool Task::restart() {
+bool __TASK_IRAM Task::restart() {
     iIterations = iSetIterations;
     return enable();
 }
@@ -1032,7 +1044,7 @@ bool Task::restart() {
 /** Restarts task delayed
  * Task will run number of iterations again
  */
-bool Task::restartDelayed(unsigned long aDelay) {
+bool __TASK_IRAM Task::restartDelayed(unsigned long aDelay) {
     iIterations = iSetIterations;
     return enableDelayed(aDelay);
 }
