@@ -1262,6 +1262,9 @@ void Scheduler::processRequests() {
     _task_request_t req;
 
     while ( _task_dequeue_request(&req) ) {
+
+        if ( req == NULL || req.object_ptr == NULL ) continue;
+        
         switch (req.req_type ) {
 
 #ifdef _TASK_STATUS_REQUEST
