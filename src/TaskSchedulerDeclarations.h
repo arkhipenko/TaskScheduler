@@ -326,7 +326,7 @@ class Task {
     unsigned long             iRunCounter;           // current number of iteration (starting with 1). Resets on enable.
 
 #ifdef _TASK_RUNTIME
-    unsigned int tRuntime;
+    unsigned long tRuntime;
 #endif  // _TASK_RUNTIME
 
 #ifndef _TASK_OO_CALLBACKS
