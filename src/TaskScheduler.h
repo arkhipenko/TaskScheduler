@@ -162,7 +162,7 @@ v3.1.2:
    2020-01-17 - bug fix: corrected external forward definitions of millis() and micros
 
 v3.1.3:
-   2020-01-30 - bug fix: _TASK_DEFINE_MILLIS to force forward definition of millis and micros. Not defined by default. 
+   2020-01-30 - bug fix: _TASK_DEFINE_MILLIS to force forward definition of millis and micros. Not defined by default.
    2020-02-16 - bug fix: add 'virtual' to the Task destructor definition (issue #86)
 
 v3.1.4:
@@ -182,41 +182,41 @@ v3.2.0:
    2020-08-16 - feature: scheduling options
 
 v3.2.1:
-   2020-10-04 - feature: Task.abort method. Stop task execution without calling OnDisable(). 
+   2020-10-04 - feature: Task.abort method. Stop task execution without calling OnDisable().
 
 v3.2.2:
-   2020-12-14 - feature: enable and restart methods return true if task enabled 
+   2020-12-14 - feature: enable and restart methods return true if task enabled
                 feature: Task.cancel() method - disable task with a cancel flag (could be used for alt. path
                          processing in the onDisable method.
                 feature: Task.cancelled() method - indicates that task was disabled with a cancel() method.
 
 v3.2.3:
-   2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11 
+   2021-01-01 - feature: discontinued use of 'register' keyword. Depricated in C++ 11
                 feature: add STM32 as a platform supporting _TASK_STD_FUNCTION. (PR #105)
 
 v3.3.0:
-   2021-05-11 - feature: Timeout() methods for StatusRequest objects 
+   2021-05-11 - feature: Timeout() methods for StatusRequest objects
 
 v3.4.0:
-   2021-07-14 - feature: ability to Enable/Disable and Pause/Resume scheduling 
-              - feature: optional use of external millis/micros methods 
+   2021-07-14 - feature: ability to Enable/Disable and Pause/Resume scheduling
+              - feature: optional use of external millis/micros methods
 
 v3.5.0:
-   2021-11-01 - feature: adjust(long aInterval) method - adjust execution schedule: 
+   2021-11-01 - feature: adjust(long aInterval) method - adjust execution schedule:
                 + aInterval - shift schedule forward (later)
                 - aInterval - shift schedule backwards (earlier)
 
 v3.6.0:
-   2021-11-01 - feature: _TASK_THREAD_SAFE compile option for multi-core systems or running under RTOS 
+   2021-11-01 - feature: _TASK_THREAD_SAFE compile option for multi-core systems or running under RTOS
 
 v3.6.1:
    2022-06-28 - bug: Internal Status Request of the canceled and aborted tasks complete with respective error code
               - feature: TASK_SR_ABORT code causes Tasks waiting on this Status Request to be aborted as well
-              
+
 v3.6.2:
    2022-10-04 - feature: added TScheduler.hpp and TSchedulerDeclarations.hpp - a workaround for conflicting declarations (e.g., nRF52840 using Adafruit Core).
                 using namespace TS (credit: https://github.com/vortigont)
-   
+
 v3.7.0:
    2022-10-10 - feature: added ability for Task to "self-destruct" on disable. Useful for dynamic task management.
                 Added updated example 19 for this functionality. Updated the Sketch Template
@@ -237,13 +237,13 @@ v3.8.3:
               - feature: added scheduler stats for total/active/invoked tasks per each pass
 
 v3.8.4:
-   2024-01-13 - bug: (git PR #180): the variables tStart and tFinish are required if sleep support is enabled, 
+   2024-01-13 - bug: (git PR #180): the variables tStart and tFinish are required if sleep support is enabled,
                 independent of _TASK_TIMECRITICAL. however, they were guarded by _TASK_TIMECRITICAL as well.
               - bug: (git PR #181): delete manually disable tasks with self-destruct flag
               - bug: (git PR #182): correct deletion of self-destruct 'current' task in disableAll()
 
 v3.8.5:
-   2024-06-17 - updated volatile compound statements after C++20 deprecated compound assignment on volatiles 
+   2024-06-17 - updated volatile compound statements after C++20 deprecated compound assignment on volatiles
 
 */
 
@@ -267,6 +267,7 @@ extern "C" {
 // and should be used in the main sketch depending on the functionality required
 //
 // #define _TASK_TIMECRITICAL       // Enable monitoring scheduling overruns
+// #define _TASK_RUNTIME            // Measure Runtime of Tasks
 // #define _TASK_SLEEP_ON_IDLE_RUN  // Enable 1 ms SLEEP_IDLE powerdowns between runs if no callback methods were invoked during the pass
 // #define _TASK_STATUS_REQUEST     // Compile with support for StatusRequest functionality - triggering tasks on status change events in addition to time only
 // #define _TASK_WDT_IDS            // Compile with support for wdt control points and task ids
@@ -340,7 +341,7 @@ static uint32_t _task_micros() {return micros();}
 Task::Task( unsigned long aInterval, long aIterations, Scheduler* aScheduler, bool aEnable
 #ifdef _TASK_SELF_DESTRUCT
 , bool aSelfDestruct ) {
-#else 
+#else
   ) {
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
     reset();
@@ -359,7 +360,7 @@ Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, S
 #ifdef _TASK_SELF_DESTRUCT
     setSelfDestruct(aSelfDestruct);
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
-    
+
     if (aScheduler) aScheduler->addTask(*this);
 
 #ifdef _TASK_WDT_IDS
@@ -410,9 +411,9 @@ StatusRequest::StatusRequest()
     iStatus = 0;
 }
 
-void StatusRequest::setWaiting(unsigned int aCount) { 
-  iCount = aCount; 
-  iStatus = 0; 
+void StatusRequest::setWaiting(unsigned int aCount) {
+  iCount = aCount;
+  iStatus = 0;
 #ifdef _TASK_TIMEOUT
   iStarttime = _TASK_TIME_FUNCTION();
 #endif  //  #ifdef _TASK_TIMEOUT
@@ -459,11 +460,11 @@ bool Task::waitFor(StatusRequest* aStatusRequest, unsigned long aInterval, long 
         setIterations(aIterations);
         setInterval(aInterval);
         iStatus.waiting = _TASK_SR_NODELAY;  // no delay
-        
+
 #ifdef _TASK_THREAD_SAFE
         iMutex = iMutex - 1;
 #endif  // _TASK_THREAD_SAFE
-        
+
         return enable();
     }
 #ifdef _TASK_THREAD_SAFE
@@ -517,6 +518,10 @@ long Task::getIterations() { return iIterations; }
 
 unsigned long Task::getRunCounter() { return iRunCounter; }
 
+#ifdef _TASK_RUNTIME
+unsigned long Task::getRuntime() { return tRuntime; }
+#endif  // _TASK_RUNTIME
+
 #ifdef _TASK_OO_CALLBACKS
 
 // bool Task::Callback() { return true; }
@@ -537,7 +542,7 @@ void Task::setOnDisable(TaskOnDisable aCallback) { iOnDisable = aCallback; }
  * out of the execution chain as a result
  */
 void Task::reset() {
-  
+
 #ifdef _TASK_THREAD_SAFE
     iMutex = 1;
 #endif  // _TASK_THREAD_SAFE
@@ -546,7 +551,7 @@ void Task::reset() {
     iStatus.inonenable = false;
     iStatus.canceled = false;
     iPreviousMillis = 0;
-    iInterval = 0; 
+    iInterval = 0;
     iDelay = 0;
     iPrev = NULL;
     iNext = NULL;
@@ -701,7 +706,7 @@ bool Task::enable() {
 
         iRunCounter = 0;
         iStatus.canceled = false;
-        
+
 #ifdef _TASK_STATUS_REQUEST
         iMyStatusRequest.setWaiting();
 #endif // _TASK_STATUS_REQUEST]
@@ -843,7 +848,7 @@ void Task::delay(unsigned long aDelay) {
 #endif  // _TASK_THREAD_SAFE
 
     iDelay = aDelay ? aDelay : iInterval;
-    iPreviousMillis = _TASK_TIME_FUNCTION(); 
+    iPreviousMillis = _TASK_TIME_FUNCTION();
 
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex - 1;
@@ -929,12 +934,12 @@ void Task::setIntervalNodelay (unsigned long aInterval, unsigned int aOption) {
           iDelay = iDelay + d;
           iInterval = aInterval;
           break;
-      } 
+      }
       case TASK_INTERVAL_RESET:
           iInterval = aInterval;
           iDelay = aInterval;
           break;
-          
+
       default:
 //      case TASK_INTERVAL_KEEP:
           if ( iInterval == iDelay ) {
@@ -1088,7 +1093,7 @@ Scheduler::~Scheduler() {
  */
 void Scheduler::init() {
     iEnabled = false;
-    
+
     iFirst = NULL;
     iLast = NULL;
     iCurrent = NULL;
@@ -1107,7 +1112,7 @@ void Scheduler::init() {
     cpuLoadReset();
 #endif  // _TASK_TIMECRITICAL
 
-    iEnabled = true;  
+    iEnabled = true;
 }
 
 /** Appends task aTask to the tail of the execution chain.
@@ -1116,7 +1121,7 @@ void Scheduler::init() {
  */
  void Scheduler::addTask(Task& aTask) {
 // If task already belongs to a scheduler, we should not be adding
-// it to this scheduler. It should be deleted from the other scheduler first. 
+// it to this scheduler. It should be deleted from the other scheduler first.
     if (aTask.iScheduler != NULL)
         return;
 
@@ -1145,9 +1150,9 @@ void Scheduler::init() {
  */
 void Scheduler::deleteTask(Task& aTask) {
 // Can only delete own tasks
-    if (aTask.iScheduler != this) 
+    if (aTask.iScheduler != this)
         return;
-    
+
     iEnabled = false;
 
     aTask.iScheduler = NULL;
@@ -1179,7 +1184,7 @@ void Scheduler::deleteTask(Task& aTask) {
     aTask.iNext->iPrev = aTask.iPrev;
     aTask.iPrev = NULL;
     aTask.iNext = NULL;
-    
+
     iEnabled = true;
 }
 
@@ -1195,7 +1200,7 @@ void Scheduler::disableAll() {
 #endif
 
     iEnabled = false;
-    
+
     Task*    current = iFirst;
     Task*    next;
     while (current) {
@@ -1222,10 +1227,10 @@ void Scheduler::disableAll() {
 void Scheduler::enableAll(bool aRecursive) {
 #else
 void Scheduler::enableAll() {
-#endif    
+#endif
 
     iEnabled = false;
-    
+
     Task    *current = iFirst;
     while (current) {
         current->enable();
@@ -1271,7 +1276,7 @@ void Scheduler::startNow() {
     unsigned long t = _TASK_TIME_FUNCTION();
 
     iEnabled = false;
-    
+
     iCurrent = iFirst;
     while (iCurrent) {
         if ( iCurrent->iStatus.enabled ) iCurrent->iPreviousMillis = t - iCurrent->iDelay;
@@ -1330,7 +1335,7 @@ unsigned long Scheduler::getCpuLoadTotal() {
 }
 #endif  // _TASK_TIMECRITICAL
 
-    
+
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
     if ( aCallback != NULL ) {
@@ -1349,14 +1354,16 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
  */
 
 bool Scheduler::execute() {
-  
+
     bool     idleRun = true;
     unsigned long m, i;  // millis, interval;
 
 #if defined(_TASK_TIMECRITICAL)
     unsigned long tPassStart;
+#endif // _TASK_TIMECRITICAL
+#if defined(_TASK_TIMECRITICAL) || defined(_TASK_RUNTIME)
     unsigned long tTaskStart, tTaskFinish;
-#endif  // _TASK_TIMECRITICAL
+#endif // _TASK_TIMECRITICAL || _TASK_RUNTIME
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
@@ -1400,7 +1407,7 @@ bool Scheduler::execute() {
 
 #if defined(_TASK_TIMECRITICAL)
         tPassStart = micros();
-        tTaskStart = tTaskFinish = 0; 
+        tTaskStart = tTaskFinish = 0;
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
@@ -1455,7 +1462,7 @@ bool Scheduler::execute() {
 
 #ifdef _TASK_TICKLESS
     // if there is a task waiting on a status request we are obligated to run continously
-    // because event can trigger at any point at time. 
+    // because event can trigger at any point at time.
     nrd |= _TASK_NEXTRUN_IMMEDIATE; // immediate
 #endif
 
@@ -1492,18 +1499,18 @@ bool Scheduler::execute() {
                     unsigned long nextrun = iCurrent->iDelay + iCurrent->iPreviousMillis;
                     // nextrun should be after current millis() (except rollover)
                     // nextrun should be sooner than previously determined
-                    if ( nextrun > m && nextrun < nr ) { 
+                    if ( nextrun > m && nextrun < nr ) {
                         nr = nextrun;
                         nrd |= _TASK_NEXTRUN_TIMED; // next run timed
                     }
-#endif  //  _TASK_TICKLESS                   
+#endif  //  _TASK_TICKLESS
                     break;
                 }
 
 
 #ifdef _TASK_TICKLESS
                 nrd |= _TASK_NEXTRUN_IMMEDIATE; // next run timed
-#endif  
+#endif
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations = iCurrent->iIterations - 1;  // do not decrement (-1) being a signal of never-ending task
                 iCurrent->iRunCounter = iCurrent->iRunCounter + 1;
@@ -1512,9 +1519,9 @@ bool Scheduler::execute() {
                   case TASK_INTERVAL:
                     iCurrent->iPreviousMillis = m;
                     break;
-                    
+
                   case TASK_SCHEDULE_NC:
-                    iCurrent->iPreviousMillis = iCurrent->iPreviousMillis + iCurrent->iDelay; 
+                    iCurrent->iPreviousMillis = iCurrent->iPreviousMillis + iCurrent->iDelay;
                     {
                         long ov = (long) ( iCurrent->iPreviousMillis + i - m );
                         if ( ov < 0 ) {
@@ -1523,7 +1530,7 @@ bool Scheduler::execute() {
                         }
                     }
                     break;
-                    
+
                   default:
                     iCurrent->iPreviousMillis = iCurrent->iPreviousMillis + iCurrent->iDelay;
                 }
@@ -1541,9 +1548,9 @@ bool Scheduler::execute() {
 
                 iCurrent->iDelay = i;
 
-#if defined(_TASK_TIMECRITICAL)
+#if defined(_TASK_TIMECRITICAL) || defined(_TASK_RUNTIME)
                 tTaskStart = micros();
-#endif  // _TASK_TIMECRITICAL
+#endif  // _TASK_TIMECRITICAL || _TASK_RUNTIME
 
 #ifdef _TASK_OO_CALLBACKS
                 idleRun = !iCurrent->Callback();
@@ -1555,9 +1562,13 @@ bool Scheduler::execute() {
                 }
 #endif // _TASK_OO_CALLBACKS
 
-#if defined(_TASK_TIMECRITICAL)
+#if defined(_TASK_TIMECRITICAL) || defined(_TASK_RUNTIME)
                 tTaskFinish = micros();
-#endif  // _TASK_TIMECRITICAL
+#endif  // _TASK_TIMECRITICAL || _TASK_RUNTIME
+
+#ifdef _TASK_RUNTIME
+                iCurrent->tRuntime = (tTaskFinish - tTaskStart);
+#endif  // _TASK_RUNTIME
 
             }
 #ifdef _TASK_SELF_DESTRUCT
@@ -1566,13 +1577,13 @@ bool Scheduler::execute() {
         } while (0);    //guaranteed single run - allows use of "break" to exit
 
         iCurrent = nextTask;
-        
-        
+
+
 #ifdef _TASK_TIMECRITICAL
         iCPUCycle += ( (micros() - tPassStart) - (tTaskFinish - tTaskStart) );
 #endif  // _TASK_TIMECRITICAL
-        
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32) 
+
+#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32)
 #if !defined(_TASK_DO_NOT_YIELD)
         yield();
 #endif  //  _TASK_DO_NOT_YIELD
@@ -1594,27 +1605,27 @@ bool Scheduler::execute() {
         if ( nr <= m) break;
         iNextRun = ( nr - m );
     } while (0);
-#endif 
+#endif
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 
     if (idleRun && iAllowSleep) {
-        if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 
+        if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep.
             if ( iSleepMethod != NULL ) {
-                
+
 #ifdef _TASK_TIMECRITICAL
                 tIdleStart = micros();
 #endif  // _TASK_TIMECRITICAL
 
                 (*iSleepMethod)( tFinish-tStart );
-                
+
 #ifdef _TASK_TIMECRITICAL
                 iCPUIdle += (micros() - tIdleStart);
 #endif  // _TASK_TIMECRITICAL
             }
         }
     }
-    
+
 
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN

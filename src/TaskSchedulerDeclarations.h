@@ -106,7 +106,7 @@ uint32_t external_micros();
 #define TASK_SR_CANCEL      (-32766)
 #define TASK_SR_ABORT       (-32767)
 #define TASK_SR_TIMEOUT     (-32768)
- 
+
 #define _TASK_SR_NODELAY    1
 #define _TASK_SR_DELAY      2
 
@@ -121,7 +121,7 @@ class StatusRequest {
     INLINE bool completed();
     INLINE int  getStatus();
     INLINE int  getCount();
-    
+
 #ifdef _TASK_TIMEOUT
     INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
     INLINE unsigned long getTimeout() { return iTimeout; };
@@ -249,7 +249,7 @@ class Task {
     INLINE void setIterations(long aIterations);
     INLINE long getIterations();
     INLINE unsigned long getRunCounter();
-    
+
 #ifdef _TASK_SELF_DESTRUCT
     INLINE void setSelfDestruct(bool aSelfDestruct=true) { iStatus.selfdestruct = aSelfDestruct; }
     INLINE bool getSelfDestruct() { return iStatus.selfdestruct; }
@@ -274,6 +274,10 @@ class Task {
     INLINE long getOverrun() ;
     INLINE long getStartDelay() ;
 #endif  // _TASK_TIMECRITICAL
+
+#ifdef _TASK_RUNTIME
+    INLINE unsigned long getRuntime();
+#endif  // _TASK_RUNTIME
 
 #ifdef _TASK_STATUS_REQUEST
     INLINE bool waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
@@ -320,6 +324,10 @@ class Task {
     volatile long             iIterations;           // number of iterations left. 0 - last iteration. -1 - infinite iterations
     long                      iSetIterations;        // number of iterations originally requested (for restarts)
     unsigned long             iRunCounter;           // current number of iteration (starting with 1). Resets on enable.
+
+#ifdef _TASK_RUNTIME
+    unsigned int tRuntime;
+#endif  // _TASK_RUNTIME
 
 #ifndef _TASK_OO_CALLBACKS
     TaskCallback              iCallback;             // pointer to the void callback method
