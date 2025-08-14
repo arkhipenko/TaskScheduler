@@ -639,7 +639,8 @@ void Task::setIterations(long aIterations) {
     iMutex = iMutex + 1;
 #endif  // _TASK_THREAD_SAFE
 
-    iSetIterations = iIterations = aIterations;
+    iIterations = aIterations;
+    iSetIterations = iIterations;
 
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex - 1;
