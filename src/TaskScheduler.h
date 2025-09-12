@@ -308,7 +308,7 @@ extern "C" {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32) && !defined (ARDUINO_ARCH_STM32)
+#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32) && !defined (ARDUINO_ARCH_STM32) && !defined (TEENSYDUINO)
 #ifdef _TASK_STD_FUNCTION
     #error Support for std::function only for ESP8266 or ESP32 architecture
 #undef _TASK_STD_FUNCTION
@@ -1572,7 +1572,7 @@ bool Scheduler::execute() {
         iCPUCycle += ( (micros() - tPassStart) - (tTaskFinish - tTaskStart) );
 #endif  // _TASK_TIMECRITICAL
         
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32) 
+#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32) || defined (TEENSYDUINO)
 #if !defined(_TASK_DO_NOT_YIELD)
         yield();
 #endif  //  _TASK_DO_NOT_YIELD
