@@ -277,10 +277,14 @@ v4.0.0:
         - Major rework of the _TASK_THREAD_SAFE approach. Developers should only be calling Scheduler and Task methods
           directly from the thread where TaskScheduler execute() method runs. 
           Calls from the other threads should be done via Scheduler::requestAction(...) methods. 
-          Target platform should implement a action queue and two methods:
+          Target platform should implement an action queue and two methods:
              bool _task_enqueue_request(_task_request_t* req);  // puts _task_request_t object on the action queue
              bool _task_dequeue_request(_task_request_t* req);  // retrieves _task_request_t object from the action queue
              Please see examples folder for implementation folder.
+    
+    2025-09-13:
+        - feature: allow _TASK_STD_FUNCTION for all platforms (you should know what you are doing)
+        - feature: allow _TASK_DO_NOT_YIELD for all platforms (you should know what you are doing)
 */
 
 #include "TaskSchedulerDeclarations.h"
@@ -317,10 +321,10 @@ v4.0.0:
  #ifdef _TASK_MICRO_RES
 
  #undef _TASK_SLEEP_ON_IDLE_RUN     // SLEEP_ON_IDLE has only millisecond resolution
- #define _TASK_TIME_FUNCTION() _task_micros()
+ #define __TASK_TIME_FUNCTION() _task_micros()
 
  #else
- #define _TASK_TIME_FUNCTION() _task_millis()
+ #define __TASK_TIME_FUNCTION() _task_millis()
 
  #endif  // _TASK_MICRO_RES
 
@@ -334,15 +338,16 @@ v4.0.0:
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
-#if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32) && !defined (ARDUINO_ARCH_STM32)
-#ifdef _TASK_STD_FUNCTION
-    #error Support for std::function only for ESP8266 or ESP32 architecture
-#undef _TASK_STD_FUNCTION
-#endif // _TASK_STD_FUNCTION
-#endif // ARDUINO_ARCH_ESP8266
+// _TASK_STD_FUNCTION is allowed for all platforms - you should know what you are doing
+// #if !defined (ARDUINO_ARCH_ESP8266) && !defined (ARDUINO_ARCH_ESP32) && !defined (ARDUINO_ARCH_STM32)
+// #ifdef _TASK_STD_FUNCTION
+//     #error Support for std::function only for ESP8266 or ESP32 architecture
+// #undef _TASK_STD_FUNCTION
+// #endif // _TASK_STD_FUNCTION
+// #endif // ARDUINO_ARCH_ESP8266
 
 #ifdef _TASK_WDT_IDS
-    static unsigned int  _task_id_counter = 0; // global task ID counter for assiging task IDs automatically.
+    static unsigned int  __task_id_counter = 0; // global task ID counter for assiging task IDs automatically.
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_PRIORITY
@@ -419,7 +424,7 @@ Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, S
     if (aScheduler) aScheduler->addTask(*this);
 
 #ifdef _TASK_WDT_IDS
-    iTaskID = ++ _task_id_counter;
+    iTaskID = ++ __task_id_counter;
 #endif  // _TASK_WDT_IDS
 
     if (aEnable) enable();
@@ -455,7 +460,7 @@ Task::Task( TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnabl
     if (aScheduler) aScheduler->addTask(*this);
 
 #ifdef _TASK_WDT_IDS
-    iTaskID = ++ _task_id_counter;
+    iTaskID = ++ __task_id_counter;
 #endif  // _TASK_WDT_IDS
 }
 
@@ -470,7 +475,7 @@ void StatusRequest::setWaiting(unsigned int aCount) {
   iCount = aCount; 
   iStatus = 0; 
 #ifdef _TASK_TIMEOUT
-  iStarttime = _TASK_TIME_FUNCTION();
+  iStarttime = __TASK_TIME_FUNCTION();
 #endif  //  #ifdef _TASK_TIMEOUT
 }
 
@@ -486,7 +491,7 @@ StatusRequest* Task::getInternalStatusRequest() { return &iMyStatusRequest; }
  *  Negative status will complete Status Request fully (since an error occured).
  *  @return: true, if StatusRequest is complete, false otherwise (still waiting for other events)
  */
-bool _TASK_IRAM StatusRequest::signal(int aStatus) {
+bool __TASK_IRAM StatusRequest::signal(int aStatus) {
     if ( iCount) {  // do not update the status request if it was already completed
         if (iCount > 0)  --iCount;
         if ( (iStatus = aStatus) < 0 ) iCount = 0;   // if an error is reported, the status is requested to be completed immediately
@@ -494,7 +499,7 @@ bool _TASK_IRAM StatusRequest::signal(int aStatus) {
     return (iCount == 0);
 }
 
-void _TASK_IRAM StatusRequest::signalComplete(int aStatus) {
+void __TASK_IRAM StatusRequest::signalComplete(int aStatus) {
     if (iCount) { // do not update the status request if it was already completed
         iCount = 0;
         iStatus = aStatus;
@@ -529,12 +534,12 @@ bool Task::waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval
 
 #ifdef _TASK_TIMEOUT
 void StatusRequest::resetTimeout() {
-    iStarttime = _TASK_TIME_FUNCTION();
+    iStarttime = __TASK_TIME_FUNCTION();
 }
 
 long StatusRequest::untilTimeout() {
     if ( iTimeout ) {
-        return ( (long) (iStarttime + iTimeout) - (long) _TASK_TIME_FUNCTION() );
+        return ( (long) (iStarttime + iTimeout) - (long) __TASK_TIME_FUNCTION() );
     }
     return -1;
 }
@@ -633,7 +638,8 @@ void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback
     iOnDisable = aOnDisable;
 #endif // _TASK_OO_CALLBACKS
     setInterval(aInterval);
-    iSetIterations = iIterations = aIterations;
+    iSetIterations = aIterations;
+    iIterations = aIterations;
 }
 
 /** Sets number of iterations for the task
@@ -641,7 +647,8 @@ void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback
  * @param aIterations - number of iterations, use -1 for no limit
  */
 void Task::setIterations(long aIterations) {
-    iSetIterations = iIterations = aIterations;
+    iSetIterations = aIterations;
+    iIterations = aIterations;
 }
 
 #ifndef _TASK_OO_CALLBACKS
@@ -674,7 +681,7 @@ void Task::yieldOnce (TaskCallback aCallback) {
  *  schedules it for execution as soon as possible,
  *  and resets the RunCounter back to zero
  */
-bool _TASK_IRAM Task::enable() {
+bool __TASK_IRAM Task::enable() {
     if (iScheduler) { // activation without active scheduler does not make sense
         iRunCounter = 0;
         iStatus.canceled = false;
@@ -707,7 +714,7 @@ bool _TASK_IRAM Task::enable() {
 #endif // _TASK_OO_CALLBACKS
 
         iDelay = iInterval;
-        iPreviousMillis = _TASK_TIME_FUNCTION() - iDelay;
+        iPreviousMillis = __TASK_TIME_FUNCTION() - iDelay;
 
 #ifdef _TASK_TIMEOUT
         resetTimeout();
@@ -726,7 +733,7 @@ bool _TASK_IRAM Task::enable() {
 /** Enables the task only if it was not enabled already
  * Returns previous state (true if was already enabled, false if was not)
  */
-bool _TASK_IRAM Task::enableIfNot() {
+bool __TASK_IRAM Task::enableIfNot() {
     bool previousEnabled = iStatus.enabled;
     if ( !previousEnabled ) enable();
     return (previousEnabled);
@@ -735,7 +742,7 @@ bool _TASK_IRAM Task::enableIfNot() {
 /** Enables the task
  * and schedules it for execution after a delay = aInterval
  */
-bool _TASK_IRAM Task::enableDelayed(unsigned long aDelay) {
+bool __TASK_IRAM Task::enableDelayed(unsigned long aDelay) {
     enable();
     delay(aDelay);
     return iStatus.enabled;
@@ -748,7 +755,7 @@ void Task::setTimeout(unsigned long aTimeout, bool aReset) {
 }
 
 void Task::resetTimeout() {
-    iStarttime = _TASK_TIME_FUNCTION();
+    iStarttime = __TASK_TIME_FUNCTION();
     iStatus.timeout = false;
 }
 
@@ -758,7 +765,7 @@ unsigned long Task::getTimeout() {
 
 long Task::untilTimeout() {
     if ( iTimeout ) {
-        return ( (long) (iStarttime + iTimeout) - (long) _TASK_TIME_FUNCTION() );
+        return ( (long) (iStarttime + iTimeout) - (long) __TASK_TIME_FUNCTION() );
     }
     return -1;
 }
@@ -775,9 +782,9 @@ bool Task::timedOut() {
  * leaves task enabled or disabled
  * if aDelay is zero, delays for the original scheduling interval from now
  */
-void _TASK_IRAM Task::delay(unsigned long aDelay) {
+void __TASK_IRAM Task::delay(unsigned long aDelay) {
     iDelay = aDelay ? aDelay : iInterval;
-    iPreviousMillis = _TASK_TIME_FUNCTION(); 
+    iPreviousMillis = __TASK_TIME_FUNCTION(); 
 }
 
 /** Adjusts Task execution with aInterval (if task is enabled).
@@ -798,9 +805,9 @@ void Task::adjust(long aInterval) {
  * leaves task enabled or disabled
  * Task's original schedule is shifted, and all subsequent iterations will continue from this point in time
  */
-void _TASK_IRAM Task::forceNextIteration() {
+void __TASK_IRAM Task::forceNextIteration() {
     iDelay = iInterval;
-    iPreviousMillis = _TASK_TIME_FUNCTION() - iDelay;
+    iPreviousMillis = __TASK_TIME_FUNCTION() - iDelay;
 }
 
 /** Sets the execution interval.
@@ -855,7 +862,7 @@ void Task::setIntervalNodelay (unsigned long aInterval, unsigned int aOption) {
  * Returns status of the task before disable was called (i.e., if the task was already disabled)
  */
 
-bool _TASK_IRAM Task::disable() {
+bool __TASK_IRAM Task::disable() {
     bool previousEnabled = iStatus.enabled;
     iStatus.enabled = false;
     iStatus.inonenable = false;
@@ -889,7 +896,7 @@ bool _TASK_IRAM Task::disable() {
 /** Aborts task execution
  * Task will no longer be executed by the scheduler AND ondisable method will not be called
  */
-void _TASK_IRAM Task::abort() {
+void __TASK_IRAM Task::abort() {
     iStatus.enabled = false;
     iStatus.inonenable = false;
     iStatus.canceled = true;
@@ -906,7 +913,7 @@ void _TASK_IRAM Task::abort() {
 /** Cancels task execution
  * Task will no longer be executed by the scheduler. Ondisable method will be called after 'canceled' flag is set
  */
-void _TASK_IRAM Task::cancel() {
+void __TASK_IRAM Task::cancel() {
     iStatus.canceled = true;
 #ifdef _TASK_STATUS_REQUEST
     iMyStatusRequest.signalComplete(TASK_SR_ABORT);
@@ -922,7 +929,7 @@ bool Task::canceled() {
  * Task will run number of iterations again
  */
 
-bool _TASK_IRAM Task::restart() {
+bool __TASK_IRAM Task::restart() {
     iIterations = iSetIterations;
     return enable();
 }
@@ -930,7 +937,7 @@ bool _TASK_IRAM Task::restart() {
 /** Restarts task delayed
  * Task will run number of iterations again
  */
-bool _TASK_IRAM Task::restartDelayed(unsigned long aDelay) {
+bool __TASK_IRAM Task::restartDelayed(unsigned long aDelay) {
     iIterations = iSetIterations;
     return enableDelayed(aDelay);
 }
@@ -1166,7 +1173,7 @@ void Scheduler::startNow( bool aRecursive ) {
 #else
 void Scheduler::startNow() {
 #endif
-    unsigned long t = _TASK_TIME_FUNCTION();
+    unsigned long t = __TASK_TIME_FUNCTION();
 
     iEnabled = false;
     
@@ -1198,7 +1205,7 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
     if ( !aTask.isEnabled() )
         return (-1);    // cannot be determined
 
-    long d = (long) aTask.iDelay - ( (long) (_TASK_TIME_FUNCTION() - aTask.iPreviousMillis) );
+    long d = (long) aTask.iDelay - ( (long) (__TASK_TIME_FUNCTION() - aTask.iPreviousMillis) );
 
     if ( d < 0 )
         return (0); // Task will run as soon as possible
@@ -1239,13 +1246,13 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef  _TASK_THREAD_SAFE
-void Scheduler::requestAction(_task_request_t* aRequest) {
-    if ( aRequest == NULL ) return; 
-    _task_enqueue_request(aRequest);
+bool Scheduler::requestAction(_task_request_t* aRequest) {
+    if ( aRequest == NULL ) return false; 
+    return _task_enqueue_request(aRequest);
 }
 
-void Scheduler::requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5) {
-    if ( aObject == NULL ) return; 
+bool Scheduler::requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5) {
+    if ( aObject == NULL ) return false; 
     _task_request_t r = {
         .req_type = aType,
         .object_ptr = aObject,
@@ -1255,7 +1262,7 @@ void Scheduler::requestAction(void* aObject, _task_request_type_t aType, unsigne
         .param4 = aParam4,
         .param5 = aParam5
     };
-    _task_enqueue_request(&r);
+    return _task_enqueue_request(&r);
 }
 
 void Scheduler::processRequests() {
@@ -1586,7 +1593,7 @@ bool Scheduler::execute() {
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
                     break;
                 }
-                m = _TASK_TIME_FUNCTION();
+                m = __TASK_TIME_FUNCTION();
                 i = iCurrent->iInterval;
 
 #ifdef _TASK_TIMEOUT
@@ -1726,11 +1733,12 @@ bool Scheduler::execute() {
         iCPUCycle += ( (_task_micros() - tPassStart) - (tTaskFinish - tTaskStart) );
 #endif  // _TASK_TIMECRITICAL
         
-#if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32) 
+// _TASK_DO_NOT_YIELD is allowed for everyone - you should know what you are doing
+// #if defined (ARDUINO_ARCH_ESP8266) || defined (ARDUINO_ARCH_ESP32) 
 #if !defined(_TASK_DO_NOT_YIELD)
         _task_yield();
 #endif  //  _TASK_DO_NOT_YIELD
-#endif  //  ARDUINO_ARCH_ESPxx
+// #endif  //  ARDUINO_ARCH_ESPxx
     }
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
@@ -1744,7 +1752,7 @@ bool Scheduler::execute() {
         if ( !idleRun ) break;
         if ( (nrd & _TASK_NEXTRUN_IMMEDIATE) ) break;
         if ( nrd == _TASK_NEXTRUN_UNDEFINED ) break;
-        m = _TASK_TIME_FUNCTION();
+        m = __TASK_TIME_FUNCTION();
         if ( nr <= m) break;
         iNextRun = ( nr - m );
     } while (0);

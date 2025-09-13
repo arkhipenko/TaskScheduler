@@ -74,21 +74,21 @@ class Scheduler;
 #endif // _TASK_PRIORITY
 
 #ifdef _TASK_INLINE
-#define _TASK_INLINE  inline
+#define __TASK_INLINE  inline
 #else
-#define _TASK_INLINE
+#define __TASK_INLINE
 #endif
 
 #ifdef _TASK_ISR_SUPPORT
 #if defined (ARDUINO_ARCH_ESP8266)
-#define _TASK_IRAM ICACHE_RAM_ATTR
+#define __TASK_IRAM ICACHE_RAM_ATTR
 #endif 
 #if  defined (ARDUINO_ARCH_ESP32)
-#define _TASK_IRAM IRAM_ATTR
+#define __TASK_IRAM IRAM_ATTR
 #endif
 #endif
-#ifndef _TASK_IRAM
-#define _TASK_IRAM
+#ifndef __TASK_IRAM
+#define __TASK_IRAM
 #endif
 
 #ifndef _TASK_MICRO_RES
@@ -179,10 +179,10 @@ typedef enum {
 // void setWaiting(unsigned int aCount = 1);
 #define TASK_SR_REQUEST_SETWAITING_1        TASK_SR_REQUEST_SETWAITING
 #define TASK_SR_REQUEST_SETWAITING_1_DEFAULT   1
-// _TASK_IRAM signal(int aStatus = 0);
+// __TASK_IRAM signal(int aStatus = 0);
 #define TASK_SR_REQUEST_SIGNAL_1            TASK_SR_REQUEST_SIGNAL
 #define TASK_SR_REQUEST_SIGNAL_1_DEFAULT    0
-// _TASK_IRAM signalComplete(int aStatus = 0);
+// __TASK_IRAM signalComplete(int aStatus = 0);
 #define TASK_SR_REQUEST_SIGNALCOMPLETE_1    TASK_SR_REQUEST_SIGNALCOMPLETE
 #define TASK_SR_REQUEST_SIGNALCOMPLETE_1_DEFAULT    0
 
@@ -231,30 +231,30 @@ typedef enum {
 #endif  // _TASK_STATUS_REQUEST
 
 #ifdef _TASK_WDT_IDS
-// _TASK_INLINE void setId(unsigned int aID) ;
+// __TASK_INLINE void setId(unsigned int aID) ;
 #define TASK_REQUEST_SETID_1                TASK_REQUEST_SETID
-// _TASK_INLINE void setControlPoint(unsigned int aPoint) ;
+// __TASK_INLINE void setControlPoint(unsigned int aPoint) ;
 #define TASK_REQUEST_SETCONTROLPOINT_1      TASK_REQUEST_SETCONTROLPOINT
 #endif  // _TASK_WDT_IDS
 
-// bool _TASK_IRAM enable();
+// bool __TASK_IRAM enable();
 #define TASK_REQUEST_ENABLE_0               TASK_REQUEST_ENABLE
-// bool _TASK_IRAM enableIfNot();
+// bool __TASK_IRAM enableIfNot();
 #define TASK_REQUEST_ENABLEIFNOT_0          TASK_REQUEST_ENABLEIFNOT
-// bool _TASK_IRAM enableDelayed(unsigned long aDelay=0);
+// bool __TASK_IRAM enableDelayed(unsigned long aDelay=0);
 #define TASK_REQUEST_ENABLEDELAYED_1        TASK_REQUEST_ENABLEDELAYED
 #define TASK_REQUEST_ENABLEDELAYED_1_DEFAULT    0
-// bool _TASK_IRAM restart();
+// bool __TASK_IRAM restart();
 #define TASK_REQUEST_RESTART_0              TASK_REQUEST_RESTART
-// bool _TASK_IRAM restartDelayed(unsigned long aDelay=0);
+// bool __TASK_IRAM restartDelayed(unsigned long aDelay=0);
 #define TASK_REQUEST_RESTARTDELAYED_1       TASK_REQUEST_RESTARTDELAYED
 #define TASK_REQUEST_RESTARTDELAYED_1_DEFAULT   0
-// void _TASK_IRAM delay(unsigned long aDelay=0);
+// void __TASK_IRAM delay(unsigned long aDelay=0);
 #define TASK_REQUEST_DELAY_1                TASK_REQUEST_DELAY
 #define TASK_REQUEST_DELAY_1_DEFAULT    0
 // void adjust(long aInterval);
 #define TASK_REQUEST_ADJUST_1               TASK_REQUEST_ADJUST
-// void _TASK_IRAM forceNextIteration();
+// void __TASK_IRAM forceNextIteration();
 #define TASK_REQUEST_FORCENEXTITERATION_0   TASK_REQUEST_FORCENEXTITERATION
 // bool disable();
 #define TASK_REQUEST_DISABLE_0              TASK_REQUEST_DISABLE
@@ -307,20 +307,20 @@ typedef struct {
 class StatusRequest {
   friend class Scheduler;
   public:
-    _TASK_INLINE StatusRequest();
-    _TASK_INLINE void setWaiting(unsigned int aCount = 1);
-    _TASK_INLINE bool _TASK_IRAM signal(int aStatus = 0);
-    _TASK_INLINE void _TASK_IRAM signalComplete(int aStatus = 0);
-    _TASK_INLINE bool pending();
-    _TASK_INLINE bool completed();
-    _TASK_INLINE int  getStatus();
-    _TASK_INLINE int  getCount();
+    __TASK_INLINE StatusRequest();
+    __TASK_INLINE void setWaiting(unsigned int aCount = 1);
+    __TASK_INLINE bool  signal(int aStatus = 0);
+    __TASK_INLINE void  signalComplete(int aStatus = 0);
+    __TASK_INLINE bool pending();
+    __TASK_INLINE bool completed();
+    __TASK_INLINE int  getStatus();
+    __TASK_INLINE int  getCount();
     
 #ifdef _TASK_TIMEOUT
-    _TASK_INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
-    _TASK_INLINE unsigned long getTimeout() { return iTimeout; };
-    _TASK_INLINE void resetTimeout();
-    _TASK_INLINE long untilTimeout();
+    __TASK_INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
+    __TASK_INLINE unsigned long getTimeout() { return iTimeout; };
+    __TASK_INLINE void resetTimeout();
+    __TASK_INLINE long untilTimeout();
 #endif
 
   _TASK_SCOPE:
@@ -376,14 +376,14 @@ class Task {
   public:
 
 #ifdef _TASK_OO_CALLBACKS
-    _TASK_INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false
+    __TASK_INLINE Task(unsigned long aInterval=0, long aIterations=0, Scheduler* aScheduler=NULL, bool aEnable=false
 #ifdef _TASK_SELF_DESTRUCT
     , bool aSelfDestruct=false);
 #else
     );
 #endif  // #ifdef _TASK_SELF_DESTRUCT
 #else
-    _TASK_INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL
+    __TASK_INLINE Task(unsigned long aInterval=0, long aIterations=0, TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, bool aEnable=false, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL
 #ifdef _TASK_SELF_DESTRUCT
   , bool aSelfDestruct=false);
 #else
@@ -394,107 +394,107 @@ class Task {
 
 #ifdef _TASK_STATUS_REQUEST
 #ifdef _TASK_OO_CALLBACKS
-//    _TASK_INLINE Task(Scheduler* aScheduler=NULL);
-    _TASK_INLINE Task(Scheduler* aScheduler);
+//    __TASK_INLINE Task(Scheduler* aScheduler=NULL);
+    __TASK_INLINE Task(Scheduler* aScheduler);
 #else
-//    _TASK_INLINE Task(TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
-    _TASK_INLINE Task(TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+//    __TASK_INLINE Task(TaskCallback aCallback=NULL, Scheduler* aScheduler=NULL, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+    __TASK_INLINE Task(TaskCallback aCallback, Scheduler* aScheduler, TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
 #endif // _TASK_OO_CALLBACKS
 #endif  // _TASK_STATUS_REQUEST
 
-    virtual _TASK_INLINE ~Task();
+    virtual __TASK_INLINE ~Task();
 
 #ifdef _TASK_TIMEOUT
-    _TASK_INLINE void setTimeout(unsigned long aTimeout, bool aReset=false);
-    _TASK_INLINE void resetTimeout();
-    _TASK_INLINE unsigned long getTimeout();
-    _TASK_INLINE long untilTimeout();
-    _TASK_INLINE bool timedOut();
+    __TASK_INLINE void setTimeout(unsigned long aTimeout, bool aReset=false);
+    __TASK_INLINE void resetTimeout();
+    __TASK_INLINE unsigned long getTimeout();
+    __TASK_INLINE long untilTimeout();
+    __TASK_INLINE bool timedOut();
 #endif
 
-    _TASK_INLINE bool _TASK_IRAM enable();
-    _TASK_INLINE bool _TASK_IRAM enableIfNot();
-    _TASK_INLINE bool _TASK_IRAM enableDelayed(unsigned long aDelay=0);
-    _TASK_INLINE bool _TASK_IRAM restart();
-    _TASK_INLINE bool _TASK_IRAM restartDelayed(unsigned long aDelay=0);
+    __TASK_INLINE bool  enable();
+    __TASK_INLINE bool  enableIfNot();
+    __TASK_INLINE bool  enableDelayed(unsigned long aDelay=0);
+    __TASK_INLINE bool  restart();
+    __TASK_INLINE bool  restartDelayed(unsigned long aDelay=0);
 
-    _TASK_INLINE void _TASK_IRAM delay(unsigned long aDelay=0);
-    _TASK_INLINE void adjust(long aInterval);
-    _TASK_INLINE void _TASK_IRAM forceNextIteration();
-    _TASK_INLINE bool _TASK_IRAM disable();
-    _TASK_INLINE void _TASK_IRAM abort();
-    _TASK_INLINE void _TASK_IRAM cancel();
-    _TASK_INLINE bool isEnabled();
-    _TASK_INLINE bool canceled();
+    __TASK_INLINE void  delay(unsigned long aDelay=0);
+    __TASK_INLINE void adjust(long aInterval);
+    __TASK_INLINE void  forceNextIteration();
+    __TASK_INLINE bool  disable();
+    __TASK_INLINE void  abort();
+    __TASK_INLINE void  cancel();
+    __TASK_INLINE bool isEnabled();
+    __TASK_INLINE bool canceled();
 
 #ifdef _TASK_SCHEDULING_OPTIONS
-    _TASK_INLINE unsigned int getSchedulingOption() { return iOption; }
-    _TASK_INLINE void setSchedulingOption(unsigned int aOption) {  iOption = aOption; }
+    __TASK_INLINE unsigned int getSchedulingOption() { return iOption; }
+    __TASK_INLINE void setSchedulingOption(unsigned int aOption) {  iOption = aOption; }
 #endif  //_TASK_SCHEDULING_OPTIONS
 
 #ifdef _TASK_OO_CALLBACKS
-    _TASK_INLINE void set(unsigned long aInterval, long aIterations);
+    __TASK_INLINE void set(unsigned long aInterval, long aIterations);
 #else
-    _TASK_INLINE void set(unsigned long aInterval, long aIterations, TaskCallback aCallback,TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
+    __TASK_INLINE void set(unsigned long aInterval, long aIterations, TaskCallback aCallback,TaskOnEnable aOnEnable=NULL, TaskOnDisable aOnDisable=NULL);
 #endif // _TASK_OO_CALLBACKS
-    _TASK_INLINE void setInterval(unsigned long aInterval);
-    _TASK_INLINE void setIntervalNodelay(unsigned long aInterval, unsigned int aOption = TASK_INTERVAL_KEEP);
-    _TASK_INLINE unsigned long getInterval();
-    _TASK_INLINE void setIterations(long aIterations);
-    _TASK_INLINE long getIterations();
-    _TASK_INLINE unsigned long getRunCounter();
+    __TASK_INLINE void setInterval(unsigned long aInterval);
+    __TASK_INLINE void setIntervalNodelay(unsigned long aInterval, unsigned int aOption = TASK_INTERVAL_KEEP);
+    __TASK_INLINE unsigned long getInterval();
+    __TASK_INLINE void setIterations(long aIterations);
+    __TASK_INLINE long getIterations();
+    __TASK_INLINE unsigned long getRunCounter();
     
 #ifdef _TASK_SELF_DESTRUCT
-    _TASK_INLINE void setSelfDestruct(bool aSelfDestruct=true) { iStatus.selfdestruct = aSelfDestruct; }
-    _TASK_INLINE bool getSelfDestruct() { return iStatus.selfdestruct; }
+    __TASK_INLINE void setSelfDestruct(bool aSelfDestruct=true) { iStatus.selfdestruct = aSelfDestruct; }
+    __TASK_INLINE bool getSelfDestruct() { return iStatus.selfdestruct; }
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
 
 #ifdef _TASK_OO_CALLBACKS
-    virtual _TASK_INLINE bool Callback() =0;  // return true if run was "productive - this will disable sleep on the idle run for next pass
-    virtual _TASK_INLINE bool OnEnable();  // return true if task should be enabled, false if it should remain disabled
-    virtual _TASK_INLINE void OnDisable();
+    virtual __TASK_INLINE bool Callback() =0;  // return true if run was "productive - this will disable sleep on the idle run for next pass
+    virtual __TASK_INLINE bool OnEnable();  // return true if task should be enabled, false if it should remain disabled
+    virtual __TASK_INLINE void OnDisable();
 #else
-    _TASK_INLINE void setCallback(TaskCallback aCallback) ;
-    _TASK_INLINE void setOnEnable(TaskOnEnable aCallback) ;
-    _TASK_INLINE void setOnDisable(TaskOnDisable aCallback) ;
-    _TASK_INLINE void yield(TaskCallback aCallback);
-    _TASK_INLINE void yieldOnce(TaskCallback aCallback);
+    __TASK_INLINE void setCallback(TaskCallback aCallback) ;
+    __TASK_INLINE void setOnEnable(TaskOnEnable aCallback) ;
+    __TASK_INLINE void setOnDisable(TaskOnDisable aCallback) ;
+    __TASK_INLINE void yield(TaskCallback aCallback);
+    __TASK_INLINE void yieldOnce(TaskCallback aCallback);
 #endif // _TASK_OO_CALLBACKS
 
-    _TASK_INLINE bool isFirstIteration() ;
-    _TASK_INLINE bool isLastIteration() ;
+    __TASK_INLINE bool isFirstIteration() ;
+    __TASK_INLINE bool isLastIteration() ;
 
 #ifdef _TASK_TIMECRITICAL
-    _TASK_INLINE long getOverrun() ;
-    _TASK_INLINE long getStartDelay() ;
+    __TASK_INLINE long getOverrun() ;
+    __TASK_INLINE long getStartDelay() ;
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_STATUS_REQUEST
-    _TASK_INLINE bool waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
-    _TASK_INLINE bool waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
-    _TASK_INLINE StatusRequest* getStatusRequest() ;
-    _TASK_INLINE StatusRequest* getInternalStatusRequest() ;
+    __TASK_INLINE bool waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+    __TASK_INLINE bool waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+    __TASK_INLINE StatusRequest* getStatusRequest() ;
+    __TASK_INLINE StatusRequest* getInternalStatusRequest() ;
 #endif  // _TASK_STATUS_REQUEST
 
 #ifdef _TASK_WDT_IDS
-    _TASK_INLINE void setId(unsigned int aID) ;
-    _TASK_INLINE unsigned int getId() ;
-    _TASK_INLINE void setControlPoint(unsigned int aPoint) ;
-    _TASK_INLINE unsigned int getControlPoint() ;
+    __TASK_INLINE void setId(unsigned int aID) ;
+    __TASK_INLINE unsigned int getId() ;
+    __TASK_INLINE void setControlPoint(unsigned int aPoint) ;
+    __TASK_INLINE unsigned int getControlPoint() ;
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_LTS_POINTER
-    _TASK_INLINE void  setLtsPointer(void *aPtr) ;
-    _TASK_INLINE void* getLtsPointer() ;
+    __TASK_INLINE void  setLtsPointer(void *aPtr) ;
+    __TASK_INLINE void* getLtsPointer() ;
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_EXPOSE_CHAIN
-    _TASK_INLINE Task*  getPreviousTask() { return iPrev; };  // pointer to the previous task in the chain, NULL if first or not set
-    _TASK_INLINE Task*  getNextTask()     { return iNext; };  // pointer to the next task in the chain, NULL if last or not set
+    __TASK_INLINE Task*  getPreviousTask() { return iPrev; };  // pointer to the previous task in the chain, NULL if first or not set
+    __TASK_INLINE Task*  getNextTask()     { return iNext; };  // pointer to the next task in the chain, NULL if last or not set
 #endif // _TASK_EXPOSE_CHAIN
 
   _TASK_SCOPE:
-    _TASK_INLINE void reset();
+    __TASK_INLINE void reset();
 
     volatile _task_status     iStatus;
     volatile unsigned long    iInterval;             // execution interval in milliseconds (or microseconds). 0 - immediate
@@ -546,72 +546,72 @@ class Task {
 class Scheduler {
   friend class Task;
   public:
-    _TASK_INLINE Scheduler();
+    __TASK_INLINE Scheduler();
 //  ~Scheduler();
-    _TASK_INLINE void init();
-    _TASK_INLINE void addTask(Task& aTask);
-    _TASK_INLINE void deleteTask(Task& aTask);
-    _TASK_INLINE void pause() { iPaused = true; };
-    _TASK_INLINE void resume() { iPaused = false; };
-    _TASK_INLINE void enable() { iEnabled = true; };
-    _TASK_INLINE void disable() { iEnabled = false; };
+    __TASK_INLINE void init();
+    __TASK_INLINE void addTask(Task& aTask);
+    __TASK_INLINE void deleteTask(Task& aTask);
+    __TASK_INLINE void pause() { iPaused = true; };
+    __TASK_INLINE void resume() { iPaused = false; };
+    __TASK_INLINE void enable() { iEnabled = true; };
+    __TASK_INLINE void disable() { iEnabled = false; };
 #ifdef _TASK_PRIORITY
-    _TASK_INLINE void disableAll(bool aRecursive = true);
-    _TASK_INLINE void enableAll(bool aRecursive = true);
-    _TASK_INLINE void startNow(bool aRecursive = true);       // reset ALL active tasks to immediate execution NOW.
+    __TASK_INLINE void disableAll(bool aRecursive = true);
+    __TASK_INLINE void enableAll(bool aRecursive = true);
+    __TASK_INLINE void startNow(bool aRecursive = true);       // reset ALL active tasks to immediate execution NOW.
 #else
-    _TASK_INLINE void disableAll();
-    _TASK_INLINE void enableAll();
-    _TASK_INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
+    __TASK_INLINE void disableAll();
+    __TASK_INLINE void enableAll();
+    __TASK_INLINE void startNow();                             // reset ALL active tasks to immediate execution NOW.
 #endif
 
-    _TASK_INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
+    __TASK_INLINE bool execute();                              // Returns true if none of the tasks' callback methods was invoked (true = idle run)
 
-    _TASK_INLINE Task& currentTask() ;                        // DEPRICATED
-    _TASK_INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
-    _TASK_INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task
+    __TASK_INLINE Task& currentTask() ;                        // DEPRICATED
+    __TASK_INLINE Task* getCurrentTask() ;                     // Returns pointer to the currently active task
+    __TASK_INLINE long timeUntilNextIteration(Task& aTask);    // return number of ms until next iteration of a given Task
 
-    _TASK_INLINE unsigned long getActiveTasks() { return iActiveTasks; }
-    _TASK_INLINE unsigned long getTotalTasks() { return iTotalTasks; }
-    _TASK_INLINE unsigned long getInvokedTasks() { return iInvokedTasks; }
+    __TASK_INLINE unsigned long getActiveTasks() { return iActiveTasks; }
+    __TASK_INLINE unsigned long getTotalTasks() { return iTotalTasks; }
+    __TASK_INLINE unsigned long getInvokedTasks() { return iInvokedTasks; }
 #ifdef _TASK_TICKLESS
-    _TASK_INLINE unsigned long getNextRun() { return iNextRun; }
+    __TASK_INLINE unsigned long getNextRun() { return iNextRun; }
 #endif
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
-    _TASK_INLINE void allowSleep(bool aState = true);
-    _TASK_INLINE void setSleepMethod( SleepCallback aCallback );
+    __TASK_INLINE void allowSleep(bool aState = true);
+    __TASK_INLINE void setSleepMethod( SleepCallback aCallback );
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_LTS_POINTER
-    _TASK_INLINE void* currentLts();
+    __TASK_INLINE void* currentLts();
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_TIMECRITICAL
-    _TASK_INLINE bool isOverrun();
-    _TASK_INLINE void cpuLoadReset();
-    _TASK_INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
-    _TASK_INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
-    _TASK_INLINE unsigned long getCpuLoadTotal();
+    __TASK_INLINE bool isOverrun();
+    __TASK_INLINE void cpuLoadReset();
+    __TASK_INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
+    __TASK_INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
+    __TASK_INLINE unsigned long getCpuLoadTotal();
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
-    _TASK_INLINE void setHighPriorityScheduler(Scheduler* aScheduler);
-    _TASK_INLINE static Scheduler& currentScheduler() { return *(iCurrentScheduler); };
+    __TASK_INLINE void setHighPriorityScheduler(Scheduler* aScheduler);
+    __TASK_INLINE static Scheduler& currentScheduler() { return *(iCurrentScheduler); };
 #endif  // _TASK_PRIORITY
 
 #ifdef _TASK_EXPOSE_CHAIN
-    _TASK_INLINE Task*  getFirstTask() { return iFirst; };       // pointer to the previous task in the chain, NULL if first or not set
-    _TASK_INLINE Task*  getLastTask()  { return iLast;  };       // pointer to the next task in the chain, NULL if last or not set
+    __TASK_INLINE Task*  getFirstTask() { return iFirst; };       // pointer to the previous task in the chain, NULL if first or not set
+    __TASK_INLINE Task*  getLastTask()  { return iLast;  };       // pointer to the next task in the chain, NULL if last or not set
 #endif // _TASK_EXPOSE_CHAIN
 
 #ifdef _TASK_THREAD_SAFE
-    _TASK_INLINE void   requestAction(_task_request_t* aRequest);    // this method places the request on the task request queue
-    _TASK_INLINE void   requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5);
+    __TASK_INLINE bool   requestAction(_task_request_t* aRequest);    // this method places the request on the task request queue
+    __TASK_INLINE bool   requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5);
 #endif
   _TASK_SCOPE:
 #ifdef _TASK_THREAD_SAFE
-    _TASK_INLINE void   processRequests();
+    __TASK_INLINE void   processRequests();
 #endif
     Task          *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
