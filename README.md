@@ -90,6 +90,11 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 ### Check out what TaskScheduler can do:
 
+#### A picture is worth 1024 words:
+
+* Video tutorial of TaskScheduler
+  https://youtu.be/eoJUlH_rWOE?si=eatgXMDMzwLPXrVP
+  
 #### Around the world:
 
 * Ninja Timer: Giant 7-Segment Display at Adafruit.com
