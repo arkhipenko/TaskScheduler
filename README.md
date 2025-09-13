@@ -6,7 +6,7 @@
 
 #### Get expedited support or integration consultation for TaskScheduler [from xs:code](https://xscode.com/arkhipenko/TaskScheduler)
 
-[![xscode](https://github.com/arkhipenko/resources/blob/master/taskscheduler-banner.png)](https://xscode.com/arkhipenko/TaskScheduler)
+[![github](https://github.com/arkhipenko/resources/blob/master/taskscheduler-banner.png)](https://github.com/arkhipenko/TaskScheduler)
 ---
 
 ### OVERVIEW:
