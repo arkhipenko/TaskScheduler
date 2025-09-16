@@ -96,31 +96,29 @@ jobs:
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example12_Priority --warnings more
       - name: Scheduler_example13_Micros
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example13_Micros --warnings more
+#      - name: Scheduler_example14_Yield # this is esp8266 only example
+#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
+
+
+  ArduinoIDE_ESP8266_ONLY:
+    strategy:
+      matrix:
+        include:
+          - arduino-platform: "esp8266:esp8266"
+            fqbn: "esp8266:esp8266:nodemcuv2"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1.1.1
+      - name: Install platform
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install ${{ matrix.arduino-platform }}
+      - name: Install repo as library
+        run: |
+          mkdir -p "$HOME/Arduino/libraries"
+          ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Scheduler_example14_Yield
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
-
-
-#  Scheduler_example00_Blink_Namespace:
-#    strategy:
-#      matrix:
-#        include:
-#          - arduino-platform: "arduino:avr"
-#            fqbn: "arduino:avr:uno"
-#          - arduino-platform: "esp32:esp32"
-#            fqbn: "esp32:esp32:esp32"
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@main
-#      - name: Setup Arduino CLI
-#        uses: arduino/setup-arduino-cli@v1.1.1
-#      - name: Install platform
-#        run: |
-#          arduino-cli core update-index
-#          arduino-cli core install ${{ matrix.arduino-platform }}
-#      - name: Install repo as library
-#        run: |
-#          mkdir -p "$HOME/Arduino/libraries"
-#          ln -s "$PWD" "$HOME/Arduino/libraries/."
-#      - name: Compile Sketch
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink_Namespace --warnings more
