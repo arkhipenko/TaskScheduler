@@ -16,7 +16,7 @@ on:
 # will produce.
 jobs:
   # This is the name of the job - can be whatever.
-  Scheduler_example00_Blink:
+  ArduinoIDE:
     # Here we tell GitHub that the jobs must be determined
     # dynamically depending on a matrix configuration.
     strategy:
@@ -66,30 +66,61 @@ jobs:
       
       # Finally, we compile the sketch, using the FQBN that was set
       # in the build matrix.
-      - name: Compile Sketch
+      - name: Scheduler_example00_Blink
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink --warnings more
-
-  Scheduler_example00_Blink_Namespace:
-    strategy:
-      matrix:
-        include:
-          - arduino-platform: "arduino:avr"
-            fqbn: "arduino:avr:uno"
-          - arduino-platform: "esp32:esp32"
-            fqbn: "esp32:esp32:esp32"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@main
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v1.1.1
-      - name: Install platform
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install ${{ matrix.arduino-platform }}
-      - name: Install repo as library
-        run: |
-          mkdir -p "$HOME/Arduino/libraries"
-          ln -s "$PWD" "$HOME/Arduino/libraries/."
-      - name: Compile Sketch
+      - name: Scheduler_example00_Blink_Namespace
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink_Namespace --warnings more
+      - name: Scheduler_example01
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example01 --warnings more
+      - name: Scheduler_example02
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example02 --warnings more
+      - name: Scheduler_example03
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example03 --warnings more
+      - name: Scheduler_example04_StatusRequest
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example04_StatusRequest --warnings more
+      - name: Scheduler_example05_StatusRequest
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example05_StatusRequest --warnings more
+      - name: Scheduler_example06_IDLE
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example06_IDLE --warnings more
+      - name: Scheduler_example07_WDT
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example07_WDT --warnings more
+      - name: Scheduler_example08_LTS
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example08_LTS --warnings more
+      - name: Scheduler_example09_TimeCritical
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example09_TimeCritical --warnings more
+      - name: Scheduler_example10_Benchmark
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example10_Benchmark --warnings more
+      - name: Scheduler_example11_Priority
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example11_Priority --warnings more
+      - name: Scheduler_example12_Priority
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example12_Priority --warnings more
+      - name: Scheduler_example13_Micros
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example13_Micros --warnings more
+      - name: Scheduler_example14_Yield
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
+
+
+#  Scheduler_example00_Blink_Namespace:
+#    strategy:
+#      matrix:
+#        include:
+#          - arduino-platform: "arduino:avr"
+#            fqbn: "arduino:avr:uno"
+#          - arduino-platform: "esp32:esp32"
+#            fqbn: "esp32:esp32:esp32"
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@main
+#      - name: Setup Arduino CLI
+#        uses: arduino/setup-arduino-cli@v1.1.1
+#      - name: Install platform
+#        run: |
+#          arduino-cli core update-index
+#          arduino-cli core install ${{ matrix.arduino-platform }}
+#      - name: Install repo as library
+#        run: |
+#          mkdir -p "$HOME/Arduino/libraries"
+#          ln -s "$PWD" "$HOME/Arduino/libraries/."
+#      - name: Compile Sketch
+#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink_Namespace --warnings more
