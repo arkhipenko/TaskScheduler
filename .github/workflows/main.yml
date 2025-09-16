@@ -8,6 +8,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 # This is the list of jobs that will be run concurrently.
 # Since we use a build matrix, the actual number of jobs
