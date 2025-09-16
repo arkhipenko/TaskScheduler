@@ -35,7 +35,8 @@ jobs:
           # the variable `fqbn` is set to "arduino:avr:uno".
           - arduino-platform: "arduino:avr"
             fqbn: "arduino:avr:uno"
-
+          - arduino-platform: "esp32:esp32"
+            fqbn: "esp32:esp32:esp32"
     # This is the platform GitHub will use to run our workflow,
     # I picked ubuntu.
     runs-on: ubuntu-latest
@@ -49,7 +50,7 @@ jobs:
       # We use the `arduino/setup-arduino-cli` action to install and
       # configure the Arduino CLI on the system.
       - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v1.1.1
+        uses: arduino/setup-arduino-cli@v1.3.1
       
       
       # We then install the platform, which one will be determined
@@ -67,3 +68,28 @@ jobs:
       # in the build matrix.
       - name: Compile Sketch
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink --warnings more
+
+  Scheduler_example00_Blink_Namespace:
+    strategy:
+      matrix:
+        include:
+          - arduino-platform: "arduino:avr"
+            fqbn: "arduino:avr:uno"
+          - arduino-platform: "esp32:esp32"
+            fqbn: "esp32:esp32:esp32"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1.3.1
+      - name: Install platform
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install ${{ matrix.arduino-platform }}
+      - name: Install repo as library
+        run: |
+          mkdir -p "$HOME/Arduino/libraries"
+          ln -s "$PWD" "$HOME/Arduino/libraries/."
+      - name: Compile Sketch
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink_Namespace --warnings more
