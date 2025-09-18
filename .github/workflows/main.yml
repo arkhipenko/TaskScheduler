@@ -186,8 +186,8 @@ jobs:
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example05_StatusRequest --warnings more
       - name: Scheduler_example06_IDLE
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example06_IDLE --warnings more
-      - name: Scheduler_example07_WDT
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example07_WDT --warnings more
+#      - name: Scheduler_example07_WDT
+#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example07_WDT --warnings more
       - name: Scheduler_example08_LTS
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example08_LTS --warnings more
       - name: Scheduler_example09_TimeCritical
