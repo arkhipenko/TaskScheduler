@@ -257,3 +257,32 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Scheduler_example14_Yield
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
+		
+  PIO:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+      - name: Install required libraries for PlatformIO
+        run: |
+          mkdir -p lib
+          # Install QueueArray from Arduino Playground
+          wget -O queuearray.zip https://playground.arduino.cc/uploads/Code/QueueArray/index.zip
+          unzip queuearray.zip -d lib/
+          # Install MemoryFree from GitHub
+          git clone https://github.com/McNeight/MemoryFree.git
+          cp -r MemoryFree lib/
+          
+      - name: Scheduler_example27_PlatformIO
+        run: |
+          cd examples/Scheduler_example27_PlatformIO
+          pio run -e esp32dev
+		  
