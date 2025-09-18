@@ -257,7 +257,7 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Scheduler_example14_Yield
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
-		
+
   PIO:
     runs-on: ubuntu-latest
     steps:
