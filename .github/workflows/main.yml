@@ -30,13 +30,35 @@ jobs:
         # future the CLI might automatically detect and download the 
         # core needed to compile against a certain FQBN, at that point 
         # the following `include` section will be useless.
-        include:
-          # This works like this: when the platformn is "arduino:avr",
-          # the variable `fqbn` is set to "arduino:avr:uno".
-          - arduino-platform: "arduino:avr"
-            fqbn: "arduino:avr:uno"
-#          - arduino-platform: "esp32:esp32"
-#            fqbn: "esp32:esp32:esp32"
+        fqbn: ["arduino:avr:uno"]
+        example:
+          - "Scheduler_example00_Blink"
+          - "Scheduler_example00_Blink_Namespace"
+          - "Scheduler_example01"
+          - "Scheduler_example02"
+          - "Scheduler_example03"
+          - "Scheduler_example04_StatusRequest"
+          - "Scheduler_example05_StatusRequest"
+          - "Scheduler_example06_IDLE"
+          - "Scheduler_example07_WDT"
+          - "Scheduler_example08_LTS"
+          - "Scheduler_example09_TimeCritical"
+          - "Scheduler_example10_Benchmark"
+          - "Scheduler_example11_Priority"
+          - "Scheduler_example12_Priority"
+          - "Scheduler_example13_Micros"
+          - "Scheduler_example16_Multitab"
+          - "Scheduler_example17_Timeout"
+          - "Scheduler_example18_StatusRequest_LTS_WDT_Timeout"
+          - "Scheduler_example19_Dynamic_Tasks"
+          - "Scheduler_example19_Dynamic_Tasks_SelfDestruct"
+          - "Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object"
+          - "Scheduler_example21_OO_Callbacks"
+          - "Scheduler_example23_IDLE_Callback"
+          - "Scheduler_example24_CPU_LOAD"
+          - "Scheduler_example25_SCHEDULER_CHAIN"
+          - "Scheduler_example26_SCHEDULING_OPTIONS"
+          - "Scheduler_example28_Tickless"
     # This is the platform GitHub will use to run our workflow,
     # I picked ubuntu.
     runs-on: ubuntu-latest
@@ -75,77 +97,43 @@ jobs:
     
       # Finally, we compile the sketch, using the FQBN that was set
       # in the build matrix.
-      - name: Scheduler_example00_Blink
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink --warnings more
-      - name: Scheduler_example00_Blink_Namespace
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink_Namespace --warnings more
-      - name: Scheduler_example01
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example01 --warnings more
-      - name: Scheduler_example02
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example02 --warnings more
-      - name: Scheduler_example03
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example03 --warnings more
-      - name: Scheduler_example04_StatusRequest
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example04_StatusRequest --warnings more
-      - name: Scheduler_example05_StatusRequest
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example05_StatusRequest --warnings more
-      - name: Scheduler_example06_IDLE
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example06_IDLE --warnings more
-      - name: Scheduler_example07_WDT
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example07_WDT --warnings more
-      - name: Scheduler_example08_LTS
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example08_LTS --warnings more
-      - name: Scheduler_example09_TimeCritical
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example09_TimeCritical --warnings more
-      - name: Scheduler_example10_Benchmark
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example10_Benchmark --warnings more
-      - name: Scheduler_example11_Priority
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example11_Priority --warnings more
-      - name: Scheduler_example12_Priority
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example12_Priority --warnings more
-      - name: Scheduler_example13_Micros
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example13_Micros --warnings more
-#      - name: Scheduler_example14_Yield
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
-#      - name: Scheduler_example15_STDFunction
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example15_STDFunction --warnings more
-      - name: Scheduler_example16_Multitab
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example16_Multitab --warnings more
-      - name: Scheduler_example17_Timeout
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example17_Timeout --warnings more
-      - name: Scheduler_example18_StatusRequest_LTS_WDT_Timeout
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example18_StatusRequest_LTS_WDT_Timeout --warnings more
-      - name: Scheduler_example18_StatusRequest_LTS_WDT_Timeout
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example18_StatusRequest_LTS_WDT_Timeout --warnings more
-      - name: Scheduler_example19_Dynamic_Tasks
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example19_Dynamic_Tasks --warnings more
-      - name: Scheduler_example19_Dynamic_Tasks_SelfDestruct
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example19_Dynamic_Tasks_SelfDestruct --warnings more
-#      - name: Scheduler_example19_Dynamic_Tasks_stdQueue
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example19_Dynamic_Tasks_stdQueue --warnings more
-      - name: Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object --warnings more
-      - name: Scheduler_example21_OO_Callbacks
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example21_OO_Callbacks --warnings more
-      - name: Scheduler_example23_IDLE_Callback
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example23_IDLE_Callback --warnings more
-      - name: Scheduler_example24_CPU_LOAD
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example24_CPU_LOAD --warnings more
-      - name: Scheduler_example25_SCHEDULER_CHAIN
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example25_SCHEDULER_CHAIN --warnings more
-      - name: Scheduler_example26_SCHEDULING_OPTIONS
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example26_SCHEDULING_OPTIONS --warnings more
-#      - name: Scheduler_example27_PlatformIO
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example27_PlatformIO --warnings more
-      - name: Scheduler_example28_Tickless
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example28_Tickless --warnings more
+      - name: Compile ${{ matrix.example }}
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/${{ matrix.example }} --warnings more
 
   ArduinoIDE_ESP32:
     strategy:
       matrix:
-        include:
-          - arduino-platform: "esp32:esp32"
-            fqbn: "esp32:esp32:esp32"
+        arduino-platform: ["esp32:esp32"]
+        fqbn: ["esp32:esp32:esp32"]
+        example:
+          - "Scheduler_example00_Blink"
+          - "Scheduler_example00_Blink_Namespace"
+          - "Scheduler_example01"
+          - "Scheduler_example02"
+          - "Scheduler_example03"
+          - "Scheduler_example04_StatusRequest"
+          - "Scheduler_example05_StatusRequest"
+          - "Scheduler_example06_IDLE"
+          - "Scheduler_example08_LTS"
+          - "Scheduler_example09_TimeCritical"
+          - "Scheduler_example10_Benchmark"
+          - "Scheduler_example11_Priority"
+          - "Scheduler_example12_Priority"
+          - "Scheduler_example13_Micros"
+          - "Scheduler_example15_STDFunction"
+          - "Scheduler_example16_Multitab"
+          - "Scheduler_example17_Timeout"
+          - "Scheduler_example18_StatusRequest_LTS_WDT_Timeout"
+          - "Scheduler_example19_Dynamic_Tasks"
+          - "Scheduler_example19_Dynamic_Tasks_SelfDestruct"
+          - "Scheduler_example19_Dynamic_Tasks_stdQueue"
+          - "Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object"
+          - "Scheduler_example21_OO_Callbacks"
+          - "Scheduler_example23_IDLE_Callback"
+          - "Scheduler_example24_CPU_LOAD"
+          - "Scheduler_example25_SCHEDULER_CHAIN"
+          - "Scheduler_example26_SCHEDULING_OPTIONS"
+          - "Scheduler_example28_Tickless"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -170,77 +158,16 @@ jobs:
           git clone https://github.com/McNeight/MemoryFree.git
           cp -r MemoryFree "$HOME/Arduino/libraries/"
           
-      - name: Scheduler_example00_Blink
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink --warnings more
-      - name: Scheduler_example00_Blink_Namespace
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink_Namespace --warnings more
-      - name: Scheduler_example01
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example01 --warnings more
-      - name: Scheduler_example02
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example02 --warnings more
-      - name: Scheduler_example03
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example03 --warnings more
-      - name: Scheduler_example04_StatusRequest
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example04_StatusRequest --warnings more
-      - name: Scheduler_example05_StatusRequest
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example05_StatusRequest --warnings more
-      - name: Scheduler_example06_IDLE
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example06_IDLE --warnings more
-#      - name: Scheduler_example07_WDT
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example07_WDT --warnings more
-      - name: Scheduler_example08_LTS
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example08_LTS --warnings more
-      - name: Scheduler_example09_TimeCritical
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example09_TimeCritical --warnings more
-      - name: Scheduler_example10_Benchmark
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example10_Benchmark --warnings more
-      - name: Scheduler_example11_Priority
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example11_Priority --warnings more
-      - name: Scheduler_example12_Priority
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example12_Priority --warnings more
-      - name: Scheduler_example13_Micros
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example13_Micros --warnings more
-#      - name: Scheduler_example14_Yield
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
-      - name: Scheduler_example15_STDFunction
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example15_STDFunction --warnings more
-      - name: Scheduler_example16_Multitab
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example16_Multitab --warnings more
-      - name: Scheduler_example17_Timeout
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example17_Timeout --warnings more
-      - name: Scheduler_example18_StatusRequest_LTS_WDT_Timeout
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example18_StatusRequest_LTS_WDT_Timeout --warnings more
-      - name: Scheduler_example18_StatusRequest_LTS_WDT_Timeout
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example18_StatusRequest_LTS_WDT_Timeout --warnings more
-      - name: Scheduler_example19_Dynamic_Tasks
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example19_Dynamic_Tasks --warnings more
-      - name: Scheduler_example19_Dynamic_Tasks_SelfDestruct
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example19_Dynamic_Tasks_SelfDestruct --warnings more
-      - name: Scheduler_example19_Dynamic_Tasks_stdQueue
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example19_Dynamic_Tasks_stdQueue --warnings more
-      - name: Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object --warnings more
-      - name: Scheduler_example21_OO_Callbacks
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example21_OO_Callbacks --warnings more
-      - name: Scheduler_example23_IDLE_Callback
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example23_IDLE_Callback --warnings more
-      - name: Scheduler_example24_CPU_LOAD
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example24_CPU_LOAD --warnings more
-      - name: Scheduler_example25_SCHEDULER_CHAIN
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example25_SCHEDULER_CHAIN --warnings more
-      - name: Scheduler_example26_SCHEDULING_OPTIONS
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example26_SCHEDULING_OPTIONS --warnings more
-#      - name: Scheduler_example27_PlatformIO
-#        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example27_PlatformIO --warnings more
-      - name: Scheduler_example28_Tickless
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example28_Tickless --warnings more
-
+      - name: Compile ${{ matrix.example }}
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/${{ matrix.example }} --warnings more
+        
   ArduinoIDE_ESP8266_ONLY:
     strategy:
       matrix:
-        include:
-          - arduino-platform: "esp8266:esp8266"
-            fqbn: "esp8266:esp8266:nodemcuv2"
+        arduino-platform: ["esp8266:esp8266"]
+        fqbn: ["esp8266:esp8266:nodemcuv2"]
+        example:
+          - "Scheduler_example14_Yield"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -255,9 +182,9 @@ jobs:
         run: |
           mkdir -p "$HOME/Arduino/libraries"
           ln -s "$PWD" "$HOME/Arduino/libraries/."
-      - name: Scheduler_example14_Yield
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
-
+      - name: Compile ${{ matrix.example }}
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/${{ matrix.example }} --warnings more
+        
   PIO:
     strategy:
       matrix:
