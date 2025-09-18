@@ -65,10 +65,10 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Install required libraries
         run: |
-          # Install QueueArray
-          git clone https://github.com/interactive-matter/QueueArray.git
           mkdir -p "$HOME/Arduino/libraries"
-          cp -r QueueArray "$HOME/Arduino/libraries/"
+          # Install QueueArray from Arduino Playground
+          wget -O queuearray.zip https://playground.arduino.cc/uploads/Code/QueueArray/index.zip
+          unzip queuearray.zip -d "$HOME/Arduino/libraries/"
           # Install MemoryFree library from Arduino Library Manager
           git clone https://github.com/McNeight/MemoryFree.git
           cp -r MemoryFree "$HOME/Arduino/libraries/"
@@ -162,10 +162,10 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Install required libraries
         run: |
-          # Install QueueArray
-          git clone https://github.com/interactive-matter/QueueArray.git
           mkdir -p "$HOME/Arduino/libraries"
-          cp -r QueueArray "$HOME/Arduino/libraries/"
+          # Install QueueArray from Arduino Playground
+          wget -O queuearray.zip https://playground.arduino.cc/uploads/Code/QueueArray/index.zip
+          unzip queuearray.zip -d "$HOME/Arduino/libraries/"
           # Install MemoryFree library from Arduino Library Manager
           git clone https://github.com/McNeight/MemoryFree.git
           cp -r MemoryFree "$HOME/Arduino/libraries/"
