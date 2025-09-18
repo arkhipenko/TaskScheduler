@@ -19,7 +19,7 @@
 
 #include <queue>
 
-int freeMemory();
+// int freeMemory();
 
 #if defined (ARDUINO_ARCH_AVR)
 #include <MemoryFree.h>
