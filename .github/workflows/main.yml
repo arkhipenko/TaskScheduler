@@ -285,3 +285,7 @@ jobs:
         run: |
           cd examples/Scheduler_example27_PlatformIO
           pio run -e esp32dev
+      - name: Scheduler_example29_NonArduino
+        run: |
+          cd examples/Scheduler_example29_NonArduino
+          pio run -e esp32dev
