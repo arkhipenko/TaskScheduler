@@ -623,7 +623,8 @@ void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback
 #endif  // _TASK_THREAD_SAFE
 
     setInterval(aInterval);
-    iSetIterations = iIterations = aIterations;
+    iSetIterations = aIterations;
+    iIterations = aIterations;
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex - 1;
 #endif  // _TASK_THREAD_SAFE
@@ -639,7 +640,8 @@ void Task::setIterations(long aIterations) {
     iMutex = iMutex + 1;
 #endif  // _TASK_THREAD_SAFE
 
-    iSetIterations = iIterations = aIterations;
+    iSetIterations = aIterations;
+    iIterations = aIterations;
 
 #ifdef _TASK_THREAD_SAFE
     iMutex = iMutex - 1;
