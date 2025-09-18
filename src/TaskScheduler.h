@@ -1363,7 +1363,9 @@ bool Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
     unsigned long tStart;
+#ifdef _TASK_TIMECRITICAL
     unsigned long tIdleStart = 0;
+#endif  // _TASK_TIMECRITICAL
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 
