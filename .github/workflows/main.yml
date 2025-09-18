@@ -185,6 +185,72 @@ jobs:
       - name: Compile ${{ matrix.example }}
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/${{ matrix.example }} --warnings more
         
+  ArduinoIDE_STM32:
+    strategy:
+      matrix:
+        arduino-platform: ["STMicroelectronics:stm32"]
+        fqbn: ["STMicroelectronics:stm32:Nucleo_64:pnum=NUCLEO_F401RE"]
+        example:
+          - "Scheduler_example00_Blink"
+          - "Scheduler_example00_Blink_Namespace"
+          - "Scheduler_example01"
+          - "Scheduler_example02"
+          - "Scheduler_example03"
+          - "Scheduler_example04_StatusRequest"
+          - "Scheduler_example05_StatusRequest"
+          - "Scheduler_example06_IDLE"
+          - "Scheduler_example08_LTS"
+          - "Scheduler_example09_TimeCritical"
+          - "Scheduler_example10_Benchmark"
+          - "Scheduler_example11_Priority"
+          - "Scheduler_example12_Priority"
+          - "Scheduler_example13_Micros"
+          - "Scheduler_example15_STDFunction"
+          - "Scheduler_example16_Multitab"
+          - "Scheduler_example17_Timeout"
+          - "Scheduler_example18_StatusRequest_LTS_WDT_Timeout"
+          - "Scheduler_example19_Dynamic_Tasks"
+          - "Scheduler_example19_Dynamic_Tasks_SelfDestruct"
+          - "Scheduler_example19_Dynamic_Tasks_stdQueue"
+          - "Scheduler_example20_StatusRequest_LTS_WDT_Timeout_Object"
+          - "Scheduler_example21_OO_Callbacks"
+          - "Scheduler_example23_IDLE_Callback"
+          - "Scheduler_example24_CPU_LOAD"
+          - "Scheduler_example25_SCHEDULER_CHAIN"
+          - "Scheduler_example26_SCHEDULING_OPTIONS"
+          - "Scheduler_example28_Tickless"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1.1.1
+        
+      - name: Install platform
+        run: |
+          arduino-cli core update-index --additional-urls https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+          arduino-cli core install ${{ matrix.arduino-platform }} --additional-urls https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+          
+      - name: Install repo as library
+        run: |
+          mkdir -p "$HOME/Arduino/libraries"
+          ln -s "$PWD" "$HOME/Arduino/libraries/."
+          
+      - name: Install required libraries
+        run: |
+          mkdir -p "$HOME/Arduino/libraries"
+          # Install QueueArray from Arduino Playground
+          wget -O queuearray.zip https://playground.arduino.cc/uploads/Code/QueueArray/index.zip
+          unzip queuearray.zip -d "$HOME/Arduino/libraries/"
+          # Install MemoryFree library from GitHub
+          git clone https://github.com/McNeight/MemoryFree.git
+          cp -r MemoryFree "$HOME/Arduino/libraries/"
+          
+      - name: Compile ${{ matrix.example }}
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/${{ matrix.example }} --warnings more
+
   PIO:
     strategy:
       matrix:
