@@ -259,6 +259,18 @@ jobs:
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example14_Yield --warnings more
 
   PIO:
+    strategy:
+      matrix:
+        example: 
+          - "Scheduler_example27_PlatformIO"
+          - "Scheduler_example29_NonArduino"
+        environment:
+          - "esp32dev"
+        include:
+          - example: "Scheduler_example27_PlatformIO"
+            environment: "esp32dev"
+          - example: "Scheduler_example29_NonArduino" 
+            environment: "esp32dev"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -271,24 +283,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install platformio
-      - name: Install required libraries for PlatformIO
+          
+      - name: Setup libraries for PlatformIO
         run: |
+          cd examples/${{ matrix.example }}
+          # Remove any existing lib_deps from platformio.ini that reference TaskScheduler
+          sed -i '/arkhipenko\/TaskScheduler/d' platformio.ini || true
+          sed -i '/TaskScheduler/d' platformio.ini || true
+          # Clone the current branch/commit to get TaskScheduler source
           mkdir -p lib
-          # Install TaskScheduler (current branch)
-          ln -s ../../../ lib/TaskScheduler
+          git clone --depth 1 --branch ${GITHUB_REF#refs/heads/} https://github.com/${GITHUB_REPOSITORY}.git lib/TaskScheduler
           # Install other required libraries
-          # Install QueueArray from Arduino Playground
           wget -O queuearray.zip https://playground.arduino.cc/uploads/Code/QueueArray/index.zip
           unzip queuearray.zip -d lib/
-          # Install MemoryFree from GitHub
           git clone https://github.com/McNeight/MemoryFree.git
           cp -r MemoryFree lib/
+          # Verify library installation
+          ls -la lib/
           
-      - name: Scheduler_example27_PlatformIO
+      - name: Compile ${{ matrix.example }}
         run: |
-          cd examples/Scheduler_example27_PlatformIO
-          pio run -e esp32dev
-      - name: Scheduler_example29_NonArduino
-        run: |
-          cd examples/Scheduler_example29_NonArduino
-          pio run -e esp32dev
+          cd examples/${{ matrix.example }}
+          pio run -e ${{ matrix.environment }}
