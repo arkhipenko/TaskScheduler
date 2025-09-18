@@ -65,10 +65,13 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Install required libraries
         run: |
+          # Install QueueArray
           git clone https://github.com/interactive-matter/QueueArray.git
           mkdir -p "$HOME/Arduino/libraries"
           cp -r QueueArray "$HOME/Arduino/libraries/"
-          
+          # Install MemoryFree library from Arduino Library Manager
+          arduino-cli lib install MemoryFree
+    
       # Finally, we compile the sketch, using the FQBN that was set
       # in the build matrix.
       - name: Scheduler_example00_Blink
@@ -158,9 +161,12 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Install required libraries
         run: |
+          # Install QueueArray
           git clone https://github.com/interactive-matter/QueueArray.git
           mkdir -p "$HOME/Arduino/libraries"
           cp -r QueueArray "$HOME/Arduino/libraries/"
+          # Install MemoryFree library from Arduino Library Manager
+          arduino-cli lib install MemoryFree
           
       - name: Scheduler_example00_Blink
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink --warnings more
