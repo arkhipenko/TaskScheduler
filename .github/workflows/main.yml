@@ -274,6 +274,11 @@ jobs:
       - name: Install required libraries for PlatformIO
         run: |
           mkdir -p lib
+          cd examples/Scheduler_example27_PlatformIO
+          mkdir -p lib/TaskScheduler
+          # Copy the current branch's TaskScheduler source to lib directory
+          cp -r ../../src/* lib/TaskScheduler/
+          # Install other required libraries
           # Install QueueArray from Arduino Playground
           wget -O queuearray.zip https://playground.arduino.cc/uploads/Code/QueueArray/index.zip
           unzip queuearray.zip -d lib/
