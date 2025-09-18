@@ -16,5 +16,6 @@ bool Ticker::Callback() {
 
   iMeasure->setWaiting(numberSensors); // Set the StatusRequest to wait for 1 to 10 signals.
   iCalc->waitFor(iMeasure);
+  return true;
 }
 
