@@ -65,7 +65,7 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Install required libraries
         run: |
-          arduino-cli lib install QueueArray
+          arduino-cli lib install --git-url https://github.com/interactive-matter/QueueArray.git
           
       # Finally, we compile the sketch, using the FQBN that was set
       # in the build matrix.
@@ -156,7 +156,7 @@ jobs:
           ln -s "$PWD" "$HOME/Arduino/libraries/."
       - name: Install required libraries
         run: |
-          arduino-cli lib install QueueArray
+          arduino-cli lib install --git-url https://github.com/interactive-matter/QueueArray.git
       - name: Scheduler_example00_Blink
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples/Scheduler_example00_Blink --warnings more
       - name: Scheduler_example00_Blink_Namespace
