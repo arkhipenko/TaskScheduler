@@ -17,7 +17,7 @@
 #define _TASK_SELF_DESTRUCT     // Enable tasks to "self-destruct" after disable
 #include <TaskScheduler.h>
 
-int freeMemory();
+// int freeMemory();
 
 #if defined (ARDUINO_ARCH_AVR)
 #include <MemoryFree.h>

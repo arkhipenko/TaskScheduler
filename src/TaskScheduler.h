@@ -640,6 +640,10 @@ void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback
     setInterval(aInterval);
     iSetIterations = aIterations;
     iIterations = aIterations;
+#ifdef _TASK_THREAD_SAFE
+    iMutex = iMutex - 1;
+#endif  // _TASK_THREAD_SAFE
+
 }
 
 /** Sets number of iterations for the task
@@ -647,8 +651,16 @@ void Task::set(unsigned long aInterval, long aIterations, TaskCallback aCallback
  * @param aIterations - number of iterations, use -1 for no limit
  */
 void Task::setIterations(long aIterations) {
+#ifdef _TASK_THREAD_SAFE
+    iMutex = iMutex + 1;
+#endif  // _TASK_THREAD_SAFE
+
     iSetIterations = aIterations;
     iIterations = aIterations;
+
+#ifdef _TASK_THREAD_SAFE
+    iMutex = iMutex - 1;
+#endif  // _TASK_THREAD_SAFE
 }
 
 #ifndef _TASK_OO_CALLBACKS
@@ -1515,7 +1527,9 @@ bool Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     unsigned long tFinish;
     unsigned long tStart;
+#ifdef _TASK_TIMECRITICAL
     unsigned long tIdleStart = 0;
+#endif  // _TASK_TIMECRITICAL
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 

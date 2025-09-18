@@ -228,7 +228,7 @@ void ntpCheck() {
 /**
  * Send NTP packet to NTP server
  */
-unsigned long sendNTPpacket(IPAddress & address)
+void sendNTPpacket(IPAddress & address)
 {
   Serial.print(millis());
   Serial.println(F(": sendNTPpacket."));
