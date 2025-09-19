@@ -39,15 +39,24 @@ inline void delayMicroseconds(unsigned long us) {
 // Mock digital I/O functions
 inline void pinMode(int pin, int mode) {
     // Mock implementation - do nothing
+    if ( pin == mode ) return;
+    else return;
 }
 
 inline void digitalWrite(int pin, int value) {
     // Mock implementation - could log pin states if needed
+    if ( pin == value ) return;
+    else return;
 }
 
 inline int digitalRead(int pin) {
     // Mock implementation - return LOW by default
-    return LOW;
+    if (pin == 0) return LOW;
+    else return HIGH;
+}
+
+inline void yield() {
+    std::this_thread::yield();
 }
 
 // Global test output capture
