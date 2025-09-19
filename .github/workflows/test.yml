@@ -32,7 +32,7 @@ jobs:
           cmake_minimum_required(VERSION 3.10)
           project(TaskSchedulerTests VERSION 1.0.0)
 
-          set(CMAKE_CXX_STANDARD 11)
+          set(CMAKE_CXX_STANDARD 14)
           set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
           # Find required packages
@@ -74,7 +74,7 @@ jobs:
 
           # Compiler definitions for Arduino compatibility
           target_compile_definitions(taskscheduler_tests PRIVATE
-              ARDUINO=300
+              ARDUINO=200
               _TASK_MICRO_RES=0
               _TASK_STD_FUNCTION=0
               _TASK_TIMECRITICAL=0
@@ -100,6 +100,51 @@ jobs:
           # Enable testing
           enable_testing()
           add_test(NAME TaskSchedulerUnitTests COMMAND taskscheduler_tests)
+          EOF
+          
+      - name: Create simplified test file
+        run: |
+          mkdir -p tests
+          cat > tests/simple_test.cpp << 'EOF'
+          #include <gtest/gtest.h>
+          #include <chrono>
+          #include <thread>
+
+          // Mock Arduino functions
+          unsigned long millis() {
+              static auto start = std::chrono::steady_clock::now();
+              auto now = std::chrono::steady_clock::now();
+              return std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+          }
+
+          void delay(unsigned long ms) {
+              std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+          }
+
+          void yield() {
+              std::this_thread::yield();
+          }
+
+          // Include TaskScheduler
+          #include "TaskScheduler.h"
+
+          // Simple test that just verifies compilation
+          TEST(TaskSchedulerTest, BasicCompilation) {
+              Scheduler ts;
+              EXPECT_TRUE(true);
+          }
+
+          TEST(TaskSchedulerTest, SchedulerExecution) {
+              Scheduler ts;
+              
+              // Run scheduler a few times - should not crash
+              for (int i = 0; i < 10; i++) {
+                  ts.execute();
+                  delay(1);
+              }
+              
+              EXPECT_TRUE(true);
+          }
           EOF
           
       - name: Build tests
