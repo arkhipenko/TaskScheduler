@@ -1,6 +1,6 @@
 // test_scheduler.cpp
 #include <gtest/gtest.h>
-#include "mock_arduino.h"
+#include "Arduino.h"
 #include "TaskScheduler.h"
 
 // Define the global test output vector
