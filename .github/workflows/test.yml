@@ -74,20 +74,7 @@ jobs:
 
           # Compiler definitions for Arduino compatibility
           target_compile_definitions(taskscheduler_tests PRIVATE
-              ARDUINO=200
-              _TASK_MICRO_RES=0
-              _TASK_STD_FUNCTION=0
-              _TASK_TIMECRITICAL=0
-              _TASK_STATUS_REQUEST=0
-              _TASK_WDT_IDS=0
-              _TASK_LTS_POINTER=0
-              _TASK_PRIORITY=0
-              _TASK_TIMEOUT=0
-              _TASK_OO_CALLBACKS=0
-              _TASK_DEFINE_MILLIS=0
-              _TASK_INLINE=0
-              _TASK_THREAD_SAFE=0
-              _TASK_SLEEP_ON_IDLE_RUN=0
+              ARDUINO=300
           )
 
           # Compiler flags
