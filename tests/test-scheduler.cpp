@@ -1,27 +1,57 @@
-// test_scheduler.cpp
+// test_scheduler.cpp - Unit tests for TaskScheduler library
+// This file contains comprehensive tests for the TaskScheduler cooperative multitasking library
+// Tests cover basic scheduler operations, task lifecycle, timing accuracy, and edge cases
+
 #include <gtest/gtest.h>
 #include "Arduino.h"
 #include "TaskScheduler.h"
 
-// Define the global test output vector
+// Global test state - used to capture and verify callback executions
 std::vector<std::string> test_output;
 
-// Test callback functions
+/**
+ * @brief Simple callback function for Task 1 testing
+ * 
+ * Records execution in the global test_output vector for verification.
+ * Used primarily for single-task execution tests and timing verification.
+ * Outputs execution timestamp for debugging timing-related issues.
+ */
 void task1_callback() {
     test_output.push_back("Task1 executed");
     std::cout << "Task1 executed at " << millis() << "ms" << std::endl;
 }
 
+/**
+ * @brief Simple callback function for Task 2 testing
+ * 
+ * Records execution with Task2 identifier to distinguish from other tasks
+ * in multi-task scheduling tests. Essential for verifying proper task
+ * isolation and execution ordering in concurrent scenarios.
+ */
 void task2_callback() {
     test_output.push_back("Task2 executed");
     std::cout << "Task2 executed at " << millis() << "ms" << std::endl;
 }
 
+/**
+ * @brief Simple callback function for Task 3 testing
+ * 
+ * Third task callback used in execution order tests and multi-task scenarios.
+ * Helps verify that the scheduler can handle multiple concurrent tasks
+ * and execute them in the correct chronological order.
+ */
 void task3_callback() {
     test_output.push_back("Task3 executed");
     std::cout << "Task3 executed at " << millis() << "ms" << std::endl;
 }
 
+/**
+ * @brief Callback for testing repeating task functionality
+ * 
+ * Uses static counter to track execution number, enabling verification
+ * of proper iteration counting and repeated execution behavior.
+ * Critical for testing tasks with limited iteration counts and infinite tasks.
+ */
 void repeating_callback() {
     static int counter = 0;
     counter++;
@@ -29,19 +59,51 @@ void repeating_callback() {
     std::cout << "Repeating task #" << counter << " executed at " << millis() << "ms" << std::endl;
 }
 
+/**
+ * @brief Test fixture class for TaskScheduler unit tests
+ * 
+ * Provides common setup and teardown functionality for all scheduler tests.
+ * Ensures clean test state between test runs and provides utility methods
+ * for common test operations like running scheduler with timeout conditions.
+ */
 class SchedulerTest : public ::testing::Test {
 protected:
+    /**
+     * @brief Set up test environment before each test
+     * 
+     * Clears any previous test output and initializes timing system.
+     * Called automatically by Google Test framework before each test method.
+     * Ensures each test starts with a clean, predictable state.
+     */
     void SetUp() override {
         clearTestOutput();
         // Reset time by creating new static start point
         millis(); // Initialize timing
     }
     
+    /**
+     * @brief Clean up test environment after each test
+     * 
+     * Clears test output to prevent interference between tests.
+     * Called automatically by Google Test framework after each test method.
+     * Ensures no test artifacts affect subsequent tests.
+     */
     void TearDown() override {
         clearTestOutput();
     }
     
-    // Helper to run scheduler until condition is met or timeout
+    /**
+     * @brief Helper method to run scheduler until condition is met or timeout
+     * 
+     * Executes the scheduler repeatedly until either the specified condition
+     * returns true or the timeout period expires. Essential for testing
+     * time-dependent scheduler behavior without creating infinite loops.
+     * 
+     * @param ts Reference to the Scheduler object to execute
+     * @param condition Lambda function that returns true when test condition is met
+     * @param timeout_ms Maximum time to wait before giving up (default: 1000ms)
+     * @return true if condition was met within timeout, false otherwise
+     */
     bool runSchedulerUntil(Scheduler& ts, std::function<bool()> condition, unsigned long timeout_ms = 1000) {
         return waitForCondition([&]() {
             ts.execute();
@@ -50,11 +112,25 @@ protected:
     }
 };
 
+/**
+ * @brief Test basic scheduler object creation
+ * 
+ * Verifies that a Scheduler object can be instantiated without throwing
+ * exceptions or causing crashes. This is the most fundamental test that
+ * ensures the library can be used at all.
+ */
 TEST_F(SchedulerTest, BasicSchedulerCreation) {
     Scheduler ts;
     EXPECT_TRUE(true); // Scheduler creation should not throw
 }
 
+/**
+ * @brief Test scheduler behavior in initial empty state
+ * 
+ * Verifies that calling execute() on an empty scheduler (no tasks added)
+ * behaves safely and doesn't produce any unexpected output or crashes.
+ * Important for validating scheduler robustness in edge cases.
+ */
 TEST_F(SchedulerTest, SchedulerInitialState) {
     Scheduler ts;
     
@@ -63,6 +139,15 @@ TEST_F(SchedulerTest, SchedulerInitialState) {
     EXPECT_EQ(getTestOutputCount(), 0);
 }
 
+/**
+ * @brief Test execution of a single task
+ * 
+ * Creates one task scheduled to run once after 100ms and verifies:
+ * 1. Task executes within reasonable timeout period
+ * 2. Task executes exactly once
+ * 3. Callback produces expected output
+ * This test validates core task scheduling functionality.
+ */
 TEST_F(SchedulerTest, SingleTaskExecution) {
     Scheduler ts;
     
@@ -77,6 +162,16 @@ TEST_F(SchedulerTest, SingleTaskExecution) {
     EXPECT_EQ(getTestOutput(0), "Task1 executed");
 }
 
+/**
+ * @brief Test concurrent execution of multiple tasks
+ * 
+ * Creates three tasks with different execution delays (50ms, 100ms, 150ms)
+ * and verifies:
+ * 1. All tasks execute within timeout
+ * 2. Tasks execute in chronological order (not creation order)
+ * 3. Each task produces correct output
+ * Critical for validating multi-task scheduling and execution ordering.
+ */
 TEST_F(SchedulerTest, MultipleTaskExecution) {
     Scheduler ts;
     
@@ -95,6 +190,16 @@ TEST_F(SchedulerTest, MultipleTaskExecution) {
     EXPECT_EQ(getTestOutput(2), "Task3 executed");
 }
 
+/**
+ * @brief Test task with limited number of iterations
+ * 
+ * Creates a task configured to run exactly 3 times with 80ms intervals
+ * and verifies:
+ * 1. Task executes the correct number of times
+ * 2. Executions are properly numbered/sequenced
+ * 3. Task stops after reaching iteration limit
+ * Validates the iteration counting mechanism.
+ */
 TEST_F(SchedulerTest, RepeatingTaskExecution) {
     Scheduler ts;
     
@@ -111,6 +216,16 @@ TEST_F(SchedulerTest, RepeatingTaskExecution) {
     EXPECT_EQ(getTestOutput(2), "Repeating task #3");
 }
 
+/**
+ * @brief Test task configured for infinite execution
+ * 
+ * Creates a task with TASK_FOREVER iterations and runs scheduler for
+ * a fixed time period (250ms) to verify:
+ * 1. Task continues executing indefinitely
+ * 2. Execution frequency matches expected interval (50ms)
+ * 3. Task doesn't stop after arbitrary number of executions
+ * Tests the infinite iteration functionality.
+ */
 TEST_F(SchedulerTest, InfiniteRepeatingTask) {
     Scheduler ts;
     
@@ -129,6 +244,16 @@ TEST_F(SchedulerTest, InfiniteRepeatingTask) {
     EXPECT_LE(getTestOutputCount(), 7);
 }
 
+/**
+ * @brief Test task enable/disable functionality
+ * 
+ * Creates a task in disabled state, verifies it doesn't execute,
+ * then enables it and verifies execution occurs. Tests:
+ * 1. Disabled tasks don't execute even if scheduler runs
+ * 2. Enabling a task allows it to execute on next scheduler pass
+ * 3. Task state changes are properly handled
+ * Critical for dynamic task management.
+ */
 TEST_F(SchedulerTest, TaskEnableDisable) {
     Scheduler ts;
     
@@ -151,6 +276,16 @@ TEST_F(SchedulerTest, TaskEnableDisable) {
     EXPECT_EQ(getTestOutput(0), "Task1 executed");
 }
 
+/**
+ * @brief Test disabling a task while it's actively running
+ * 
+ * Creates an infinite repeating task, lets it execute several times,
+ * then disables it and verifies no further executions occur. Tests:
+ * 1. Running tasks can be disabled mid-execution
+ * 2. Disabled tasks immediately stop executing
+ * 3. Task state changes take effect on next scheduler pass
+ * Important for dynamic task control scenarios.
+ */
 TEST_F(SchedulerTest, TaskDisableDuringExecution) {
     Scheduler ts;
     
@@ -177,6 +312,16 @@ TEST_F(SchedulerTest, TaskDisableDuringExecution) {
     EXPECT_EQ(getTestOutputCount(), executions_before_disable);
 }
 
+/**
+ * @brief Test scheduler behavior with no registered tasks
+ * 
+ * Runs scheduler execute() method multiple times when no tasks are
+ * registered and verifies:
+ * 1. No crashes or exceptions occur
+ * 2. No unexpected output is generated
+ * 3. Scheduler handles empty task list gracefully
+ * Edge case test for scheduler robustness.
+ */
 TEST_F(SchedulerTest, SchedulerWithNoTasks) {
     Scheduler ts;
     
@@ -189,6 +334,17 @@ TEST_F(SchedulerTest, SchedulerWithNoTasks) {
     EXPECT_EQ(getTestOutputCount(), 0);
 }
 
+/**
+ * @brief Test correct execution order of tasks with different schedules
+ * 
+ * Creates three tasks with deliberately mixed creation order vs execution order:
+ * - task_late: 200ms delay (should execute last)
+ * - task_early: 50ms delay (should execute first)  
+ * - task_mid: 100ms delay (should execute second)
+ * 
+ * Verifies scheduler executes tasks in chronological order, not creation order.
+ * Critical for validating proper task scheduling algorithm implementation.
+ */
 TEST_F(SchedulerTest, TaskExecutionOrder) {
     Scheduler ts;
     
@@ -209,6 +365,18 @@ TEST_F(SchedulerTest, TaskExecutionOrder) {
     EXPECT_EQ(getTestOutput(2), "Task3 executed");  // Third (200ms)
 }
 
+/**
+ * @brief Test scheduler performance with large number of concurrent tasks
+ * 
+ * Creates 10 tasks with slightly staggered execution times (100ms + i*10ms)
+ * and verifies:
+ * 1. All tasks execute successfully within timeout
+ * 2. No performance degradation causes task loss
+ * 3. Scheduler can handle realistic task loads
+ * 
+ * Stress test for scheduler scalability and performance under load.
+ * Uses smart pointers to manage task memory automatically.
+ */
 TEST_F(SchedulerTest, SchedulerHandlesLargeNumberOfTasks) {
     Scheduler ts;
     std::vector<std::unique_ptr<Task>> tasks;
@@ -226,6 +394,17 @@ TEST_F(SchedulerTest, SchedulerHandlesLargeNumberOfTasks) {
     EXPECT_EQ(getTestOutputCount(), 10);
 }
 
+/**
+ * @brief Main test runner function
+ * 
+ * Initializes Google Test framework and runs all registered test cases.
+ * Called by the test execution environment to start the testing process.
+ * Returns 0 for success, non-zero for test failures.
+ * 
+ * @param argc Command line argument count
+ * @param argv Command line argument values
+ * @return Test execution status (0 = success)
+ */
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
