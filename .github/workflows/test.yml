@@ -57,6 +57,7 @@ jobs:
           }
 
           // Include TaskScheduler headers
+          #define _TASK_NON_ARDUINO
           #include "TaskScheduler.h"
 
           // Global test output capture
