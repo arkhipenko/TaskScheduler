@@ -1,6 +1,20 @@
 // test_scheduler.cpp - Unit tests for TaskScheduler library
 // This file contains comprehensive tests for the TaskScheduler cooperative multitasking library
 // Tests cover basic scheduler operations, task lifecycle, timing accuracy, and edge cases
+//
+// IMPORTANT TASKSCHEDULER BEHAVIOR NOTES:
+// ======================================
+// 1. Tasks execute their FIRST iteration IMMEDIATELY when enabled (enable() called)
+// 2. Subsequent iterations follow the specified interval timing
+// 3. To make a task wait for its full interval before first execution, create it 
+//    disabled (enable=false) and use enableDelayed() method
+// 4. This behavior is critical for timing-sensitive tests, especially sequencing tests
+// 5. enableDelayed() ensures first execution happens after the specified interval
+//
+// Test Design Implications:
+// - Immediate execution tests: Use enable=true in constructor
+// - Timing sequence tests: Use enable=false + enableDelayed()
+// - Multi-task timing tests: Use enableDelayed() for predictable ordering
 
 #include <gtest/gtest.h>
 #include "Arduino.h"
@@ -146,15 +160,17 @@ TEST_F(SchedulerTest, SchedulerInitialState) {
  * 1. Task executes within reasonable timeout period
  * 2. Task executes exactly once
  * 3. Callback produces expected output
- * This test validates core task scheduling functionality.
+ * 
+ * NOTE: TaskScheduler executes the first iteration immediately when enabled.
+ * This test validates immediate execution behavior for enabled tasks.
  */
 TEST_F(SchedulerTest, SingleTaskExecution) {
     Scheduler ts;
     
-    // Create a task that runs once after 100ms
+    // Create a task that runs once - will execute immediately since enabled=true
     Task task1(100, 1, &task1_callback, &ts, true);
     
-    // Run scheduler until task executes
+    // Run scheduler until task executes (should be immediate)
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 1; });
     
     EXPECT_TRUE(success) << "Task did not execute within timeout";
@@ -166,19 +182,27 @@ TEST_F(SchedulerTest, SingleTaskExecution) {
  * @brief Test concurrent execution of multiple tasks
  * 
  * Creates three tasks with different execution delays (50ms, 100ms, 150ms)
- * and verifies:
+ * but creates them disabled and uses enableDelayed() to ensure proper timing.
+ * This verifies:
  * 1. All tasks execute within timeout
- * 2. Tasks execute in chronological order (not creation order)
+ * 2. Tasks execute in chronological order based on their delays
  * 3. Each task produces correct output
- * Critical for validating multi-task scheduling and execution ordering.
+ * 
+ * CRITICAL: Tasks are created disabled and enabled with enableDelayed() 
+ * to ensure the first execution respects the specified interval timing.
  */
 TEST_F(SchedulerTest, MultipleTaskExecution) {
     Scheduler ts;
     
-    // Create multiple tasks with different intervals
-    Task task1(50, 1, &task1_callback, &ts, true);   // Run once after 50ms
-    Task task2(100, 1, &task2_callback, &ts, true);  // Run once after 100ms
-    Task task3(150, 1, &task3_callback, &ts, true);  // Run once after 150ms
+    // Create multiple tasks disabled to control timing precisely
+    Task task1(50, 1, &task1_callback, &ts, false);   // Will execute after 50ms
+    Task task2(100, 1, &task2_callback, &ts, false);  // Will execute after 100ms
+    Task task3(150, 1, &task3_callback, &ts, false);  // Will execute after 150ms
+    
+    // Enable all tasks with delayed execution to respect intervals
+    task1.enableDelayed();
+    task2.enableDelayed();
+    task3.enableDelayed();
     
     // Run scheduler until all tasks execute
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 3; });
@@ -342,16 +366,25 @@ TEST_F(SchedulerTest, SchedulerWithNoTasks) {
  * - task_early: 50ms delay (should execute first)  
  * - task_mid: 100ms delay (should execute second)
  * 
+ * CRITICAL: Tasks are created disabled and enabled with enableDelayed() to ensure
+ * the first execution happens after the specified interval, not immediately.
+ * This is essential for proper sequencing verification.
+ * 
  * Verifies scheduler executes tasks in chronological order, not creation order.
  * Critical for validating proper task scheduling algorithm implementation.
  */
 TEST_F(SchedulerTest, TaskExecutionOrder) {
     Scheduler ts;
     
-    // Create tasks that should execute in specific order
-    Task task_late(200, 1, &task3_callback, &ts, true);  // Latest
-    Task task_early(50, 1, &task1_callback, &ts, true);  // Earliest  
-    Task task_mid(100, 1, &task2_callback, &ts, true);   // Middle
+    // Create tasks disabled to control execution timing precisely
+    Task task_late(200, 1, &task3_callback, &ts, false);  // Should execute last
+    Task task_early(50, 1, &task1_callback, &ts, false);  // Should execute first  
+    Task task_mid(100, 1, &task2_callback, &ts, false);   // Should execute middle
+    
+    // Enable all tasks with delayed execution to respect their intervals
+    task_late.enableDelayed();   // Will execute after 200ms
+    task_early.enableDelayed();  // Will execute after 50ms
+    task_mid.enableDelayed();    // Will execute after 100ms
     
     // Run until all execute
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 3; });
