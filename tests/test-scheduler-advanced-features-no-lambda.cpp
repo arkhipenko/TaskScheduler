@@ -826,7 +826,7 @@ TEST_F(AdvancedSchedulerTest, TaskTimeoutExpiration) {
     ts.execute();
 
     // Task should be timed out and disabled
-    EXPECT_TRUE(task.isTimedOut());
+    EXPECT_TRUE(task.timedOut());
     EXPECT_FALSE(task.isEnabled());
 
     // No further executions should occur
@@ -1081,7 +1081,7 @@ TEST_F(AdvancedSchedulerTest, StatusRequestWithTimeout) {
     EXPECT_LE(sr.untilTimeout(), 0); // Should be negative (timed out)
 
     // Task should eventually time out as well since SR never completed
-    EXPECT_TRUE(waiter.isTimedOut() || !waiter.isEnabled());
+    EXPECT_TRUE(waiter.timedOut() || !waiter.isEnabled());
 }
 
 /**
@@ -1165,10 +1165,10 @@ TEST_F(AdvancedSchedulerTest, ComplexProducerConsumerCoordination) {
     EXPECT_EQ(production_complete.getStatus(), 100);
 
     // Verify no timeouts occurred
-    EXPECT_FALSE(producer.isTimedOut());
-    EXPECT_FALSE(consumer1.isTimedOut());
-    EXPECT_FALSE(consumer2.isTimedOut());
-    EXPECT_FALSE(consumer3.isTimedOut());
+    EXPECT_FALSE(producer.timedOut());
+    EXPECT_FALSE(consumer1.timedOut());
+    EXPECT_FALSE(consumer2.timedOut());
+    EXPECT_FALSE(consumer3.timedOut());
 
     // Clean up global pointer
     global_status_request = nullptr;
@@ -1201,7 +1201,7 @@ TEST_F(AdvancedSchedulerTest, ProducerConsumerWithYieldSwitching) {
 
     // Run the scenario
     bool success = runAdvancedSchedulerUntil(ts, []() {
-        return getAdvancedTestOutputCount() >= 3; // producer + consumer initial + consumer yielded
+        return advanced_test_output.size() >= 3; // producer + consumer initial + consumer yielded
     }, 1000);
 
     EXPECT_TRUE(success);

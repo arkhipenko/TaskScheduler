@@ -169,29 +169,6 @@ void current_task_callback() {
     test_output.push_back("got_current_task");
 }
 
-/**
- * @brief Callback function for yield test
- *
- * Yields to multi_step_callback_2 for step-by-step processing.
- */
-void yield_callback() {
-    test_output.push_back("step_1");
-    if (global_yield_task) {
-        global_yield_task->yield(&multi_step_callback_2);
-    }
-}
-
-/**
- * @brief Callback function for yield once test
- *
- * Yields once to multi_step_callback_2 for single execution.
- */
-void yield_once_callback() {
-    test_output.push_back("step_1");
-    if (global_yield_once_task) {
-        global_yield_once_task->yieldOnce(&multi_step_callback_2);
-    }
-}
 
 /**
  * @brief Basic callback function for general testing
@@ -260,6 +237,30 @@ void multi_step_callback_2() {
  */
 void multi_step_callback_3() {
     test_output.push_back("step_3");
+}
+
+/**
+ * @brief Callback function for yield test
+ *
+ * Yields to multi_step_callback_2 for step-by-step processing.
+ */
+void yield_callback() {
+    test_output.push_back("step_1");
+    if (global_yield_task) {
+        global_yield_task->yield(&multi_step_callback_2);
+    }
+}
+
+/**
+ * @brief Callback function for yield once test
+ *
+ * Yields once to multi_step_callback_2 for single execution.
+ */
+void yield_once_test_callback() {
+    test_output.push_back("step_1");
+    if (global_yield_once_task) {
+        global_yield_once_task->yieldOnce(&multi_step_callback_2);
+    }
 }
 
 /**
@@ -1231,7 +1232,7 @@ TEST_F(SchedulerThoroughTest, TaskYield) {
 TEST_F(SchedulerThoroughTest, TaskYieldOnce) {
     Scheduler ts;
 
-    Task task(100, 5, yield_once_callback, &ts, true);
+    Task task(100, 5, yield_once_test_callback, &ts, true);
     global_yield_once_task = &task;
 
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 1; });
