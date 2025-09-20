@@ -52,7 +52,8 @@ jobs:
           # Only include the specific test file we want to run
           set(TEST_SOURCES
               "${CMAKE_SOURCE_DIR}/tests/test-scheduler-basic.cpp"
-              "${CMAKE_SOURCE_DIR}/tests/test-scheduler-basic-thorough.cpp"
+              "${CMAKE_SOURCE_DIR}/tests/test-scheduler-basic-thorough-no-lambda.cpp"
+              "${CMAKE_SOURCE_DIR}/tests/test-scheduler-advanced-features-no-lambda.cpp"
           )
 
           # Check if we have test files
