@@ -149,7 +149,49 @@ int callback_counter = 0;
 bool onEnable_called = false;
 bool onDisable_called = false;
 
+// Global variables for getCurrentTask test
+static Task* global_current_task_ptr = nullptr;
+static Scheduler* global_scheduler_ptr = nullptr;
+
+// Global variables for yield tests
+static Task* global_yield_task = nullptr;
+static Task* global_yield_once_task = nullptr;
+
 // Test callback functions (no lambda functions)
+
+/**
+ * @brief Callback function for getCurrentTask test
+ *
+ * Captures the current task pointer for verification.
+ */
+void current_task_callback() {
+    global_current_task_ptr = global_scheduler_ptr->getCurrentTask();
+    test_output.push_back("got_current_task");
+}
+
+/**
+ * @brief Callback function for yield test
+ *
+ * Yields to multi_step_callback_2 for step-by-step processing.
+ */
+void yield_callback() {
+    test_output.push_back("step_1");
+    if (global_yield_task) {
+        global_yield_task->yield(&multi_step_callback_2);
+    }
+}
+
+/**
+ * @brief Callback function for yield once test
+ *
+ * Yields once to multi_step_callback_2 for single execution.
+ */
+void yield_once_callback() {
+    test_output.push_back("step_1");
+    if (global_yield_once_task) {
+        global_yield_once_task->yieldOnce(&multi_step_callback_2);
+    }
+}
 
 /**
  * @brief Basic callback function for general testing
@@ -1137,19 +1179,8 @@ TEST_F(SchedulerThoroughTest, TaskIterationState) {
 TEST_F(SchedulerThoroughTest, TaskYield) {
     Scheduler ts;
 
-    // Create a global task pointer for the callback to access
-    static Task* yield_task = nullptr;
-
-    // Callback that will yield to another callback
-    auto yield_callback = []() {
-        test_output.push_back("step_1");
-        if (yield_task) {
-            yield_task->yield(&multi_step_callback_2);
-        }
-    };
-
     Task task(200, 3, yield_callback, &ts, true);
-    yield_task = &task;
+    global_yield_task = &task;
 
     // First execution should produce step_1 and yield
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 1; });
@@ -1161,7 +1192,7 @@ TEST_F(SchedulerThoroughTest, TaskYield) {
     EXPECT_TRUE(success);
     EXPECT_EQ(getTestOutput(1), "step_2");
 
-    yield_task = nullptr; // Clean up
+    global_yield_task = nullptr; // Clean up
 }
 
 /**
@@ -1200,17 +1231,8 @@ TEST_F(SchedulerThoroughTest, TaskYield) {
 TEST_F(SchedulerThoroughTest, TaskYieldOnce) {
     Scheduler ts;
 
-    static Task* yield_once_task = nullptr;
-
-    auto yield_once_callback = []() {
-        test_output.push_back("step_1");
-        if (yield_once_task) {
-            yield_once_task->yieldOnce(&multi_step_callback_2);
-        }
-    };
-
     Task task(100, 5, yield_once_callback, &ts, true);
-    yield_once_task = &task;
+    global_yield_once_task = &task;
 
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 1; });
     EXPECT_TRUE(success);
@@ -1221,7 +1243,7 @@ TEST_F(SchedulerThoroughTest, TaskYieldOnce) {
     EXPECT_EQ(getTestOutput(1), "step_2");
     EXPECT_FALSE(task.isEnabled()); // Should be disabled after yieldOnce
 
-    yield_once_task = nullptr; // Clean up
+    global_yield_once_task = nullptr; // Clean up
 }
 
 // ================== TASK ONENABLE/ONDISABLE TESTS ==================
@@ -1652,21 +1674,22 @@ TEST_F(SchedulerThoroughTest, SchedulerTimeUntilNextIteration) {
  */
 TEST_F(SchedulerThoroughTest, SchedulerCurrentTask) {
     Scheduler ts;
-    Task* current_task_ptr = nullptr;
     Task* task_address = nullptr;
 
-    // Create callback that captures getCurrentTask()
-    auto current_task_callback = [&ts, &current_task_ptr]() {
-        current_task_ptr = ts.getCurrentTask();
-        test_output.push_back("got_current_task");
-    };
+    // Set up global pointers for the callback
+    global_current_task_ptr = nullptr;
+    global_scheduler_ptr = &ts;
 
     Task task(100, 1, current_task_callback, &ts, true);
     task_address = &task;
 
     bool success = runSchedulerUntil(ts, []() { return getTestOutputCount() >= 1; });
     EXPECT_TRUE(success);
-    EXPECT_EQ(current_task_ptr, task_address);
+    EXPECT_EQ(global_current_task_ptr, task_address);
+
+    // Clean up global pointers
+    global_current_task_ptr = nullptr;
+    global_scheduler_ptr = nullptr;
 }
 
 // ================== SCHEDULER TIMING CONTROL TESTS ==================

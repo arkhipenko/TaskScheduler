@@ -125,6 +125,7 @@ bool task_self_destructed = false;
 
 // Global pointers for task-to-task communication
 static StatusRequest* global_status_request = nullptr;
+static Task* global_advanced_yield_task = nullptr;
 
 // Test callback functions (no lambda functions)
 
@@ -230,6 +231,16 @@ void yield_step1_callback() {
  */
 void yield_step2_callback() {
     advanced_test_output.push_back("step_2");
+}
+
+/**
+ * @brief Consumer callback that yields to yield_step2_callback
+ */
+void consumer_yield_callback() {
+    advanced_test_output.push_back("consumer_initial");
+    if (global_advanced_yield_task) {
+        global_advanced_yield_task->yield(&yield_step2_callback);
+    }
 }
 
 /**
@@ -1183,17 +1194,9 @@ TEST_F(AdvancedSchedulerTest, ProducerConsumerWithYieldSwitching) {
     Task producer(100, 1, &producer_callback, &ts, true);
 
     // Create consumer that will yield to different callback after SR completion
-    static Task* yield_task = nullptr;
-
-    auto consumer_yield_callback = []() {
-        advanced_test_output.push_back("consumer_initial");
-        if (yield_task) {
-            yield_task->yield(&yield_step2_callback);
-        }
-    };
 
     Task consumer(100, 2, consumer_yield_callback, &ts);
-    yield_task = &consumer;
+    global_advanced_yield_task = &consumer;
     consumer.waitFor(&sr);
 
     // Run the scenario
@@ -1208,7 +1211,7 @@ TEST_F(AdvancedSchedulerTest, ProducerConsumerWithYieldSwitching) {
 
     // Clean up
     global_status_request = nullptr;
-    yield_task = nullptr;
+    global_advanced_yield_task = nullptr;
 }
 
 /**
