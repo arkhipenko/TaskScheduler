@@ -311,8 +311,10 @@ class StatusRequest {
     __TASK_INLINE void setWaiting(unsigned int aCount = 1);
     __TASK_INLINE bool  signal(int aStatus = 0);
     __TASK_INLINE void  signalComplete(int aStatus = 0);
-    __TASK_INLINE bool pending();
-    __TASK_INLINE bool completed();
+    __TASK_INLINE bool pending() { return isPending(); };  // deprecated
+    __TASK_INLINE bool isPending();
+    __TASK_INLINE bool completed() { return isCompleted(); }; // deprecated
+    __TASK_INLINE bool isCompleted();
     __TASK_INLINE int  getStatus();
     __TASK_INLINE int  getCount();
     
@@ -409,7 +411,8 @@ class Task {
     __TASK_INLINE void resetTimeout();
     __TASK_INLINE unsigned long getTimeout();
     __TASK_INLINE long untilTimeout();
-    __TASK_INLINE bool timedOut();
+    __TASK_INLINE bool timedOut() { return isTimedOut(); };  // deprecated
+    __TASK_INLINE bool isTimedOut();
 #endif
 
     __TASK_INLINE bool  enable();
@@ -419,13 +422,14 @@ class Task {
     __TASK_INLINE bool  restartDelayed(unsigned long aDelay=0);
 
     __TASK_INLINE void  delay(unsigned long aDelay=0);
-    __TASK_INLINE void adjust(long aInterval);
+    __TASK_INLINE void  adjust(long aInterval);
     __TASK_INLINE void  forceNextIteration();
     __TASK_INLINE bool  disable();
     __TASK_INLINE void  abort();
     __TASK_INLINE void  cancel();
-    __TASK_INLINE bool isEnabled();
-    __TASK_INLINE bool canceled();
+    __TASK_INLINE bool  isEnabled();
+    __TASK_INLINE bool  isCanceled();
+    __TASK_INLINE bool  canceled() { return isCanceled(); };  // deprecated
 
 #ifdef _TASK_SCHEDULING_OPTIONS
     __TASK_INLINE unsigned int getSchedulingOption() { return iOption; }

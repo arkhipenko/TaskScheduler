@@ -479,8 +479,8 @@ void StatusRequest::setWaiting(unsigned int aCount) {
 #endif  //  #ifdef _TASK_TIMEOUT
 }
 
-bool StatusRequest::pending() { return (iCount != 0); }
-bool StatusRequest::completed() { return (iCount == 0); }
+bool StatusRequest::isPending() { return (iCount != 0); }
+bool StatusRequest::isCompleted() { return (iCount == 0); }
 int StatusRequest::getStatus() { return iStatus; }
 int StatusRequest::getCount() { return iCount; }
 StatusRequest* Task::getStatusRequest() { return iStatusRequest; }
@@ -782,7 +782,7 @@ long Task::untilTimeout() {
     return -1;
 }
 
-bool Task::timedOut() {
+bool Task::isTimedOut() {
     return iStatus.timeout;
 }
 
@@ -933,7 +933,7 @@ void __TASK_IRAM Task::cancel() {
     disable();
 }
 
-bool Task::canceled() {
+bool Task::isCanceled() {
     return iStatus.canceled;
 }
 
