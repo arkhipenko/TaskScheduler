@@ -90,8 +90,8 @@ jobs:
           echo "=== Running Basic Scheduler Tests ==="
           ./test_basic
 
-  test-thorough-no-lambda:
-    name: Thorough No-Lambda Tests
+  test-thorough:
+    name: Thorough Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -110,11 +110,11 @@ jobs:
           sudo cmake --build . --target all
           sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
 
-      - name: Create CMakeLists.txt for Thorough No-Lambda Tests
+      - name: Create CMakeLists.txt for Thorough  Tests
         run: |
           cat > CMakeLists.txt << 'EOF'
           cmake_minimum_required(VERSION 3.10)
-          project(TaskSchedulerThoroughNoLambdaTests VERSION 1.0.0)
+          project(TaskSchedulerThoroughTests VERSION 1.0.0)
 
           set(CMAKE_CXX_STANDARD 14)
           set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -133,26 +133,26 @@ jobs:
               "${CMAKE_SOURCE_DIR}/src/*.c"
           )
 
-          # Create the thorough no-lambda test executable
-          add_executable(test_thorough_no_lambda
-              tests/test-scheduler-basic-thorough-no-lambda.cpp
+          # Create the thorough test executable
+          add_executable(test_thorough
+              tests/test-scheduler-basic-thorough.cpp
               ${TASKSCHEDULER_SOURCES}
           )
 
           # Link libraries
-          target_link_libraries(test_thorough_no_lambda
+          target_link_libraries(test_thorough
               gtest
               gtest_main
               pthread
           )
 
           # Compiler definitions for Arduino compatibility
-          target_compile_definitions(test_thorough_no_lambda PRIVATE
+          target_compile_definitions(test_thorough PRIVATE
               ARDUINO=300
           )
 
           # Compiler flags
-          target_compile_options(test_thorough_no_lambda PRIVATE
+          target_compile_options(test_thorough PRIVATE
               -Wall
               -Wextra
               -O2
@@ -160,21 +160,21 @@ jobs:
 
           # Enable testing
           enable_testing()
-          add_test(NAME ThoroughNoLambdaTests COMMAND test_thorough_no_lambda)
+          add_test(NAME ThoroughTests COMMAND test_thorough)
           EOF
 
-      - name: Build thorough no-lambda tests
+      - name: Build thorough tests
         run: |
           cmake .
           make -j$(nproc)
 
-      - name: Run thorough no-lambda tests
+      - name: Run thorough tests
         run: |
-          echo "=== Running Thorough No-Lambda Tests ==="
-          ./test_thorough_no_lambda
+          echo "=== Running Thorough Tests ==="
+          ./test_thorough
 
-  test-advanced-no-lambda:
-    name: Advanced No-Lambda Tests
+  test-advanced:
+    name: Advanced Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -193,11 +193,11 @@ jobs:
           sudo cmake --build . --target all
           sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
 
-      - name: Create CMakeLists.txt for Advanced No-Lambda Tests
+      - name: Create CMakeLists.txt for Advanced Tests
         run: |
           cat > CMakeLists.txt << 'EOF'
           cmake_minimum_required(VERSION 3.10)
-          project(TaskSchedulerAdvancedNoLambdaTests VERSION 1.0.0)
+          project(TaskSchedulerAdvancedTests VERSION 1.0.0)
 
           set(CMAKE_CXX_STANDARD 14)
           set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -216,26 +216,26 @@ jobs:
               "${CMAKE_SOURCE_DIR}/src/*.c"
           )
 
-          # Create the advanced no-lambda test executable
-          add_executable(test_advanced_no_lambda
-              tests/test-scheduler-advanced-features-no-lambda.cpp
+          # Create the advanced test executable
+          add_executable(test_advanced
+              tests/test-scheduler-advanced-features.cpp
               ${TASKSCHEDULER_SOURCES}
           )
 
           # Link libraries
-          target_link_libraries(test_advanced_no_lambda
+          target_link_libraries(test_advanced
               gtest
               gtest_main
               pthread
           )
 
           # Compiler definitions for Arduino compatibility
-          target_compile_definitions(test_advanced_no_lambda PRIVATE
+          target_compile_definitions(test_advanced PRIVATE
               ARDUINO=300
           )
 
           # Compiler flags
-          target_compile_options(test_advanced_no_lambda PRIVATE
+          target_compile_options(test_advanced PRIVATE
               -Wall
               -Wextra
               -O2
@@ -243,15 +243,15 @@ jobs:
 
           # Enable testing
           enable_testing()
-          add_test(NAME AdvancedNoLambdaTests COMMAND test_advanced_no_lambda)
+          add_test(NAME AdvancedTests COMMAND test_advanced)
           EOF
 
-      - name: Build advanced no-lambda tests
+      - name: Build advanced tests
         run: |
           cmake .
           make -j$(nproc)
 
-      - name: Run advanced no-lambda tests
+      - name: Run advanced tests
         run: |
-          echo "=== Running Advanced No-Lambda Tests ==="
-          ./test_advanced_no_lambda
+          echo "=== Running Advanced Tests ==="
+          ./test_advanced
