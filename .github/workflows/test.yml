@@ -255,3 +255,88 @@ jobs:
         run: |
           echo "=== Running Advanced Tests ==="
           ./test_advanced
+
+  test-blink-example:
+    name: Blink Example Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libgtest-dev pkg-config
+
+      - name: Build and install Google Test
+        run: |
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo cmake --build . --target all
+          sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
+
+      - name: Create CMakeLists.txt for Blink Example Tests
+        run: |
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.10)
+          project(TaskSchedulerBlinkExampleTests VERSION 1.0.0)
+
+          set(CMAKE_CXX_STANDARD 14)
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+          # Find required packages
+          find_package(PkgConfig REQUIRED)
+          find_package(Threads REQUIRED)
+
+          # Include directories
+          include_directories(${CMAKE_SOURCE_DIR}/src)
+          include_directories(${CMAKE_SOURCE_DIR}/tests)
+
+          # Gather source files
+          file(GLOB TASKSCHEDULER_SOURCES
+              "${CMAKE_SOURCE_DIR}/src/*.cpp"
+              "${CMAKE_SOURCE_DIR}/src/*.c"
+          )
+
+          # Create the blink example test executable
+          add_executable(test_blink_example
+              tests/test-scheduler-blink-example.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+
+          # Link libraries
+          target_link_libraries(test_blink_example
+              gtest
+              gtest_main
+              pthread
+          )
+
+          # Compiler definitions for Arduino compatibility
+          target_compile_definitions(test_blink_example PRIVATE
+              ARDUINO=300
+              _TASK_SLEEP_ON_IDLE_RUN
+              _TASK_STATUS_REQUEST
+          )
+
+          # Compiler flags
+          target_compile_options(test_blink_example PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+
+          # Enable testing
+          enable_testing()
+          add_test(NAME BlinkExampleTests COMMAND test_blink_example)
+          EOF
+
+      - name: Build blink example tests
+        run: |
+          cmake .
+          make -j$(nproc)
+
+      - name: Run blink example tests
+        run: |
+          echo "=== Running Blink Example Tests ==="
+          ./test_blink_example

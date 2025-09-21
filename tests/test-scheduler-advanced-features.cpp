@@ -610,7 +610,7 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForDelayedStatusRequest) {
     sr.signalComplete(); // Complete SR
 
     // The task will be scheduled to run after the delay
-    bool success = runAdvancedSchedulerUntil(ts, true, 200); // Wait up to 200ms
+    bool success = runAdvancedSchedulerUntil(ts, []() { return true; }, 200); // Wait up to 1000ms
     EXPECT_FALSE(success); 
 
     delay(400);
