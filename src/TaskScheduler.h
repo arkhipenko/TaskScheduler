@@ -469,6 +469,10 @@ StatusRequest::StatusRequest()
 {
     iCount = 0;
     iStatus = 0;
+#ifdef _TASK_TIMEOUT
+    iTimeout = 0;
+    iStarttime = 0;
+#endif  //  #ifdef _TASK_TIMEOUT
 }
 
 void StatusRequest::setWaiting(unsigned int aCount) { 
@@ -1629,9 +1633,9 @@ bool Scheduler::execute() {
                 if ( iCurrent->iStatus.waiting ) {
 
 #ifdef _TASK_TICKLESS
-    // if there is a task waiting on a status request we are obligated to run continously
-    // because event can trigger at any point at time. 
-    nrd |= _TASK_NEXTRUN_IMMEDIATE; // immediate
+                    // if there is a task waiting on a status request we are obligated to run continously
+                    // because event can trigger at any point at time. 
+                    nrd |= _TASK_NEXTRUN_IMMEDIATE; // immediate
 #endif
 
 #ifdef _TASK_TIMEOUT

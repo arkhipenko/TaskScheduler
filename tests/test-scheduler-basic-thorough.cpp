@@ -1139,7 +1139,7 @@ TEST_F(SchedulerThoroughTest, TaskIterationState) {
 
     // Note: Testing iteration state requires access during callback execution
     // This test verifies the task completes its iterations properly
-    success = runSchedulerUntil(ts, []() { return true; }, 1000);
+    success = runSchedulerUntil(ts, []() { return false; }, 1000);
     // EXPECT_TRUE(success);
     EXPECT_EQ(callback_counter, 3);
     EXPECT_FALSE(task.isEnabled()); // Should auto-disable after 3 iterations
@@ -1803,7 +1803,7 @@ TEST_F(SchedulerThoroughTest, ComplexTaskLifecycle) {
     EXPECT_TRUE(task.isEnabled());
 
     // Run all iterations
-    bool success = runSchedulerUntil(ts, []() { return true; }, 1000);
+    bool success = runSchedulerUntil(ts, []() { return false; }, 1000);
     // EXPECT_TRUE(success);
     EXPECT_EQ(callback_counter, 3);
     EXPECT_EQ(task.getRunCounter(), 3);

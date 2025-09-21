@@ -564,6 +564,7 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForStatusRequest) {
 
     EXPECT_TRUE(sr.isPending());
     ts.execute();
+    EXPECT_TRUE(sr.isPending());
     EXPECT_EQ(advanced_callback_counter, 0);
 
     // Complete the status request
@@ -600,21 +601,21 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForDelayedStatusRequest) {
     advanced_callback_counter = 0;
 
     // Create task with delayed wait (should wait for delay even though SR is complete)
-    Task delayed_waiter(500, 1, &consumer_callback, &ts);
+    Task delayed_waiter(50, 1, &consumer_callback, &ts);
     delayed_waiter.waitForDelayed(&sr, 500, 1); // 500ms delay
 
     // Task should be enabled
     EXPECT_TRUE(delayed_waiter.isEnabled());
 
     // Should not execute immediately despite completed StatusRequest
-    delay(50);
+    delay(500);
     EXPECT_TRUE(sr.isPending());
     ts.execute();
     EXPECT_EQ(advanced_callback_counter, 0);
 
     sr.signalComplete(); // Complete SR
     EXPECT_FALSE(sr.isPending());
-    
+
     // The task will be scheduled to run after the delay
     bool success = runAdvancedSchedulerUntil(ts, []() { return false; }, 200); // Wait up to 1000ms
     EXPECT_FALSE(success); 
