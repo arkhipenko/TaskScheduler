@@ -1,6 +1,6 @@
 # Task Scheduler
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 4.0.0: 2024-10-26 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
+#### Version 4.0.0: 2025-09-21 [Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates)
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
 
@@ -58,17 +58,31 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 
 
 
-​                                                 **Don't just take my word for it - try it for yourself on [Wokwi](https://wokwi.com/playground/task-scheduler)**
+​**Don't just take my word for it - try it for yourself on [Wokwi](https://wokwi.com/playground/task-scheduler)**
 
 
 
 ---
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
 ---
-### Changelog is located [here.](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
+### Changelog 
+
+Changelog is located [here.](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
 
 
-#### For detailed functionality overview please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
+#### For detailed functionality overview 
+
+Please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
+
+### Contributing
+
+#### Code 
+
+As of version 4.0.0 TaskScheduler has a comprehensive set of compilation and unit tests. Please submit a PR with your changes and make sure that your code passes all the tests. 
+
+#### More unit tests
+
+There is no such thing as enough testing. If you come up with another test scenario - please contribute!
 
 ### User Feedback:
 
