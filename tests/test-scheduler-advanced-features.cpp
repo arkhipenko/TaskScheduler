@@ -972,6 +972,7 @@ TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     // Test TASK_SCHEDULE option - task catches up on missed executions
     advanced_callback_counter = 0;
     clearAdvancedTestOutput();
+    ts.init();
 
     Task catchup_task(100, 10, &advanced_status_callback, &ts, false);
     catchup_task.setSchedulingOption(TASK_SCHEDULE);
@@ -994,8 +995,10 @@ TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     // Test TASK_SCHEDULE_NC option - no catch-up, limited executions
     advanced_callback_counter = 0;
     clearAdvancedTestOutput();
+    ts.init();
 
-    Task no_catchup_task(100, 10, &advanced_status_callback, &ts, false);
+    Task no_catchup_task(100, 10, &advanced_status_callback);
+    ts.addTask(no_catchup_task);
     no_catchup_task.setSchedulingOption(TASK_SCHEDULE_NC);
 
     // Enable task and immediately delay for 2000ms
@@ -1016,8 +1019,10 @@ TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     // Test TASK_INTERVAL option - maintains interval from end to start, not start to start
     advanced_callback_counter = 0;
     clearAdvancedTestOutput();
+    ts.init();
 
-    Task interval_task(100, 5, &interval_timing_callback, &ts, false);
+    Task interval_task(100, 5, &interval_timing_callback);
+    ts.addTask(interval_task);
 
     interval_task.setSchedulingOption(TASK_INTERVAL);
     interval_task.enable();
