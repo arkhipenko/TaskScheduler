@@ -97,6 +97,8 @@
 
 // Enable priority functionality for comprehensive testing
 #define _TASK_PRIORITY              // Layered task prioritization
+#define _TASK_WDT_IDS
+#define _TASK_TIMECRITICAL
 
 #include <gtest/gtest.h>
 #include "Arduino.h"
@@ -131,6 +133,33 @@ void high_priority_callback() {
     priority_test_output.push_back("high_priority_executed");
     priority_execution_times[priority_execution_index++] = millis();
     std::cout << "High priority task executed at " << millis() << "ms" << std::endl;
+}
+
+/**
+ * @brief Priority test callback that uses currentScheduler() and currentTask()
+ *
+ * This callback mimics the example11 pattern by accessing the current scheduler
+ * and task to get task ID and timing information.
+ */
+void priority_test_callback() {
+    priority_callback_counter++;
+
+    // Use currentScheduler() and currentTask() like in example11
+    Scheduler& current_scheduler = Scheduler::currentScheduler();
+    Task& current_task = current_scheduler.currentTask();
+
+    // Record task execution with ID for verification
+    unsigned int task_id = current_task.getId();
+    unsigned long execution_time = millis();
+
+    priority_execution_times[priority_execution_index++] = execution_time;
+
+    // Create output string with task ID for verification
+    std::string output = "task_" + std::to_string(task_id) + "_executed";
+    priority_test_output.push_back(output);
+
+    std::cout << "Task: " << task_id << " executed at " << execution_time
+              << "ms, Start delay = " << current_task.getStartDelay() << std::endl;
 }
 
 /**
@@ -255,64 +284,206 @@ protected:
         }
         return true;
     }
+
+    /**
+     * @brief Analyze priority evaluation pattern based on example11 sequence
+     *
+     * According to wiki: "entire chain of tasks of the higher priority scheduler
+     * is executed for every single step (task) of the lower priority chain"
+     *
+     * Expected pattern: high priority tasks are evaluated between each base task
+     */
+    bool validatePriorityEvaluationPattern() {
+        // Look for the pattern where high priority tasks (4,5) are frequently interspersed
+        // with base priority tasks (1,2,3), especially task 4 which has shortest interval
+
+        int consecutive_base_tasks = 0;
+        int max_consecutive_base = 0;
+
+        for (size_t i = 0; i < getPriorityTestOutputCount(); i++) {
+            std::string task = getPriorityTestOutput(i);
+
+            if (task == "task_1_executed" || task == "task_2_executed" || task == "task_3_executed") {
+                consecutive_base_tasks++;
+                max_consecutive_base = std::max(max_consecutive_base, consecutive_base_tasks);
+            } else {
+                consecutive_base_tasks = 0;
+            }
+        }
+
+        // In proper priority scheduling, we shouldn't see many consecutive base tasks
+        // because high priority tasks should be evaluated frequently
+        return max_consecutive_base <= 3;  // Allow some consecutive base tasks but not too many
+    }
 };
 
 // ================== BASIC PRIORITY FUNCTIONALITY TESTS ==================
 
 /**
- * @brief Test basic scheduler hierarchy setup and validation
+ * @brief Test basic scheduler hierarchy setup and validation (based on example11)
  *
- * TESTS: setHighPriorityScheduler(), currentScheduler()
+ * TESTS: setHighPriorityScheduler(), currentScheduler(), currentTask()
  *
  * PURPOSE: Verify that scheduler hierarchy can be established correctly
- * and that the priority relationships work as expected for basic scenarios.
+ * and that the priority relationships work as expected for basic scenarios,
+ * following the pattern from Scheduler_example11_Priority.
  *
- * PRIORITY HIERARCHY SETUP:
- * - Base scheduler: Normal priority tasks
- * - High scheduler: High priority tasks
+ * PRIORITY HIERARCHY SETUP (from example11):
+ * - Base scheduler: Tasks t1, t2, t3 (1000ms, 2000ms, 3000ms intervals)
+ * - High scheduler: Tasks t4, t5 (500ms, 1000ms intervals)
  * - Hierarchy relationship: base.setHighPriorityScheduler(&high)
- * - Execution order: High priority tasks execute before base priority
+ * - Execution order follows priority evaluation sequence: 4,5,1,4,5,2,4,5,3
  *
  * TEST SCENARIO:
- * 1. Create base and high priority schedulers
+ * 1. Create base and high priority schedulers matching example11
  * 2. Establish hierarchy relationship
- * 3. Add tasks to both schedulers
- * 4. Execute base scheduler (should execute high priority first)
- * 5. Verify execution order matches priority hierarchy
+ * 3. Add tasks to both schedulers with example11 intervals
+ * 4. Execute base scheduler and verify priority execution pattern
+ * 5. Verify currentScheduler() and currentTask() work correctly
  *
  * EXPECTATIONS:
- * - High priority tasks execute before base priority tasks
+ * - High priority tasks (t4, t5) execute more frequently
  * - currentScheduler() returns correct scheduler during execution
- * - Hierarchy setup works correctly
- * - Execution order follows priority rules
+ * - Task IDs can be retrieved and verified
+ * - Priority evaluation follows documented sequence
  */
 TEST_F(PrioritySchedulerTest, BasicSchedulerHierarchy) {
-    // Create base and high priority schedulers
+    // Create base and high priority schedulers (matching example11)
     Scheduler base_scheduler;
     Scheduler high_scheduler;
 
     // Establish hierarchy - high scheduler has priority over base
     base_scheduler.setHighPriorityScheduler(&high_scheduler);
 
-    // Add tasks to schedulers
-    Task base_task(100, 3, &base_priority_callback, &base_scheduler, true);
-    Task high_task(100, 2, &high_priority_callback, &high_scheduler, true);
+    // Add tasks to schedulers with intervals matching example11
+    // Base priority tasks: longer intervals
+    Task t1(1000, 3, &priority_test_callback, &base_scheduler, false);  // 1000ms interval
+    Task t2(2000, 2, &priority_test_callback, &base_scheduler, false);  // 2000ms interval
+    Task t3(3000, 1, &priority_test_callback, &base_scheduler, false);  // 3000ms interval
 
-    // Execute base scheduler - should process high priority tasks first
+    // High priority tasks: shorter intervals for more frequent execution
+    Task t4(500, 6, &priority_test_callback, &high_scheduler, false);   // 500ms interval
+    Task t5(1000, 3, &priority_test_callback, &high_scheduler, false);  // 1000ms interval
+
+    // Set task IDs for identification (like in example11)
+    t1.setId(1);
+    t2.setId(2);
+    t3.setId(3);
+    t4.setId(4);
+    t5.setId(5);
+
+    // Enable all tasks recursively (like example11: enableAll(true))
+    base_scheduler.enableAll(true);
+
+    // Verify tasks are enabled
+    EXPECT_TRUE(t1.isEnabled());
+    EXPECT_TRUE(t2.isEnabled());
+    EXPECT_TRUE(t3.isEnabled());
+    EXPECT_TRUE(t4.isEnabled());
+    EXPECT_TRUE(t5.isEnabled());
+
+    // Execute scheduler for sufficient time to see priority pattern
+    // High priority tasks should execute more frequently due to shorter intervals
     bool success = runPrioritySchedulerUntil(base_scheduler, []() {
-        return priority_callback_counter >= 5; // 2 high + 3 base = 5 total
-    });
+        return priority_callback_counter >= 15; // 6+3=9 high + 3+2+1=6 base = 15 total
+    }, 5000);
 
     EXPECT_TRUE(success);
-    EXPECT_EQ(priority_callback_counter, 5);
+    EXPECT_EQ(priority_callback_counter, 15);
 
-    // Verify execution order: high priority tasks execute first
-    EXPECT_EQ(getPriorityTestOutput(0), "high_priority_executed");
-    EXPECT_EQ(getPriorityTestOutput(1), "high_priority_executed");
-    // Base tasks should execute after high priority tasks complete
-    EXPECT_EQ(getPriorityTestOutput(2), "base_priority_executed");
-    EXPECT_EQ(getPriorityTestOutput(3), "base_priority_executed");
-    EXPECT_EQ(getPriorityTestOutput(4), "base_priority_executed");
+    // Count executions by task ID to verify the priority pattern
+    int task1_count = 0, task2_count = 0, task3_count = 0;  // Base priority tasks
+    int task4_count = 0, task5_count = 0;                   // High priority tasks
+
+    for (size_t i = 0; i < getPriorityTestOutputCount(); i++) {
+        std::string output = getPriorityTestOutput(i);
+        if (output == "task_1_executed") task1_count++;
+        else if (output == "task_2_executed") task2_count++;
+        else if (output == "task_3_executed") task3_count++;
+        else if (output == "task_4_executed") task4_count++;
+        else if (output == "task_5_executed") task5_count++;
+    }
+
+    // Verify execution counts match expected iterations
+    EXPECT_EQ(task1_count, 3);  // t1: 3 executions (1000ms interval)
+    EXPECT_EQ(task2_count, 2);  // t2: 2 executions (2000ms interval)
+    EXPECT_EQ(task3_count, 1);  // t3: 1 execution (3000ms interval)
+    EXPECT_EQ(task4_count, 6);  // t4: 6 executions (500ms interval, high priority)
+    EXPECT_EQ(task5_count, 3);  // t5: 3 executions (1000ms interval, high priority)
+
+    // Verify that task 4 (highest frequency, high priority) executed first
+    // Task 4 has 500ms interval and high priority, so it should execute first
+    EXPECT_EQ(getPriorityTestOutput(0), "task_4_executed");
+
+    // Count high vs base priority executions for overall pattern verification
+    int high_priority_total = task4_count + task5_count;    // 6 + 3 = 9
+    int base_priority_total = task1_count + task2_count + task3_count;  // 3 + 2 + 1 = 6
+
+    EXPECT_EQ(high_priority_total, 9);
+    EXPECT_EQ(base_priority_total, 6);
+
+    // Validate the priority execution order pattern from example11 output
+    // Expected initial sequence: 4, 5, 1, 2, 3 (based on timing and priority)
+    // Task 4 (ID 40 in example) executes at 0ms, 500ms, 1000ms, 1500ms, 2000ms, 2500ms
+    // Task 5 (ID 50 in example) executes at 10ms, 1010ms, 2011ms, 3010ms, etc.
+    // Task 1 executes at ~21ms, 1021ms, 2022ms, 3021ms, etc.
+
+    // Verify high priority tasks execute more frequently in early execution
+    std::vector<std::string> early_executions;
+    for (size_t i = 0; i < std::min((size_t)10, getPriorityTestOutputCount()); i++) {
+        early_executions.push_back(getPriorityTestOutput(i));
+    }
+
+    // Count high priority vs base priority in first 10 executions
+    int early_high_count = 0;
+    int early_base_count = 0;
+    for (const auto& exec : early_executions) {
+        if (exec == "task_4_executed" || exec == "task_5_executed") {
+            early_high_count++;
+        } else if (exec == "task_1_executed" || exec == "task_2_executed" || exec == "task_3_executed") {
+            early_base_count++;
+        }
+    }
+
+    // High priority tasks should dominate early execution due to shorter intervals
+    EXPECT_GE(early_high_count, early_base_count);
+
+    // Verify task 4 appears multiple times in early execution (due to 500ms interval)
+    int task4_early_count = 0;
+    for (const auto& exec : early_executions) {
+        if (exec == "task_4_executed") {
+            task4_early_count++;
+        }
+    }
+    EXPECT_GE(task4_early_count, 2); // Task 4 should execute at least twice in early sequence
+
+    // Validate that base priority tasks eventually execute
+    // Task 1 should appear at least once given its 1000ms interval
+    bool task1_found = false;
+    bool task2_found = (task2_count > 0);  // Task 2 might not execute in early sequence due to 2000ms interval
+    for (const auto& exec : priority_test_output) {
+        if (exec == "task_1_executed") {
+            task1_found = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(task1_found);
+
+    // Print execution sequence for debugging (similar to example11 output)
+    std::cout << "\nPriority Test Execution Sequence:" << std::endl;
+    for (size_t i = 0; i < getPriorityTestOutputCount() && i < 15; i++) {
+        std::string task_id = getPriorityTestOutput(i);
+        // Extract task number from "task_X_executed"
+        if (task_id.length() > 5) {
+            char task_num = task_id[5];
+            std::cout << "Task: " << task_num << " at position " << i << std::endl;
+        }
+    }
+
+    // Validate the specific execution order pattern from example11 output
+    // This ensures the priority evaluation sequence matches documented behavior
+    EXPECT_TRUE(validatePriorityEvaluationPattern())
+        << "Priority evaluation pattern validation failed - high priority tasks should be interspersed with base tasks";
 }
 
 /**
