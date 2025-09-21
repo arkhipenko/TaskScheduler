@@ -11,7 +11,6 @@
 
 #include <TaskSchedulerDeclarations.h>
 
-#include <Arduino.h>
 #include "main.h"
 #include "led.h"
 
@@ -19,7 +18,7 @@
 Scheduler ts;
 
 
-// Comment the following 3 functions out to observer errors due to missing Arduino.h
+// Comment the following 3 functions out to observe errors due to missing Arduino.h
 unsigned long _task_millis() {
   return xTaskGetTickCount();
 }

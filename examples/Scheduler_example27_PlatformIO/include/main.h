@@ -1,7 +1,5 @@
-#ifndef _TS27_MAIN_H
-#define _TS27_MAIN_H
-
-#include <Arduino.h>
+#ifndef _TS29_MAIN_H
+#define _TS29_MAIN_H
 
 #ifdef _DEBUG_
 #define _PP(a) Serial.print(a);
