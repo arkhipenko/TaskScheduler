@@ -88,7 +88,7 @@ inline bool waitForCondition(Condition condition, unsigned long timeout_ms) {
         if (condition()) {
             return true;
         }
-        delay(10);
+        delay(1); // Use 1ms delay for better timing precision
     }
     return false;
 }

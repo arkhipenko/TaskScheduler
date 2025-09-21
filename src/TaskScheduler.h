@@ -1677,7 +1677,9 @@ bool Scheduler::execute() {
 
 
 #ifdef _TASK_TICKLESS
-                nrd |= _TASK_NEXTRUN_IMMEDIATE; // next run timed
+                // if there is a task ready to run right now - we have to have another scheduler pass right after this one
+                // this is especially important for the tasks that run out of iterations and should be disabled during next pass
+                nrd |= _TASK_NEXTRUN_IMMEDIATE; // next run immediate
 #endif  
 
                 if ( iCurrent->iIterations > 0 ) iCurrent->iIterations = iCurrent->iIterations - 1;  // do not decrement (-1) being a signal of never-ending task
@@ -1741,7 +1743,6 @@ bool Scheduler::execute() {
         } while (0);    //guaranteed single run - allows use of "break" to exit
 
         iCurrent = nextTask;
-        
         
 #ifdef _TASK_TIMECRITICAL
         iCPUCycle += ( (_task_micros() - tPassStart) - (tTaskFinish - tTaskStart) );

@@ -1032,7 +1032,7 @@ TEST_F(SchedulerThoroughTest, TaskSetIterations) {
     EXPECT_EQ(task.getIterations(), 5);
 
     // Should run 5 times
-    bool success = runSchedulerUntil(ts, []() { return true; }, 1000);
+    bool success = runSchedulerUntil(ts, []() { return callback_counter > 5; }, 1000);
     // EXPECT_FALSE(success);
     EXPECT_EQ(callback_counter, 5);
     EXPECT_FALSE(task.isEnabled()); // Should auto-disable after iterations

@@ -366,7 +366,71 @@ std::string getBlinkTestOutput(size_t index) {
     return "";
 }
 
-bool runBlinkSchedulerUntil(Scheduler& ts, std::function<bool()> condition, unsigned long timeout_ms = 2000) {
+// Test condition functions to replace lambda functions
+bool condition_output_count_1() {
+    return getBlinkTestOutputCount() >= 1;
+}
+
+bool condition_led_changes_6() {
+    return led_state_changes >= 6;
+}
+
+bool condition_led_changes_8() {
+    return led_state_changes >= 8;
+}
+
+bool condition_led_changes_5() {
+    return led_state_changes >= 5;
+}
+
+bool condition_led_changes_4() {
+    return led_state_changes >= 4;
+}
+
+bool condition_tBlink1_disabled() {
+    return tBlink1_ptr && !tBlink1_ptr->isEnabled();
+}
+
+bool condition_tBlink2_disabled() {
+    return tBlink2_ptr && !tBlink2_ptr->isEnabled();
+}
+
+bool condition_tBlink3_disabled() {
+    return tBlink3_ptr && !tBlink3_ptr->isEnabled();
+}
+
+bool condition_tBlink3_runcount_6() {
+    return tBlink3_ptr && tBlink3_ptr->getRunCounter() >= 6;
+}
+
+bool condition_counter_10() {
+    return counter >= 10;
+}
+
+bool condition_counter_duration_period4() {
+    return counter >= DURATION / PERIOD4;
+}
+
+bool condition_both_blink4_disabled() {
+    return tBlink4On_ptr && tBlink4Off_ptr &&
+           !tBlink4On_ptr->isEnabled() && !tBlink4Off_ptr->isEnabled();
+}
+
+bool condition_both_blink5_disabled() {
+    return tBlink5On_ptr && tBlink5Off_ptr &&
+           !tBlink5On_ptr->isEnabled() && !tBlink5Off_ptr->isEnabled();
+}
+
+bool condition_tBlink6_disabled() {
+    return tBlink6_ptr && !tBlink6_ptr->isEnabled();
+}
+
+bool condition_tBlink6_runcount_4() {
+    return tBlink6_ptr && tBlink6_ptr->getRunCounter() >= 4;
+}
+
+// Scheduler execution helper with callback function pointer
+bool runBlinkSchedulerUntil(Scheduler& ts, bool (*condition)(), unsigned long timeout_ms = 2000) {
     unsigned long start_time = millis();
     while (millis() - start_time < timeout_ms) {
         bool idle = ts.execute();
@@ -418,24 +482,18 @@ TEST_F(BlinkExampleTest, Approach1_SimpleFlagDriven) {
     tBlink1_ptr = &tBlink1;
 
     // Should execute first iteration
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK1_START");
     EXPECT_TRUE(simulated_led_state); // Should turn LED on first
 
     // Let it run several cycles
-    success = runBlinkSchedulerUntil(ts, []() {
-        return led_state_changes >= 6;
-    }, 3000);
+    success = runBlinkSchedulerUntil(ts, condition_led_changes_6, 3000);
     EXPECT_TRUE(success);
     EXPECT_GE(led_state_changes, 6);
 
     // Wait for completion
-    success = runBlinkSchedulerUntil(ts, []() {
-        return !tBlink1.isEnabled();
-    }, 15000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink1_disabled, 15000);
     EXPECT_TRUE(success);
     EXPECT_FALSE(tBlink1.isEnabled());
 
@@ -474,17 +532,13 @@ TEST_F(BlinkExampleTest, Approach2_DualCallbackSwitching) {
     tBlink2_ptr = &tBlink2;
 
     // Should start with ON callback
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK2_START");
     EXPECT_TRUE(simulated_led_state); // First callback turns LED on
 
     // Let it run and switch callbacks several times
-    success = runBlinkSchedulerUntil(ts, []() {
-        return led_state_changes >= 8;
-    }, 4000);
+    success = runBlinkSchedulerUntil(ts, condition_led_changes_8, 4000);
     EXPECT_TRUE(success);
     EXPECT_GE(led_state_changes, 8);
 
@@ -499,9 +553,7 @@ TEST_F(BlinkExampleTest, Approach2_DualCallbackSwitching) {
     EXPECT_LE(abs(on_count - off_count), 1); // Should be roughly equal
 
     // Wait for completion
-    success = runBlinkSchedulerUntil(ts, []() {
-        return !tBlink2.isEnabled();
-    }, 15000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink2_disabled, 15000);
     EXPECT_TRUE(success);
     EXPECT_FALSE(simulated_led_state); // LED should be off at end
 
@@ -529,16 +581,12 @@ TEST_F(BlinkExampleTest, Approach3_RunCounterDriven) {
     tBlink3_ptr = &tBlink3;
 
     // Should start execution
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK3_START");
 
     // Let it run several cycles to test counter logic
-    success = runBlinkSchedulerUntil(ts, []() {
-        return tBlink3.getRunCounter() >= 6;
-    }, 3000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink3_runcount_6, 3000);
     EXPECT_TRUE(success);
     EXPECT_GE(tBlink3.getRunCounter(), 6);
 
@@ -552,9 +600,7 @@ TEST_F(BlinkExampleTest, Approach3_RunCounterDriven) {
     }
 
     // Wait for completion
-    success = runBlinkSchedulerUntil(ts, []() {
-        return !tBlink3.isEnabled();
-    }, 15000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink3_disabled, 15000);
     EXPECT_TRUE(success);
     EXPECT_FALSE(simulated_led_state); // LED should be off at end
 
@@ -588,16 +634,12 @@ TEST_F(BlinkExampleTest, Approach4_StatusRequestCoordination) {
     tBlink4On.enable();
 
     // Should execute OnEnable and start
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK4_START");
 
     // Let the ping-pong pattern run
-    success = runBlinkSchedulerUntil(ts, []() {
-        return counter >= 10;
-    }, 3000);
+    success = runBlinkSchedulerUntil(ts, condition_counter_10, 3000);
     EXPECT_TRUE(success);
     EXPECT_GE(counter, 10);
 
@@ -605,9 +647,7 @@ TEST_F(BlinkExampleTest, Approach4_StatusRequestCoordination) {
     EXPECT_GE(led_state_changes, 5);
 
     // Wait for the sequence to complete
-    success = runBlinkSchedulerUntil(ts, []() {
-        return counter >= DURATION / PERIOD4;
-    }, 15000);
+    success = runBlinkSchedulerUntil(ts, condition_counter_duration_period4, 15000);
     EXPECT_TRUE(success);
 
     // Both tasks should be disabled by OnDisable callback
@@ -646,16 +686,12 @@ TEST_F(BlinkExampleTest, Approach5_InterleavingTasks) {
     tBlink5Off.enable();
 
     // Should execute OnEnable
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK5_START");
 
     // Let both tasks run
-    success = runBlinkSchedulerUntil(ts, []() {
-        return led_state_changes >= 8;
-    }, 4000);
+    success = runBlinkSchedulerUntil(ts, condition_led_changes_8, 4000);
     EXPECT_TRUE(success);
     EXPECT_GE(led_state_changes, 8);
 
@@ -663,9 +699,7 @@ TEST_F(BlinkExampleTest, Approach5_InterleavingTasks) {
     EXPECT_TRUE(tBlink5On.isEnabled() || tBlink5Off.isEnabled());
 
     // Wait for completion
-    success = runBlinkSchedulerUntil(ts, []() {
-        return !tBlink5On.isEnabled() && !tBlink5Off.isEnabled();
-    }, 15000);
+    success = runBlinkSchedulerUntil(ts, condition_both_blink5_disabled, 15000);
     EXPECT_TRUE(success);
     EXPECT_FALSE(simulated_led_state); // LED should be off at end
 
@@ -698,18 +732,14 @@ TEST_F(BlinkExampleTest, Approach6_RandomIntervalGeneration) {
     tBlink6.enable();
 
     // Should execute OnEnable and set initial interval
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK6_START");
     EXPECT_EQ(interval6, 500); // Fixed value for testing
     EXPECT_EQ(tBlink6.getInterval(), 500);
 
     // Let it run and change intervals
-    success = runBlinkSchedulerUntil(ts, []() {
-        return tBlink6.getRunCounter() >= 4;
-    }, 3000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink6_runcount_4, 3000);
     EXPECT_TRUE(success);
     EXPECT_GE(tBlink6.getRunCounter(), 4);
 
@@ -723,9 +753,7 @@ TEST_F(BlinkExampleTest, Approach6_RandomIntervalGeneration) {
     }
 
     // Wait for completion
-    success = runBlinkSchedulerUntil(ts, []() {
-        return !tBlink6.isEnabled();
-    }, 15000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink6_disabled, 15000);
     EXPECT_TRUE(success);
     EXPECT_FALSE(simulated_led_state); // LED should be off at end
 
@@ -756,16 +784,12 @@ TEST_F(BlinkExampleTest, SequentialTaskChainExecution) {
     tBlink1_ptr = &tBlink1;
 
     // Run just the first approach for integration test
-    bool success = runBlinkSchedulerUntil(ts, []() {
-        return getBlinkTestOutputCount() >= 1;
-    });
+    bool success = runBlinkSchedulerUntil(ts, condition_output_count_1);
     EXPECT_TRUE(success);
     EXPECT_EQ(getBlinkTestOutput(0), "BLINK1_START");
 
     // Let it complete its cycles
-    success = runBlinkSchedulerUntil(ts, []() {
-        return !tBlink1.isEnabled();
-    }, 5000);
+    success = runBlinkSchedulerUntil(ts, condition_tBlink1_disabled, 5000);
     EXPECT_TRUE(success);
     EXPECT_FALSE(tBlink1.isEnabled());
 

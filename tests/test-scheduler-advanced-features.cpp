@@ -560,11 +560,15 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForStatusRequest) {
 
     // Run scheduler - task should not execute yet
     delay(100);
+    // The Status Request should still be pending
+
+    EXPECT_TRUE(sr.isPending());
     ts.execute();
     EXPECT_EQ(advanced_callback_counter, 0);
 
     // Complete the status request
     sr.signalComplete();
+    EXPECT_FALSE(sr.isPending());
 
     // Now task should execute
     bool success = runAdvancedSchedulerUntil(ts, []() {
@@ -604,13 +608,15 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForDelayedStatusRequest) {
 
     // Should not execute immediately despite completed StatusRequest
     delay(50);
+    EXPECT_TRUE(sr.isPending());
     ts.execute();
     EXPECT_EQ(advanced_callback_counter, 0);
 
     sr.signalComplete(); // Complete SR
-
+    EXPECT_FALSE(sr.isPending());
+    
     // The task will be scheduled to run after the delay
-    bool success = runAdvancedSchedulerUntil(ts, []() { return true; }, 200); // Wait up to 1000ms
+    bool success = runAdvancedSchedulerUntil(ts, []() { return false; }, 200); // Wait up to 1000ms
     EXPECT_FALSE(success); 
 
     delay(400);
