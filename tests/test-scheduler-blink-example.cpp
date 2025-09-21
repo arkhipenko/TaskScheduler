@@ -650,6 +650,8 @@ TEST_F(BlinkExampleTest, Approach4_StatusRequestCoordination) {
     success = runBlinkSchedulerUntil(ts, condition_counter_duration_period4, 15000);
     EXPECT_TRUE(success);
 
+    ts.execute(); // Final execute to process disable
+    
     // Both tasks should be disabled by OnDisable callback
     EXPECT_FALSE(tBlink4On.isEnabled());
     EXPECT_FALSE(tBlink4Off.isEnabled());
