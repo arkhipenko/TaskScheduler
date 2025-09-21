@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-basic:
-    name: Basic Scheduler Tests
+    name: Tests of Basic Functionality
     runs-on: ubuntu-latest
 
     steps:
@@ -174,7 +174,7 @@ jobs:
           ./test_thorough
 
   test-advanced:
-    name: Advanced Scheduler Tests
+    name: Tests of Advanced Functionality
     runs-on: ubuntu-latest
 
     steps:
@@ -257,7 +257,7 @@ jobs:
           ./test_advanced
 
   test-blink-example:
-    name: Scheduler Tests Based on Blink Example
+    name: Tests Based on Blink Example
     runs-on: ubuntu-latest
 
     steps:
@@ -342,7 +342,7 @@ jobs:
           ./test_blink_example
 
   test-priority:
-    name: Scheduler Tests with Layered Priority
+    name: Tests with Layered Priority
     runs-on: ubuntu-latest
 
     steps:
