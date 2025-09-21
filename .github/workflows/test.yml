@@ -91,7 +91,7 @@ jobs:
           ./test_basic
 
   test-thorough:
-    name: Thorough Tests
+    name: Thorough Scheduler Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -174,7 +174,7 @@ jobs:
           ./test_thorough
 
   test-advanced:
-    name: Advanced Tests
+    name: Advanced Scheduler Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -257,7 +257,7 @@ jobs:
           ./test_advanced
 
   test-blink-example:
-    name: Blink Example Tests
+    name: Scheduler Tests Based on Blink Example
     runs-on: ubuntu-latest
 
     steps:
@@ -340,3 +340,87 @@ jobs:
         run: |
           echo "=== Running Blink Example Tests ==="
           ./test_blink_example
+
+  test-priority:
+    name: Scheduler Tests with Layered Priority
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libgtest-dev pkg-config
+
+      - name: Build and install Google Test
+        run: |
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo cmake --build . --target all
+          sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
+
+      - name: Create CMakeLists.txt for Priority Tests
+        run: |
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.10)
+          project(TaskSchedulerPriorityTests VERSION 1.0.0)
+
+          set(CMAKE_CXX_STANDARD 14)
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+          # Find required packages
+          find_package(PkgConfig REQUIRED)
+          find_package(Threads REQUIRED)
+
+          # Include directories
+          include_directories(${CMAKE_SOURCE_DIR}/src)
+          include_directories(${CMAKE_SOURCE_DIR}/tests)
+
+          # Gather source files
+          file(GLOB TASKSCHEDULER_SOURCES
+              "${CMAKE_SOURCE_DIR}/src/*.cpp"
+              "${CMAKE_SOURCE_DIR}/src/*.c"
+          )
+
+          # Create the priority test executable
+          add_executable(test_priority
+              tests/test-scheduler-priority.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+
+          # Link libraries
+          target_link_libraries(test_priority
+              gtest
+              gtest_main
+              pthread
+          )
+
+          # Compiler definitions for Arduino compatibility and priority support
+          target_compile_definitions(test_priority PRIVATE
+              ARDUINO=300
+              _TASK_PRIORITY
+          )
+
+          # Compiler flags
+          target_compile_options(test_priority PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+
+          # Enable testing
+          enable_testing()
+          add_test(NAME PriorityTests COMMAND test_priority)
+          EOF
+
+      - name: Build priority tests
+        run: |
+          cmake .
+          make -j$(nproc)
+
+      - name: Run priority tests
+        run: |
+          echo "=== Running Priority Tests ==="
+          ./test_priority
