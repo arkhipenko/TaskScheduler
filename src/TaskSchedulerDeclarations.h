@@ -16,7 +16,7 @@
  * - Support for task IDs and Control Points for error handling and watchdog timer
  * - Support for Local Task Storage pointer (allowing the use of same callback code for multiple tasks)
  * - Support for layered task prioritization
- * - Support for std::functions (ESP8266 only)
+ * - Support for std::functions 
  * - Overall task timeout
  * - Static and dynamic callback method binding
  *

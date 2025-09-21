@@ -50,7 +50,7 @@
 // #define _TASK_LTS_POINTER        // Compile with support for local task storage pointer
 // #define _TASK_PRIORITY           // Support for layered scheduling priority
 // #define _TASK_MICRO_RES          // Support for microsecond resolution
-// #define _TASK_STD_FUNCTION       // Support for std::function (ESP8266 ONLY)
+// #define _TASK_STD_FUNCTION       // Support for std::function 
 // #define _TASK_DEBUG              // Make all methods and variables public for debug purposes
 // #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT            // Support for overall task timeout
