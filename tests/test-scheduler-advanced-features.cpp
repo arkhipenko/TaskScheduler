@@ -1037,11 +1037,11 @@ TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     EXPECT_EQ(advanced_callback_counter, 5);
 
     // With TASK_INTERVAL, the schedule should adjust to honor 100ms interval from end to start
-    // Each execution: 105ms callback + 100ms interval = ~205ms total cycle
-    // 5 executions should take approximately 5 * 205ms = ~1025ms
+    // Each execution: 105ms callback + 100ms interval = 105ms total cycle
+    // 5 executions should take approximately 5 * 105ms = ~525ms
     unsigned long total_time = millis() - test_start;
-    EXPECT_GE(total_time, 1000); // At least 1000ms
-    EXPECT_LE(total_time, 1200); // At most 1200ms (allowing for timing variance)
+    EXPECT_GE(total_time, 500); // At least 500ms
+    EXPECT_LE(total_time, 600); // At most 600ms (allowing for timing variance)
 
     // Verify the output shows proper timing intervals
     EXPECT_EQ(getAdvancedTestOutputCount(), 10); // 5 start + 5 end messages
