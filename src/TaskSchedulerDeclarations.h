@@ -408,9 +408,68 @@ class Scheduler;
 /** @} */ // End of TimeConstants group
 
 #ifdef _TASK_TICKLESS
+/**
+ * @defgroup NextRunStates Task Next Run State Definitions
+ * @brief State flags for tickless operation next run scheduling
+ *
+ * These constants define the next execution state of tasks in tickless mode,
+ * enabling power-efficient operation by categorizing when tasks need to run.
+ * Used internally by the scheduler to optimize sleep/wake cycles and minimize
+ * power consumption in battery-powered applications.
+ *
+ * @note Only available when _TASK_TICKLESS compile-time option is enabled
+ * @see _TASK_TICKLESS
+ * @{
+ */
+
+/**
+ * @brief Undefined next run state
+ *
+ * Indicates that the task's next execution time is not defined or has not
+ * been calculated. This is typically an initial state or error condition
+ * where the scheduler cannot determine when the task should next execute.
+ *
+ * Binary value: 0b0 (0)
+ *
+ * @note Used internally by tickless scheduler for state management
+ * @see _TASK_TICKLESS
+ * @since Version 3.0.0
+ */
 #define _TASK_NEXTRUN_UNDEFINED 0b0
+
+/**
+ * @brief Immediate next run state
+ *
+ * Indicates that the task should execute immediately on the next scheduler
+ * pass, bypassing any timing delays. Used for tasks that have been triggered
+ * by events, forced execution, or have reached their scheduled execution time.
+ *
+ * Binary value: 0b1 (1)
+ *
+ * @note In tickless mode, prevents the system from entering deep sleep
+ * @see forceNextIteration(), _TASK_TICKLESS
+ * @since Version 3.0.0
+ */
 #define _TASK_NEXTRUN_IMMEDIATE 0b1
+
+/**
+ * @brief Timed next run state
+ *
+ * Indicates that the task has a specific future execution time and should
+ * wait until that time arrives. This enables the tickless scheduler to
+ * calculate optimal sleep durations and enter power-saving modes until
+ * the earliest task execution time.
+ *
+ * Hexadecimal value: 0x10 (16)
+ *
+ * @note Enables deep sleep optimization in tickless mode
+ * @note Value deliberately different from other states for bit manipulation
+ * @see _TASK_TICKLESS, getInterval(), delay()
+ * @since Version 3.0.0
+ */
 #define _TASK_NEXTRUN_TIMED     0x10
+
+/** @} */ // End of NextRunStates group
 #endif  //  _TASK_TICKLESS
 
 #ifdef _TASK_THREAD_SAFE
@@ -1386,14 +1445,261 @@ class Task {
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
 
 #ifdef _TASK_OO_CALLBACKS
-    virtual __TASK_INLINE bool Callback() =0;  // return true if run was "productive - this will disable sleep on the idle run for next pass
-    virtual __TASK_INLINE bool OnEnable();  // return true if task should be enabled, false if it should remain disabled
+    /**
+     * @brief Pure virtual main task execution callback (Object-Oriented mode)
+     *
+     * This pure virtual method must be implemented by derived classes to define
+     * the task's main execution logic. Called by the scheduler when the task
+     * is ready to execute based on its timing and iteration settings.
+     *
+     * @return bool True if the execution was "productive" (performed meaningful work),
+     *              false if the task was idle. A productive return value prevents
+     *              the scheduler from entering sleep mode on the next idle cycle,
+     *              optimizing power management for active tasks.
+     *
+     * @note Only available when _TASK_OO_CALLBACKS compile-time option is enabled
+     * @note This is a pure virtual function - derived classes MUST implement it
+     * @note Return value affects power management in _TASK_SLEEP_ON_IDLE_RUN mode
+     * @see _TASK_OO_CALLBACKS, _TASK_SLEEP_ON_IDLE_RUN
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * class MyTask : public Task {
+     * public:
+     *     bool Callback() override {
+     *         // Perform task work
+     *         Serial.println("Task executing");
+     *         return true; // Productive execution
+     *     }
+     * };
+     * @endcode
+     */
+    virtual __TASK_INLINE bool Callback() =0;
+
+    /**
+     * @brief Virtual task enable lifecycle callback (Object-Oriented mode)
+     *
+     * Called when the task transitions from disabled to enabled state. Allows
+     * derived classes to implement custom initialization logic, resource allocation,
+     * or conditional enabling based on system state.
+     *
+     * @return bool True to allow the task to be enabled, false to prevent enabling.
+     *              Returning false keeps the task disabled despite the enable request.
+     *
+     * @note Only available when _TASK_OO_CALLBACKS compile-time option is enabled
+     * @note Default implementation returns true (allow enabling)
+     * @note Called synchronously during enable() operation
+     * @note Conditional enabling useful for resource-dependent tasks
+     * @see _TASK_OO_CALLBACKS, enable(), OnDisable()
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * class ConditionalTask : public Task {
+     * public:
+     *     bool OnEnable() override {
+     *         if (systemReady()) {
+     *             initializeResources();
+     *             return true; // Allow enabling
+     *         }
+     *         return false; // Prevent enabling
+     *     }
+     * };
+     * @endcode
+     */
+    virtual __TASK_INLINE bool OnEnable();
+
+    /**
+     * @brief Virtual task disable lifecycle callback (Object-Oriented mode)
+     *
+     * Called when the task transitions from enabled to disabled state. Allows
+     * derived classes to implement custom cleanup logic, resource deallocation,
+     * or state preservation when the task is deactivated.
+     *
+     * @note Only available when _TASK_OO_CALLBACKS compile-time option is enabled
+     * @note Called synchronously during disable() operation
+     * @note Called during automatic disable (iteration completion, errors)
+     * @note Default implementation performs no action
+     * @see _TASK_OO_CALLBACKS, disable(), OnEnable()
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * class ResourceTask : public Task {
+     * public:
+     *     void OnDisable() override {
+     *         cleanupResources();
+     *         saveState();
+     *         Serial.println("Task disabled");
+     *     }
+     * };
+     * @endcode
+     */
     virtual __TASK_INLINE void OnDisable();
 #else
+    /**
+     * @brief Set the main task execution callback function
+     *
+     * Assigns a new callback function that will be executed when the task runs.
+     * The callback function defines the task's main execution logic and is called
+     * by the scheduler when the task is ready to execute.
+     *
+     * @param aCallback Function pointer to the new callback function.
+     *                  Must have signature: void callbackFunction()
+     *
+     * @note Only available when _TASK_OO_CALLBACKS is NOT enabled (function pointer mode)
+     * @note Callback can be changed dynamically during task execution
+     * @note Setting nullptr callback is allowed but will result in no-op execution
+     * @see TaskCallback, yield(), yieldOnce()
+     * @since Version 1.0.0
+     *
+     * @par Example:
+     * @code
+     * void task1Function() {
+     *     Serial.println("Task 1 executing");
+     * }
+     *
+     * void task2Function() {
+     *     Serial.println("Task 2 executing");
+     * }
+     *
+     * Task myTask(1000, TASK_FOREVER, task1Function, &scheduler);
+     * myTask.setCallback(task2Function); // Switch to different function
+     * @endcode
+     */
     __TASK_INLINE void setCallback(TaskCallback aCallback) ;
+
+    /**
+     * @brief Set the task enable lifecycle callback function
+     *
+     * Assigns a callback function that will be called when the task transitions
+     * from disabled to enabled state. Enables custom initialization logic and
+     * conditional enabling based on system conditions.
+     *
+     * @param aCallback Function pointer to the enable callback function.
+     *                  Must have signature: bool onEnableFunction()
+     *                  Return true to allow enabling, false to prevent it.
+     *
+     * @note Only available when _TASK_OO_CALLBACKS is NOT enabled (function pointer mode)
+     * @note Called synchronously during enable() operation
+     * @note Returning false from callback prevents task enabling
+     * @note Setting nullptr removes the enable callback
+     * @see TaskOnEnable, setOnDisable(), enable()
+     * @since Version 2.0.0
+     *
+     * @par Example:
+     * @code
+     * bool checkSystemReady() {
+     *     return digitalRead(READY_PIN) == HIGH;
+     * }
+     *
+     * Task myTask(1000, 10, mainCallback, &scheduler);
+     * myTask.setOnEnable(checkSystemReady); // Conditional enabling
+     * @endcode
+     */
     __TASK_INLINE void setOnEnable(TaskOnEnable aCallback) ;
+
+    /**
+     * @brief Set the task disable lifecycle callback function
+     *
+     * Assigns a callback function that will be called when the task transitions
+     * from enabled to disabled state. Enables custom cleanup logic and resource
+     * management when the task is deactivated.
+     *
+     * @param aCallback Function pointer to the disable callback function.
+     *                  Must have signature: void onDisableFunction()
+     *
+     * @note Only available when _TASK_OO_CALLBACKS is NOT enabled (function pointer mode)
+     * @note Called synchronously during disable() operation
+     * @note Called during automatic disable (iteration completion, errors)
+     * @note Setting nullptr removes the disable callback
+     * @see TaskOnDisable, setOnEnable(), disable()
+     * @since Version 2.0.0
+     *
+     * @par Example:
+     * @code
+     * void cleanupTask() {
+     *     Serial.println("Task cleaning up");
+     *     // Release resources, save state, etc.
+     * }
+     *
+     * Task myTask(1000, 5, mainCallback, &scheduler);
+     * myTask.setOnDisable(cleanupTask); // Cleanup on disable
+     * @endcode
+     */
     __TASK_INLINE void setOnDisable(TaskOnDisable aCallback) ;
+
+    /**
+     * @brief Permanently switch to a new callback function
+     *
+     * Changes the task's callback function to the specified new function for all
+     * subsequent executions. This enables state machine behavior and multi-phase
+     * task processing within a single task object.
+     *
+     * @param aCallback Function pointer to the new callback function.
+     *                  Must have signature: void newCallbackFunction()
+     *
+     * @note Only available when _TASK_OO_CALLBACKS is NOT enabled (function pointer mode)
+     * @note Change takes effect immediately and is permanent
+     * @note All future executions will use the new callback
+     * @note Different from yieldOnce() which executes new callback only once
+     * @see yieldOnce(), setCallback(), TaskCallback
+     * @since Version 2.0.0
+     *
+     * @par Example:
+     * @code
+     * void phase1Callback() {
+     *     Serial.println("Phase 1");
+     *     // Switch to phase 2 after some condition
+     *     if (conditionMet()) {
+     *         myTask.yield(phase2Callback);
+     *     }
+     * }
+     *
+     * void phase2Callback() {
+     *     Serial.println("Phase 2");
+     * }
+     * @endcode
+     */
     __TASK_INLINE void yield(TaskCallback aCallback);
+
+    /**
+     * @brief Execute a callback function once, then disable the task
+     *
+     * Switches to the specified callback function for exactly one execution,
+     * then automatically disables the task. Useful for one-time completion
+     * logic, cleanup operations, or finalization steps.
+     *
+     * @param aCallback Function pointer to the callback function to execute once.
+     *                  Must have signature: void onceCallbackFunction()
+     *
+     * @note Only available when _TASK_OO_CALLBACKS is NOT enabled (function pointer mode)
+     * @note Task executes the new callback exactly once on next scheduler pass
+     * @note Task automatically disables after the single execution
+     * @note Original callback is not restored (task becomes inactive)
+     * @note Useful for completion handlers and one-shot operations
+     * @see yield(), setCallback(), TaskCallback
+     * @since Version 2.0.0
+     *
+     * @par Example:
+     * @code
+     * void mainCallback() {
+     *     static int count = 0;
+     *     Serial.print("Main execution: ");
+     *     Serial.println(++count);
+     *
+     *     if (count >= 5) {
+     *         myTask.yieldOnce(finalizationCallback);
+     *     }
+     * }
+     *
+     * void finalizationCallback() {
+     *     Serial.println("Task completed - final cleanup");
+     *     // Task will automatically disable after this
+     * }
+     * @endcode
+     */
     __TASK_INLINE void yieldOnce(TaskCallback aCallback);
 #endif // _TASK_OO_CALLBACKS
 
@@ -1410,32 +1716,541 @@ class Task {
     __TASK_INLINE bool isLastIteration() ;
 
 #ifdef _TASK_TIMECRITICAL
+    /**
+     * @brief Get the execution overrun time in microseconds
+     *
+     * Returns the amount of time (in microseconds) that the task's execution
+     * exceeded its scheduled interval. This measures how much longer the task
+     * took to complete compared to its allocated time budget, helping identify
+     * timing violations and performance bottlenecks.
+     *
+     * @return long Overrun time in microseconds. Positive values indicate the task
+     *              ran longer than its interval, negative values indicate it finished
+     *              early. Zero indicates the task completed exactly on schedule.
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Measured from scheduled execution time to actual completion time
+     * @note Useful for real-time system analysis and performance optimization
+     * @see getStartDelay(), _TASK_TIMECRITICAL
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void criticalTaskCallback() {
+     *     // Perform time-critical work
+     *     performCriticalOperation();
+     *
+     *     // Check if we exceeded our time budget
+     *     long overrun = myTask.getOverrun();
+     *     if (overrun > 1000) { // More than 1ms overrun
+     *         Serial.print("Warning: Task overrun by ");
+     *         Serial.print(overrun);
+     *         Serial.println(" microseconds");
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE long getOverrun() ;
+
+    /**
+     * @brief Get the task start delay in microseconds
+     *
+     * Returns the amount of time (in microseconds) between when the task was
+     * scheduled to start and when it actually began execution. This measures
+     * scheduler latency and helps identify system timing accuracy and load issues.
+     *
+     * @return long Start delay in microseconds. Positive values indicate the task
+     *              started later than scheduled, negative values indicate it started
+     *              early. Zero indicates perfect timing accuracy.
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Measured from scheduled start time to actual execution start time
+     * @note High values may indicate system overload or scheduler inefficiency
+     * @see getOverrun(), _TASK_TIMECRITICAL
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void timingAnalysisCallback() {
+     *     long startDelay = myTask.getStartDelay();
+     *     long overrun = myTask.getOverrun();
+     *
+     *     Serial.print("Start delay: ");
+     *     Serial.print(startDelay);
+     *     Serial.print("us, Overrun: ");
+     *     Serial.print(overrun);
+     *     Serial.println("us");
+     *
+     *     if (startDelay > 500) {
+     *         Serial.println("Warning: High scheduler latency detected");
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE long getStartDelay() ;
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_STATUS_REQUEST
+    /**
+     * @brief Wait for a StatusRequest to be signaled, then execute with new parameters
+     *
+     * Suspends this task until the specified StatusRequest is signaled by another task,
+     * then reconfigures this task with new interval and iterations before resuming.
+     * Enables sophisticated inter-task communication and coordination patterns.
+     *
+     * @param aStatusRequest Pointer to StatusRequest object to wait for
+     * @param aInterval New execution interval in milliseconds (default: 0 = keep current)
+     * @param aIterations New iteration count (default: 1 = single execution)
+     *
+     * @return bool True if wait was successful and task was reconfigured,
+     *              false if StatusRequest is invalid or operation failed
+     *
+     * @note Only available when _TASK_STATUS_REQUEST compile-time option is enabled
+     * @note Task becomes inactive until StatusRequest is signaled
+     * @note StatusRequest must be signaled by another task's completion
+     * @note Interval of 0 keeps current task interval unchanged
+     * @see waitForDelayed(), getStatusRequest(), StatusRequest
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * Task task1(1000, TASK_FOREVER, task1Callback, &scheduler);
+     * Task task2(500, 1, task2Callback, &scheduler);
+     *
+     * void task1Callback() {
+     *     // Wait for task2 to complete, then run every 200ms for 5 iterations
+     *     if (task1.waitFor(task2.getStatusRequest(), 200, 5)) {
+     *         Serial.println("Task1 resumed after task2 completion");
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE bool waitFor(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+
+    /**
+     * @brief Wait for a StatusRequest with delay, then execute with new parameters
+     *
+     * Similar to waitFor() but introduces an additional delay before the task
+     * becomes eligible for execution after the StatusRequest is signaled.
+     * Useful for staggered execution and preventing simultaneous task activation.
+     *
+     * @param aStatusRequest Pointer to StatusRequest object to wait for
+     * @param aInterval New execution interval in milliseconds (default: 0 = keep current)
+     * @param aIterations New iteration count (default: 1 = single execution)
+     *
+     * @return bool True if wait was successful and task was reconfigured,
+     *              false if StatusRequest is invalid or operation failed
+     *
+     * @note Only available when _TASK_STATUS_REQUEST compile-time option is enabled
+     * @note Adds scheduling delay after StatusRequest is signaled
+     * @note Prevents immediate execution, allowing for staggered task activation
+     * @note Interval of 0 keeps current task interval unchanged
+     * @see waitFor(), getStatusRequest(), StatusRequest
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void coordinatorCallback() {
+     *     // Wait for sensor task, then start processing with 1 second delay
+     *     if (processingTask.waitForDelayed(sensorTask.getStatusRequest(), 1000, 10)) {
+     *         Serial.println("Processing will start 1 second after sensor completion");
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE bool waitForDelayed(StatusRequest* aStatusRequest, unsigned long aInterval = 0, long aIterations = 1);
+
+    /**
+     * @brief Get the external StatusRequest object for this task
+     *
+     * Returns a pointer to the StatusRequest object that other tasks can use
+     * to wait for this task's completion. This enables the creation of task
+     * dependency chains and sophisticated coordination patterns.
+     *
+     * @return StatusRequest* Pointer to the task's external StatusRequest object,
+     *                        or nullptr if StatusRequest functionality is not available
+     *
+     * @note Only available when _TASK_STATUS_REQUEST compile-time option is enabled
+     * @note External StatusRequest is signaled when task completes its iterations
+     * @note Used by other tasks in waitFor() and waitForDelayed() calls
+     * @note Different from getInternalStatusRequest() which is used for internal coordination
+     * @see getInternalStatusRequest(), waitFor(), StatusRequest
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * Task producerTask(1000, 5, producerCallback, &scheduler);
+     * Task consumerTask(100, 1, consumerCallback, &scheduler);
+     *
+     * void setupTasks() {
+     *     // Consumer waits for producer to complete
+     *     StatusRequest* producerStatus = producerTask.getStatusRequest();
+     *     consumerTask.waitFor(producerStatus, 500, TASK_FOREVER);
+     * }
+     * @endcode
+     */
     __TASK_INLINE StatusRequest* getStatusRequest() ;
+
+    /**
+     * @brief Get the internal StatusRequest object for this task
+     *
+     * Returns a pointer to the internal StatusRequest object used for advanced
+     * task coordination patterns within the same task or tightly coupled task groups.
+     * Provides finer control over task signaling and coordination mechanisms.
+     *
+     * @return StatusRequest* Pointer to the task's internal StatusRequest object,
+     *                        or nullptr if StatusRequest functionality is not available
+     *
+     * @note Only available when _TASK_STATUS_REQUEST compile-time option is enabled
+     * @note Internal StatusRequest provides advanced coordination capabilities
+     * @note Used for complex task orchestration and state machine patterns
+     * @note Separate from external StatusRequest for different coordination levels
+     * @see getStatusRequest(), waitFor(), StatusRequest
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void complexCoordinationCallback() {
+     *     StatusRequest* internalStatus = myTask.getInternalStatusRequest();
+     *     // Use internal status for advanced coordination
+     *     otherTask.waitForDelayed(internalStatus, 100, 1);
+     * }
+     * @endcode
+     */
     __TASK_INLINE StatusRequest* getInternalStatusRequest() ;
 #endif  // _TASK_STATUS_REQUEST
 
 #ifdef _TASK_WDT_IDS
+    /**
+     * @brief Set the watchdog timer ID for this task
+     *
+     * Assigns a unique identifier to the task for watchdog timer monitoring.
+     * The ID is used by external watchdog systems to track task execution
+     * and detect hung or malfunctioning tasks in mission-critical applications.
+     *
+     * @param aID Unique identifier for watchdog monitoring (typically 0-255 range)
+     *
+     * @note Only available when _TASK_WDT_IDS compile-time option is enabled
+     * @note ID should be unique across all tasks in the system
+     * @note Used in conjunction with external watchdog hardware/software
+     * @note Essential for safety-critical and mission-critical applications
+     * @see getId(), setControlPoint(), _TASK_WDT_IDS
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * Task criticalTask(1000, TASK_FOREVER, criticalCallback, &scheduler);
+     * Task monitorTask(5000, TASK_FOREVER, monitorCallback, &scheduler);
+     *
+     * void setup() {
+     *     criticalTask.setId(1);  // Critical system task
+     *     monitorTask.setId(2);   // System monitor task
+     * }
+     *
+     * void criticalCallback() {
+     *     // Reset watchdog for this task ID
+     *     resetWatchdog(criticalTask.getId());
+     * }
+     * @endcode
+     */
     __TASK_INLINE void setId(unsigned int aID) ;
+
+    /**
+     * @brief Get the watchdog timer ID for this task
+     *
+     * Returns the unique identifier assigned to this task for watchdog monitoring.
+     * Used by watchdog systems and monitoring code to identify which task is
+     * currently executing or has failed to respond.
+     *
+     * @return unsigned int The task's watchdog ID, or 0 if no ID has been set
+     *
+     * @note Only available when _TASK_WDT_IDS compile-time option is enabled
+     * @note Returns the ID set by setId(), or 0 for uninitialized tasks
+     * @note Used for watchdog reset operations and task identification
+     * @see setId(), getControlPoint(), _TASK_WDT_IDS
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void watchdogResetCallback() {
+     *     unsigned int taskId = myTask.getId();
+     *     if (taskId > 0) {
+     *         // Reset watchdog for this specific task
+     *         resetWatchdogTimer(taskId);
+     *         Serial.print("Watchdog reset for task ID: ");
+     *         Serial.println(taskId);
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE unsigned int getId() ;
+
+    /**
+     * @brief Set the control point identifier for this task
+     *
+     * Assigns a control point identifier used for fine-grained execution monitoring
+     * and debugging. Control points can mark specific execution phases or critical
+     * sections within task callbacks for detailed system analysis.
+     *
+     * @param aPoint Control point identifier (application-defined meaning)
+     *
+     * @note Only available when _TASK_WDT_IDS compile-time option is enabled
+     * @note Control points provide execution phase tracking within tasks
+     * @note Used for debugging, profiling, and fine-grained monitoring
+     * @note Meaning and usage are application-specific
+     * @see getControlPoint(), setId(), _TASK_WDT_IDS
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void complexTaskCallback() {
+     *     myTask.setControlPoint(1);  // Phase 1: Sensor reading
+     *     readSensors();
+     *
+     *     myTask.setControlPoint(2);  // Phase 2: Data processing
+     *     processData();
+     *
+     *     myTask.setControlPoint(3);  // Phase 3: Output generation
+     *     generateOutput();
+     *
+     *     myTask.setControlPoint(0);  // Phase complete
+     * }
+     * @endcode
+     */
     __TASK_INLINE void setControlPoint(unsigned int aPoint) ;
+
+    /**
+     * @brief Get the current control point identifier for this task
+     *
+     * Returns the current control point identifier, indicating which execution
+     * phase or critical section the task is currently in or last executed.
+     * Useful for debugging hung tasks and execution flow analysis.
+     *
+     * @return unsigned int Current control point identifier, or 0 if none set
+     *
+     * @note Only available when _TASK_WDT_IDS compile-time option is enabled
+     * @note Returns the most recent control point set by setControlPoint()
+     * @note Used for debugging and execution phase identification
+     * @note Can help identify where tasks hang or fail
+     * @see setControlPoint(), getId(), _TASK_WDT_IDS
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void monitorTaskCallback() {
+     *     unsigned int controlPoint = criticalTask.getControlPoint();
+     *     unsigned long lastRun = criticalTask.getRunCounter();
+     *
+     *     if (lastRun == previousRunCount && controlPoint != 0) {
+     *         Serial.print("Critical task hung at control point: ");
+     *         Serial.println(controlPoint);
+     *         // Take corrective action
+     *     }
+     *     previousRunCount = lastRun;
+     * }
+     * @endcode
+     */
     __TASK_INLINE unsigned int getControlPoint() ;
 #endif  // _TASK_WDT_IDS
 
 #ifdef _TASK_LTS_POINTER
+    /**
+     * @brief Set the Local Task Storage (LTS) pointer for this task
+     *
+     * Assigns a pointer to task-specific data storage that persists across
+     * task executions. This enables tasks to maintain state, store working
+     * data, or reference external resources without using global variables.
+     *
+     * @param aPtr Pointer to task-local storage area (any data type)
+     *
+     * @note Only available when _TASK_LTS_POINTER compile-time option is enabled
+     * @note Pointer can reference any data structure or object
+     * @note Memory management is application responsibility
+     * @note Enables object-oriented patterns and data encapsulation
+     * @see getLtsPointer(), _TASK_LTS_POINTER
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * struct TaskData {
+     *     int counter;
+     *     float average;
+     *     bool initialized;
+     * };
+     *
+     * TaskData myTaskData = {0, 0.0, false};
+     * Task dataTask(1000, TASK_FOREVER, dataCallback, &scheduler);
+     *
+     * void setup() {
+     *     dataTask.setLtsPointer(&myTaskData);
+     * }
+     *
+     * void dataCallback() {
+     *     TaskData* data = (TaskData*)dataTask.getLtsPointer();
+     *     if (data) {
+     *         data->counter++;
+     *         // Use task-specific data
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE void  setLtsPointer(void *aPtr) ;
+
+    /**
+     * @brief Get the Local Task Storage (LTS) pointer for this task
+     *
+     * Returns the pointer to task-specific data storage previously set with
+     * setLtsPointer(). Enables tasks to access their persistent data without
+     * relying on global variables or external storage mechanisms.
+     *
+     * @return void* Pointer to task-local storage, or nullptr if none set
+     *
+     * @note Only available when _TASK_LTS_POINTER compile-time option is enabled
+     * @note Returned pointer must be cast to appropriate data type
+     * @note Returns nullptr if no LTS pointer has been set
+     * @note Enables clean data encapsulation and object-oriented patterns
+     * @see setLtsPointer(), _TASK_LTS_POINTER
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * struct SensorData {
+     *     float temperature;
+     *     float humidity;
+     *     unsigned long lastReading;
+     * };
+     *
+     * void sensorCallback() {
+     *     SensorData* data = (SensorData*)sensorTask.getLtsPointer();
+     *     if (data) {
+     *         data->temperature = readTemperature();
+     *         data->humidity = readHumidity();
+     *         data->lastReading = millis();
+     *
+     *         Serial.print("Temp: ");
+     *         Serial.print(data->temperature);
+     *         Serial.print("°C, Humidity: ");
+     *         Serial.print(data->humidity);
+     *         Serial.println("%");
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE void* getLtsPointer() ;
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_EXPOSE_CHAIN
-    __TASK_INLINE Task*  getPreviousTask() { return iPrev; };  // pointer to the previous task in the chain, NULL if first or not set
-    __TASK_INLINE Task*  getNextTask()     { return iNext; };  // pointer to the next task in the chain, NULL if last or not set
+    /**
+     * @brief Get pointer to the previous task in the scheduler's task chain
+     *
+     * Returns a pointer to the task that precedes this task in the scheduler's
+     * internal linked list. This enables task chain traversal, debugging, and
+     * advanced task management operations for custom scheduler behaviors.
+     *
+     * @return Task* Pointer to the previous task in the chain, or nullptr if:
+     *               - This is the first task in the chain
+     *               - Task is not currently registered with a scheduler
+     *               - Task chain is empty
+     *
+     * @note Only available when _TASK_EXPOSE_CHAIN compile-time option is enabled
+     * @note Exposes internal scheduler data structure for advanced operations
+     * @note Chain order may not correlate with execution order (depends on timing)
+     * @note Useful for debugging, custom algorithms, and chain analysis
+     * @warning Direct chain manipulation can corrupt scheduler state
+     * @see getNextTask(), _TASK_EXPOSE_CHAIN
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void analyzeTaskChain(Task& startTask) {
+     *     Task* current = &startTask;
+     *     int position = 0;
+     *
+     *     // Walk backwards through the chain
+     *     while (current->getPreviousTask() != nullptr) {
+     *         current = current->getPreviousTask();
+     *         position++;
+     *     }
+     *
+     *     Serial.print("Task is at position ");
+     *     Serial.print(position);
+     *     Serial.println(" from chain start");
+     * }
+     *
+     * void debugTaskChain(Scheduler& scheduler) {
+     *     // Find chain relationships for debugging
+     *     Serial.println("Task Chain Analysis:");
+     *     // Implementation would traverse and analyze the chain
+     * }
+     * @endcode
+     */
+    __TASK_INLINE Task*  getPreviousTask() { return iPrev; };
+
+    /**
+     * @brief Get pointer to the next task in the scheduler's task chain
+     *
+     * Returns a pointer to the task that follows this task in the scheduler's
+     * internal linked list. This enables forward chain traversal, task enumeration,
+     * and advanced scheduler analysis for custom task management operations.
+     *
+     * @return Task* Pointer to the next task in the chain, or nullptr if:
+     *               - This is the last task in the chain
+     *               - Task is not currently registered with a scheduler
+     *               - Task chain is empty
+     *
+     * @note Only available when _TASK_EXPOSE_CHAIN compile-time option is enabled
+     * @note Exposes internal scheduler data structure for advanced operations
+     * @note Chain order is registration order, not execution priority
+     * @note Useful for iteration, monitoring, and custom scheduler algorithms
+     * @warning Direct chain manipulation can corrupt scheduler state
+     * @see getPreviousTask(), _TASK_EXPOSE_CHAIN
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void printAllTasks(Task& firstTask) {
+     *     Task* current = &firstTask;
+     *     int taskCount = 0;
+     *
+     *     Serial.println("=== Task Chain Report ===");
+     *     while (current != nullptr) {
+     *         taskCount++;
+     *         Serial.print("Task ");
+     *         Serial.print(taskCount);
+     *         Serial.print(": Enabled=");
+     *         Serial.print(current->isEnabled() ? "YES" : "NO");
+     *         Serial.print(", Interval=");
+     *         Serial.print(current->getInterval());
+     *         Serial.print("ms, Iterations=");
+     *         Serial.println(current->getIterations());
+     *
+     *         current = current->getNextTask();
+     *     }
+     *     Serial.print("Total tasks: ");
+     *     Serial.println(taskCount);
+     * }
+     *
+     * int countEnabledTasks(Task& anyTask) {
+     *     // Find start of chain
+     *     Task* start = &anyTask;
+     *     while (start->getPreviousTask() != nullptr) {
+     *         start = start->getPreviousTask();
+     *     }
+     *
+     *     // Count enabled tasks
+     *     int enabledCount = 0;
+     *     Task* current = start;
+     *     while (current != nullptr) {
+     *         if (current->isEnabled()) {
+     *             enabledCount++;
+     *         }
+     *         current = current->getNextTask();
+     *     }
+     *     return enabledCount;
+     * }
+     * @endcode
+     */
+    __TASK_INLINE Task*  getNextTask()     { return iNext; };
 #endif // _TASK_EXPOSE_CHAIN
 
   _TASK_SCOPE:
@@ -1704,36 +2519,609 @@ class Scheduler {
 #endif
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+    /**
+     * @brief Enable or disable sleep mode during idle scheduler cycles
+     *
+     * Controls whether the scheduler should enter sleep mode when no tasks
+     * are ready for execution. Sleep mode reduces power consumption by
+     * halting CPU execution until the next task is scheduled to run.
+     *
+     * @param aState True to enable sleep mode (default), false to disable
+     *
+     * @note Only available when _TASK_SLEEP_ON_IDLE_RUN compile-time option is enabled
+     * @note Sleep is only activated when all tasks return false from their callbacks
+     * @note Tasks returning true (productive execution) prevent sleep on next cycle
+     * @note Custom sleep method can be set with setSleepMethod()
+     * @see setSleepMethod(), _TASK_SLEEP_ON_IDLE_RUN
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * Scheduler powerEfficientScheduler;
+     *
+     * void setup() {
+     *     // Enable power-saving sleep mode
+     *     powerEfficientScheduler.allowSleep(true);
+     *
+     *     // Custom sleep implementation
+     *     powerEfficientScheduler.setSleepMethod(customSleepCallback);
+     * }
+     *
+     * void customSleepCallback(unsigned long aTimeToSleep) {
+     *     if (aTimeToSleep > 1000) {
+     *         // Deep sleep for longer periods
+     *         ESP.deepSleep(aTimeToSleep * 1000); // Convert to microseconds
+     *     } else {
+     *         // Light sleep for short periods
+     *         delay(aTimeToSleep);
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE void allowSleep(bool aState = true);
+
+    /**
+     * @brief Set custom sleep implementation callback
+     *
+     * Assigns a custom callback function that will be called when the scheduler
+     * enters sleep mode. This allows for platform-specific power management
+     * implementations, such as deep sleep modes on ESP32 or low-power modes
+     * on Arduino boards.
+     *
+     * @param aCallback Function pointer to sleep callback with signature:
+     *                  void sleepCallback(unsigned long sleepTime)
+     *                  where sleepTime is in milliseconds
+     *
+     * @note Only available when _TASK_SLEEP_ON_IDLE_RUN compile-time option is enabled
+     * @note Sleep callback receives the calculated sleep duration in milliseconds
+     * @note Default implementation uses delay() if no custom callback is set
+     * @note Callback should implement appropriate power management for the platform
+     * @see allowSleep(), SleepCallback, _TASK_SLEEP_ON_IDLE_RUN
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void arduinoSleep(unsigned long sleepTime) {
+     *     // Arduino-specific power management
+     *     if (sleepTime > 100) {
+     *         // Use watchdog timer for longer sleeps
+     *         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+     *         sleep_enable();
+     *         sleep_mode();
+     *         sleep_disable();
+     *     } else {
+     *         delay(sleepTime);
+     *     }
+     * }
+     *
+     * void esp32Sleep(unsigned long sleepTime) {
+     *     // ESP32-specific power management
+     *     if (sleepTime > 1000) {
+     *         esp_sleep_enable_timer_wakeup(sleepTime * 1000ULL);
+     *         esp_light_sleep_start();
+     *     } else {
+     *         delayMicroseconds(sleepTime * 1000);
+     *     }
+     * }
+     *
+     * scheduler.setSleepMethod(esp32Sleep);
+     * @endcode
+     */
     __TASK_INLINE void setSleepMethod( SleepCallback aCallback );
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef _TASK_LTS_POINTER
+    /**
+     * @brief Get Local Task Storage pointer of currently executing task
+     *
+     * Returns the LTS (Local Task Storage) pointer of the task that is
+     * currently being executed by the scheduler. This provides access to
+     * task-specific data from within the scheduler context or shared utilities.
+     *
+     * @return void* Pointer to the current task's local storage, or nullptr if:
+     *               - No task is currently executing
+     *               - Current task has no LTS pointer set
+     *               - Called outside of task execution context
+     *
+     * @note Only available when _TASK_LTS_POINTER compile-time option is enabled
+     * @note Must be called from within task execution context for valid results
+     * @note Returned pointer must be cast to appropriate data type
+     * @note Useful for shared utilities that need access to current task data
+     * @see Task::setLtsPointer(), Task::getLtsPointer(), _TASK_LTS_POINTER
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * struct TaskData {
+     *     int sensorValue;
+     *     float average;
+     *     bool alertFlag;
+     * };
+     *
+     * void sharedUtilityFunction() {
+     *     TaskData* currentData = (TaskData*)scheduler.currentLts();
+     *     if (currentData) {
+     *         // Access current task's data
+     *         Serial.print("Current task sensor value: ");
+     *         Serial.println(currentData->sensorValue);
+     *
+     *         if (currentData->sensorValue > THRESHOLD) {
+     *             currentData->alertFlag = true;
+     *         }
+     *     }
+     * }
+     *
+     * void taskCallback() {
+     *     // Task-specific work
+     *     readSensors();
+     *
+     *     // Call shared utility that accesses current task's LTS
+     *     sharedUtilityFunction();
+     * }
+     * @endcode
+     */
     __TASK_INLINE void* currentLts();
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_TIMECRITICAL
+    /**
+     * @brief Check if any task execution overran its allocated time
+     *
+     * Returns whether any task in the current execution cycle exceeded its
+     * scheduled interval time. This provides system-wide timing violation
+     * detection for real-time system monitoring and performance analysis.
+     *
+     * @return bool True if any task overran its allocated time, false otherwise
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Checks for timing violations across all tasks in the scheduler
+     * @note Useful for system-wide real-time performance monitoring
+     * @note Should be checked after each scheduler execution cycle
+     * @see Task::getOverrun(), getCpuLoadTotal(), _TASK_TIMECRITICAL
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void loop() {
+     *     scheduler.execute();
+     *
+     *     // Check for system-wide timing violations
+     *     if (scheduler.isOverrun()) {
+     *         Serial.println("WARNING: System overrun detected!");
+     *
+     *         // Log CPU load statistics
+     *         unsigned long cpuLoad = scheduler.getCpuLoadTotal();
+     *         Serial.print("CPU Load: ");
+     *         Serial.print(cpuLoad);
+     *         Serial.println("%");
+     *
+     *         // Take corrective action
+     *         if (cpuLoad > 90) {
+     *             // Reduce system load
+     *             disableNonCriticalTasks();
+     *         }
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE bool isOverrun();
+
+    /**
+     * @brief Reset CPU load measurement counters
+     *
+     * Resets the internal counters used for CPU load calculation, providing
+     * a fresh measurement baseline. This allows for periodic CPU load monitoring
+     * and performance analysis over specific time intervals.
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Resets both cycle time and idle time counters
+     * @note Should be called before starting a new measurement period
+     * @note Useful for periodic performance monitoring and load analysis
+     * @see getCpuLoadTotal(), getCpuLoadCycle(), getCpuLoadIdle()
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void performanceMonitor() {
+     *     static unsigned long lastReset = 0;
+     *     unsigned long now = millis();
+     *
+     *     // Measure CPU load every 10 seconds
+     *     if (now - lastReset > 10000) {
+     *         unsigned long cpuLoad = scheduler.getCpuLoadTotal();
+     *         unsigned long cycleTime = scheduler.getCpuLoadCycle();
+     *         unsigned long idleTime = scheduler.getCpuLoadIdle();
+     *
+     *         Serial.print("10s Performance Report - CPU Load: ");
+     *         Serial.print(cpuLoad);
+     *         Serial.print("%, Cycle: ");
+     *         Serial.print(cycleTime);
+     *         Serial.print("us, Idle: ");
+     *         Serial.print(idleTime);
+     *         Serial.println("us");
+     *
+     *         // Reset for next measurement period
+     *         scheduler.cpuLoadReset();
+     *         lastReset = now;
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE void cpuLoadReset();
+
+    /**
+     * @brief Get total CPU cycle time in microseconds
+     *
+     * Returns the cumulative time spent in CPU cycles (active execution)
+     * since the last reset. This measures the total processing time used
+     * by all tasks and scheduler overhead.
+     *
+     * @return unsigned long Total CPU cycle time in microseconds
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Includes task execution time and scheduler overhead
+     * @note Used in conjunction with getCpuLoadIdle() for load calculation
+     * @note Accumulates until reset with cpuLoadReset()
+     * @see getCpuLoadIdle(), getCpuLoadTotal(), cpuLoadReset()
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void detailedPerformanceAnalysis() {
+     *     unsigned long cycleTime = scheduler.getCpuLoadCycle();
+     *     unsigned long idleTime = scheduler.getCpuLoadIdle();
+     *     unsigned long totalTime = cycleTime + idleTime;
+     *
+     *     if (totalTime > 0) {
+     *         float cpuUtilization = (float)cycleTime / totalTime * 100.0;
+     *         float idlePercentage = (float)idleTime / totalTime * 100.0;
+     *
+     *         Serial.print("Detailed Analysis - Active: ");
+     *         Serial.print(cpuUtilization, 2);
+     *         Serial.print("%, Idle: ");
+     *         Serial.print(idlePercentage, 2);
+     *         Serial.print("%, Total time: ");
+     *         Serial.print(totalTime);
+     *         Serial.println("us");
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE unsigned long getCpuLoadCycle(){ return iCPUCycle; };
+
+    /**
+     * @brief Get total CPU idle time in microseconds
+     *
+     * Returns the cumulative time spent in idle state (no tasks executing)
+     * since the last reset. This measures the total time the CPU was
+     * available but not processing tasks.
+     *
+     * @return unsigned long Total CPU idle time in microseconds
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Includes time spent waiting for next task execution
+     * @note Used in conjunction with getCpuLoadCycle() for load calculation
+     * @note Accumulates until reset with cpuLoadReset()
+     * @see getCpuLoadCycle(), getCpuLoadTotal(), cpuLoadReset()
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void powerManagementAnalysis() {
+     *     unsigned long idleTime = scheduler.getCpuLoadIdle();
+     *     unsigned long cycleTime = scheduler.getCpuLoadCycle();
+     *
+     *     // Calculate power saving potential
+     *     if (idleTime > cycleTime) {
+     *         float powerSavingPotential = (float)idleTime / (idleTime + cycleTime) * 100.0;
+     *
+     *         Serial.print("Power saving potential: ");
+     *         Serial.print(powerSavingPotential, 1);
+     *         Serial.println("%");
+     *
+     *         if (powerSavingPotential > 50.0) {
+     *             Serial.println("Consider enabling sleep mode for better power efficiency");
+     *         }
+     *     }
+     * }
+     * @endcode
+     */
     __TASK_INLINE unsigned long getCpuLoadIdle() { return iCPUIdle; };
+
+    /**
+     * @brief Get total CPU load percentage
+     *
+     * Calculates and returns the CPU load as a percentage based on the ratio
+     * of active cycle time to total time (cycle + idle). This provides a
+     * normalized measure of system utilization for performance monitoring.
+     *
+     * @return unsigned long CPU load percentage (0-100)
+     *
+     * @note Only available when _TASK_TIMECRITICAL compile-time option is enabled
+     * @note Returns percentage of time spent in active execution vs idle
+     * @note Calculation: (cycleTime / (cycleTime + idleTime)) * 100
+     * @note Returns 0 if no measurements have been taken
+     * @see getCpuLoadCycle(), getCpuLoadIdle(), cpuLoadReset()
+     * @since Version 3.0.0
+     *
+     * @par Example:
+     * @code
+     * void systemHealthMonitor() {
+     *     unsigned long cpuLoad = scheduler.getCpuLoadTotal();
+     *
+     *     // System health thresholds
+     *     if (cpuLoad > 95) {
+     *         Serial.println("CRITICAL: CPU load extremely high!");
+     *         // Emergency measures
+     *         disableNonEssentialTasks();
+     *     } else if (cpuLoad > 80) {
+     *         Serial.println("WARNING: High CPU load detected");
+     *         // Performance optimization
+     *         optimizeTaskIntervals();
+     *     } else if (cpuLoad < 10) {
+     *         Serial.println("INFO: Low CPU load - power optimization opportunity");
+     *         // Enable power saving features
+     *         scheduler.allowSleep(true);
+     *     }
+     *
+     *     // Log current status
+     *     Serial.print("Current CPU Load: ");
+     *     Serial.print(cpuLoad);
+     *     Serial.println("%");
+     * }
+     * @endcode
+     */
     __TASK_INLINE unsigned long getCpuLoadTotal();
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_PRIORITY
+    /**
+     * @brief Sets a higher priority scheduler for priority-based task scheduling
+     *
+     * This method establishes a hierarchical relationship between schedulers, allowing
+     * the current scheduler to defer execution to a higher priority scheduler when needed.
+     * This enables multi-level priority scheduling where critical tasks can preempt
+     * normal task execution.
+     *
+     * @param aScheduler Pointer to the higher priority scheduler to associate with this scheduler.
+     *                   Pass nullptr to remove the high priority scheduler association.
+     *
+     * @note This method is only available when _TASK_PRIORITY compilation option is enabled.
+     * @note The high priority scheduler should be executed more frequently than this scheduler
+     *       to ensure priority-based preemption works correctly.
+     * @note Circular priority relationships should be avoided to prevent infinite loops.
+     *
+     * @see currentScheduler()
+     * @see _TASK_PRIORITY
+     *
+     * Example usage:
+     * @code
+     * Scheduler highPriorityScheduler;
+     * Scheduler normalScheduler;
+     *
+     * // Set up priority relationship
+     * normalScheduler.setHighPriorityScheduler(&highPriorityScheduler);
+     *
+     * // In main loop, execute high priority first
+     * highPriorityScheduler.execute();
+     * normalScheduler.execute();
+     * @endcode
+     */
     __TASK_INLINE void setHighPriorityScheduler(Scheduler* aScheduler);
+
+    /**
+     * @brief Returns a reference to the currently executing scheduler
+     *
+     * This static method provides access to the scheduler that is currently executing tasks.
+     * It's primarily used internally by the library to maintain context during task execution
+     * and to support priority-based scheduling operations.
+     *
+     * @return Reference to the currently active scheduler instance
+     *
+     * @note This method is only available when _TASK_PRIORITY compilation option is enabled.
+     * @note This is a static method that can be called without a scheduler instance.
+     * @note The returned reference is valid only during task execution context.
+     *
+     * @warning Do not store the returned reference for long-term use as the current
+     *          scheduler context changes during execution.
+     *
+     * @see setHighPriorityScheduler()
+     * @see _TASK_PRIORITY
+     *
+     * Example usage:
+     * @code
+     * void taskCallback() {
+     *     // Get reference to the scheduler executing this task
+     *     Scheduler& currentSched = Scheduler::currentScheduler();
+     *
+     *     // Access scheduler information
+     *     Serial.print("Active tasks: ");
+     *     Serial.println(currentSched.size());
+     * }
+     * @endcode
+     */
     __TASK_INLINE static Scheduler& currentScheduler() { return *(iCurrentScheduler); };
 #endif  // _TASK_PRIORITY
 
 #ifdef _TASK_EXPOSE_CHAIN
-    __TASK_INLINE Task*  getFirstTask() { return iFirst; };       // pointer to the previous task in the chain, NULL if first or not set
-    __TASK_INLINE Task*  getLastTask()  { return iLast;  };       // pointer to the next task in the chain, NULL if last or not set
+    /**
+     * @brief Returns a pointer to the first task in the scheduler's task chain
+     *
+     * This method provides direct access to the first task in the internal linked list
+     * of tasks managed by this scheduler. It's primarily used for advanced task chain
+     * manipulation, debugging, and custom iteration over all tasks.
+     *
+     * @return Pointer to the first task in the chain, or nullptr if no tasks are registered
+     *
+     * @note This method is only available when _TASK_EXPOSE_CHAIN compilation option is enabled.
+     * @note The returned pointer should be treated as read-only to avoid corrupting the task chain.
+     * @note Tasks are stored in a doubly-linked list internally.
+     *
+     * @warning Direct manipulation of the task chain can lead to undefined behavior.
+     *          Use the standard addTask() and deleteTask() methods instead.
+     *
+     * @see getLastTask()
+     * @see addTask()
+     * @see deleteTask()
+     * @see _TASK_EXPOSE_CHAIN
+     *
+     * Example usage:
+     * @code
+     * Scheduler ts;
+     * Task t1, t2, t3;
+     *
+     * ts.addTask(t1);
+     * ts.addTask(t2);
+     * ts.addTask(t3);
+     *
+     * // Iterate through all tasks
+     * Task* current = ts.getFirstTask();
+     * while (current != nullptr) {
+     *     Serial.print("Task ID: ");
+     *     Serial.println(current->getId());
+     *     current = current->getNext();
+     * }
+     * @endcode
+     */
+    __TASK_INLINE Task*  getFirstTask() { return iFirst; };
+
+    /**
+     * @brief Returns a pointer to the last task in the scheduler's task chain
+     *
+     * This method provides direct access to the last task in the internal linked list
+     * of tasks managed by this scheduler. It's useful for reverse iteration through
+     * the task chain and for advanced task management operations.
+     *
+     * @return Pointer to the last task in the chain, or nullptr if no tasks are registered
+     *
+     * @note This method is only available when _TASK_EXPOSE_CHAIN compilation option is enabled.
+     * @note The returned pointer should be treated as read-only to avoid corrupting the task chain.
+     * @note Tasks are stored in a doubly-linked list internally.
+     *
+     * @warning Direct manipulation of the task chain can lead to undefined behavior.
+     *          Use the standard addTask() and deleteTask() methods instead.
+     *
+     * @see getFirstTask()
+     * @see addTask()
+     * @see deleteTask()
+     * @see _TASK_EXPOSE_CHAIN
+     *
+     * Example usage:
+     * @code
+     * Scheduler ts;
+     * Task t1, t2, t3;
+     *
+     * ts.addTask(t1);
+     * ts.addTask(t2);
+     * ts.addTask(t3);
+     *
+     * // Iterate through tasks in reverse order
+     * Task* current = ts.getLastTask();
+     * while (current != nullptr) {
+     *     Serial.print("Task ID (reverse): ");
+     *     Serial.println(current->getId());
+     *     current = current->getPrev();
+     * }
+     * @endcode
+     */
+    __TASK_INLINE Task*  getLastTask()  { return iLast;  };
 #endif // _TASK_EXPOSE_CHAIN
 
 #ifdef _TASK_THREAD_SAFE
-    __TASK_INLINE bool   requestAction(_task_request_t* aRequest);    // this method places the request on the task request queue
+    /**
+     * @brief Queues a task operation request for thread-safe execution
+     *
+     * This method places a pre-constructed request structure onto the task request queue
+     * for later processing during the next scheduler execution cycle. This provides
+     * thread-safe access to task operations from interrupt service routines or other
+     * execution contexts.
+     *
+     * @param aRequest Pointer to a _task_request_t structure containing the operation details.
+     *                 The structure should be properly initialized with the target object,
+     *                 operation type, and parameters.
+     *
+     * @return true if the request was successfully queued, false if the queue is full
+     *
+     * @note This method is only available when _TASK_THREAD_SAFE compilation option is enabled.
+     * @note The request structure must remain valid until the request is processed.
+     * @note Requests are processed in FIFO order during scheduler execution.
+     * @note The maximum number of queued requests is limited by the request queue size.
+     *
+     * @warning The aRequest pointer must point to a valid _task_request_t structure.
+     *          Invalid pointers will cause undefined behavior.
+     *
+     * @see requestAction(void*, _task_request_type_t, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long)
+     * @see processRequests()
+     * @see _task_request_t
+     * @see _TASK_THREAD_SAFE
+     *
+     * Example usage:
+     * @code
+     * _task_request_t request;
+     * request.object = &myTask;
+     * request.type = TASK_REQUEST_ENABLE;
+     * request.param1 = 0;
+     * request.param2 = 0;
+     * request.param3 = 0;
+     * request.param4 = 0;
+     * request.param5 = 0;
+     *
+     * if (ts.requestAction(&request)) {
+     *     Serial.println("Request queued successfully");
+     * } else {
+     *     Serial.println("Request queue full");
+     * }
+     * @endcode
+     */
+    __TASK_INLINE bool   requestAction(_task_request_t* aRequest);
+
+    /**
+     * @brief Queues a task operation request with individual parameters for thread-safe execution
+     *
+     * This method creates and queues a task operation request using individual parameters.
+     * It provides a convenient interface for thread-safe task operations without requiring
+     * manual construction of the request structure.
+     *
+     * @param aObject Pointer to the target object (Task or Scheduler) for the operation
+     * @param aType Type of operation to perform (from _task_request_type_t enum)
+     * @param aParam1 First parameter for the operation (interpretation depends on aType)
+     * @param aParam2 Second parameter for the operation (interpretation depends on aType)
+     * @param aParam3 Third parameter for the operation (interpretation depends on aType)
+     * @param aParam4 Fourth parameter for the operation (interpretation depends on aType)
+     * @param aParam5 Fifth parameter for the operation (interpretation depends on aType)
+     *
+     * @return true if the request was successfully queued, false if the queue is full
+     *
+     * @note This method is only available when _TASK_THREAD_SAFE compilation option is enabled.
+     * @note Parameter interpretation varies by operation type - see _task_request_type_t documentation.
+     * @note Unused parameters should be set to 0.
+     * @note Requests are processed in FIFO order during scheduler execution.
+     *
+     * @warning The aObject pointer must point to a valid Task or Scheduler instance.
+     *          Invalid pointers will cause undefined behavior when the request is processed.
+     *
+     * @see requestAction(_task_request_t*)
+     * @see processRequests()
+     * @see _task_request_type_t
+     * @see _TASK_THREAD_SAFE
+     *
+     * Example usage:
+     * @code
+     * // Request to enable a task from an ISR
+     * void IRAM_ATTR sensorISR() {
+     *     ts.requestAction(&sensorTask, TASK_REQUEST_ENABLE, 0, 0, 0, 0, 0);
+     * }
+     *
+     * // Request to restart a task with new interval
+     * ts.requestAction(&myTask, TASK_REQUEST_RESTART, 5000, 0, 0, 0, 0); // 5 second interval
+     *
+     * // Request to set task iterations
+     * ts.requestAction(&myTask, TASK_REQUEST_SET_ITERATIONS, 10, 0, 0, 0, 0); // 10 iterations
+     * @endcode
+     */
     __TASK_INLINE bool   requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5);
 #endif
+
   _TASK_SCOPE:
 #ifdef _TASK_THREAD_SAFE
     __TASK_INLINE void   processRequests();

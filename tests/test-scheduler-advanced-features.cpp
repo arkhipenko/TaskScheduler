@@ -123,6 +123,9 @@ int last_status_code = 0;
 bool timeout_occurred = false;
 bool task_self_destructed = false;
 
+// Definition for test_output vector used by Arduino.h mock
+std::vector<std::string> test_output;
+
 // Global pointers for task-to-task communication
 static StatusRequest* global_status_request = nullptr;
 static Task* global_advanced_yield_task = nullptr;
@@ -265,6 +268,23 @@ void waiter2_callback() {
 void waiter3_callback() {
     advanced_callback_counter++;
     advanced_test_output.push_back("waiter3_executed");
+}
+
+/**
+ * @brief Callback for TASK_INTERVAL timing test - simulates long-running task
+ *
+ * This callback takes 105ms to execute, which is longer than the 100ms interval.
+ * Used to test that TASK_INTERVAL scheduling honors the interval from end to start
+ * rather than start to start.
+ */
+void interval_timing_callback() {
+    advanced_callback_counter++;
+    advanced_test_output.push_back("interval_task_start_" + std::to_string(millis()));
+
+    // Callback takes 105ms to execute (longer than 100ms interval)
+    delay(105);
+
+    advanced_test_output.push_back("interval_task_end_" + std::to_string(millis()));
 }
 
 /**
@@ -947,6 +967,79 @@ TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     task.setSchedulingOption(TASK_SCHEDULE_NC);
     EXPECT_EQ(task.getSchedulingOption(), TASK_SCHEDULE_NC);
     EXPECT_TRUE(task.isEnabled()); // Should remain enabled
+
+    // ======== TASK_SCHEDULE CATCH-UP TEST ========
+    // Test TASK_SCHEDULE option - task catches up on missed executions
+    advanced_callback_counter = 0;
+    clearAdvancedTestOutput();
+
+    Task catchup_task(100, 10, &advanced_status_callback, &ts, false);
+    catchup_task.setSchedulingOption(TASK_SCHEDULE);
+
+    // Enable task and immediately delay for 2000ms
+    catchup_task.enable();
+    delay(2000);
+
+    // Now run scheduler for 2000ms - task should execute 10 times back to back (catching up)
+    unsigned long start_time = millis();
+    bool success = runAdvancedSchedulerUntil(ts, []() {
+        return advanced_callback_counter >= 10;
+    }, 2000);
+
+    EXPECT_TRUE(success);
+    EXPECT_EQ(advanced_callback_counter, 10); // Should have caught up all 10 executions
+    EXPECT_EQ(getAdvancedTestOutputCount(), 10);
+
+    // ======== TASK_SCHEDULE_NC LIMITED EXECUTION TEST ========
+    // Test TASK_SCHEDULE_NC option - no catch-up, limited executions
+    advanced_callback_counter = 0;
+    clearAdvancedTestOutput();
+
+    Task no_catchup_task(100, 10, &advanced_status_callback, &ts, false);
+    no_catchup_task.setSchedulingOption(TASK_SCHEDULE_NC);
+
+    // Enable task and immediately delay for 2000ms
+    no_catchup_task.enable();
+    delay(2000);
+
+    // Run scheduler for only 500ms - should execute only ~5 times (no catch-up)
+    start_time = millis();
+    success = runAdvancedSchedulerUntil(ts, []() {
+        return false; // Run for full timeout
+    }, 500);
+
+    // Should have executed approximately 5 times (500ms / 100ms interval)
+    EXPECT_GE(advanced_callback_counter, 4); // At least 4 times
+    EXPECT_LE(advanced_callback_counter, 6); // At most 6 times (allowing for timing variance)
+
+    // ======== TASK_INTERVAL TIMING ADJUSTMENT TEST ========
+    // Test TASK_INTERVAL option - maintains interval from end to start, not start to start
+    advanced_callback_counter = 0;
+    clearAdvancedTestOutput();
+
+    Task interval_task(100, 5, &interval_timing_callback, &ts, false);
+
+    interval_task.setSchedulingOption(TASK_INTERVAL);
+    interval_task.enable();
+
+    // Record start time and run until all 5 executions complete
+    unsigned long test_start = millis();
+    success = runAdvancedSchedulerUntil(ts, []() {
+        return advanced_callback_counter >= 5;
+    }, 2000);
+
+    EXPECT_TRUE(success);
+    EXPECT_EQ(advanced_callback_counter, 5);
+
+    // With TASK_INTERVAL, the schedule should adjust to honor 100ms interval from end to start
+    // Each execution: 105ms callback + 100ms interval = ~205ms total cycle
+    // 5 executions should take approximately 5 * 205ms = ~1025ms
+    unsigned long total_time = millis() - test_start;
+    EXPECT_GE(total_time, 1000); // At least 1000ms
+    EXPECT_LE(total_time, 1200); // At most 1200ms (allowing for timing variance)
+
+    // Verify the output shows proper timing intervals
+    EXPECT_EQ(getAdvancedTestOutputCount(), 10); // 5 start + 5 end messages
 }
 
 // ================== SELF-DESTRUCT FUNCTIONALITY TESTS ==================

@@ -285,6 +285,11 @@ v4.0.0:
     2025-09-13:
         - feature: allow _TASK_STD_FUNCTION for all platforms (you should know what you are doing)
         - feature: allow _TASK_DO_NOT_YIELD for all platforms (you should know what you are doing)
+
+    2025-09-21:
+        - bug: incorrect behavior of the StatusRequest timeout functionality due to uninitialized timeout variable
+        - update: addedd Doxygen comments to all methods and variables
+         -update: added a number of compile and unit tests for CI/CD
 */
 
 #include "TaskSchedulerDeclarations.h"

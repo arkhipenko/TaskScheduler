@@ -1,0 +1,290 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'src/**'
+      - 'extras/**'
+      - '.github/workflows/doxygen.yml'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'src/**'
+      - 'extras/**'
+      - '.github/workflows/doxygen.yml'
+  workflow_dispatch:
+
+jobs:
+  documentation:
+    name: Generate Doxygen Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Verify Doxygen installation
+        run: |
+          doxygen --version
+          dot -V
+
+      - name: Create Doxyfile configuration
+        run: |
+          cat > Doxyfile << 'EOF'
+          # Doxyfile for TaskScheduler Library
+
+          # Project information
+          PROJECT_NAME           = "TaskScheduler"
+          PROJECT_NUMBER         = "v4.0.0"
+          PROJECT_BRIEF          = "Cooperative multitasking for Arduino and ESP platforms"
+          PROJECT_LOGO           =
+
+          # Output configuration
+          OUTPUT_DIRECTORY       = ./doc
+          CREATE_SUBDIRS         = NO
+          ALLOW_UNICODE_NAMES    = NO
+
+          # Build configuration
+          EXTRACT_ALL            = YES
+          EXTRACT_PRIVATE        = YES
+          EXTRACT_PRIV_VIRTUAL   = YES
+          EXTRACT_PACKAGE        = YES
+          EXTRACT_STATIC         = YES
+          EXTRACT_LOCAL_CLASSES  = YES
+          EXTRACT_LOCAL_METHODS  = YES
+          EXTRACT_ANON_NSPACES   = YES
+
+          # Input configuration
+          INPUT                  = ./src
+          INPUT_ENCODING         = UTF-8
+          FILE_PATTERNS          = *.h *.hpp *.cpp *.c
+          RECURSIVE              = YES
+          EXCLUDE                =
+          EXCLUDE_SYMLINKS       = NO
+          EXCLUDE_PATTERNS       =
+          EXCLUDE_SYMBOLS        =
+
+          # Source browsing
+          SOURCE_BROWSER         = YES
+          INLINE_SOURCES         = NO
+          STRIP_CODE_COMMENTS    = YES
+          REFERENCED_BY_RELATION = YES
+          REFERENCES_RELATION    = YES
+          REFERENCES_LINK_SOURCE = YES
+          SOURCE_TOOLTIPS        = YES
+          USE_HTAGS              = NO
+          VERBATIM_HEADERS       = YES
+
+          # Alphabetical class index
+          ALPHABETICAL_INDEX     = YES
+          COLS_IN_ALPHA_INDEX    = 5
+          IGNORE_PREFIX          =
+
+          # HTML output
+          GENERATE_HTML          = YES
+          HTML_OUTPUT            = html
+          HTML_FILE_EXTENSION    = .html
+          HTML_HEADER            =
+          HTML_FOOTER            =
+          HTML_STYLESHEET        =
+          HTML_EXTRA_STYLESHEET  =
+          HTML_EXTRA_FILES       =
+          HTML_COLORSTYLE_HUE    = 220
+          HTML_COLORSTYLE_SAT    = 100
+          HTML_COLORSTYLE_GAMMA  = 80
+          HTML_TIMESTAMP         = YES
+          HTML_DYNAMIC_MENUS     = YES
+          HTML_DYNAMIC_SECTIONS  = NO
+          HTML_INDEX_NUM_ENTRIES = 100
+          GENERATE_DOCSET        = NO
+          GENERATE_HTMLHELP      = NO
+          GENERATE_QHP           = NO
+          GENERATE_ECLIPSEHELP   = NO
+          DISABLE_INDEX          = NO
+          GENERATE_TREEVIEW      = YES
+          ENUM_VALUES_PER_LINE   = 4
+          TREEVIEW_WIDTH         = 250
+          EXT_LINKS_IN_WINDOW    = NO
+          FORMULA_FONTSIZE       = 10
+          FORMULA_TRANSPARENT    = YES
+          USE_MATHJAX            = NO
+          SEARCHENGINE           = YES
+          SERVER_BASED_SEARCH    = NO
+          EXTERNAL_SEARCH        = NO
+          SEARCHENGINE_URL       =
+          SEARCHDATA_FILE        = searchdata.xml
+          EXTERNAL_SEARCH_ID     =
+          EXTRA_SEARCH_MAPPINGS  =
+
+          # LaTeX output (disabled)
+          GENERATE_LATEX         = NO
+
+          # RTF output (disabled)
+          GENERATE_RTF           = NO
+
+          # Man page output (disabled)
+          GENERATE_MAN           = NO
+
+          # XML output (disabled)
+          GENERATE_XML           = NO
+
+          # DOCBOOK output (disabled)
+          GENERATE_DOCBOOK       = NO
+
+          # AutoGen output (disabled)
+          GENERATE_AUTOGEN_DEF   = NO
+
+          # Perl module output (disabled)
+          GENERATE_PERLMOD       = NO
+
+          # Preprocessor configuration
+          ENABLE_PREPROCESSING   = YES
+          MACRO_EXPANSION        = YES
+          EXPAND_ONLY_PREDEF     = NO
+          SEARCH_INCLUDES        = YES
+          INCLUDE_PATH           = ./src
+          INCLUDE_FILE_PATTERNS  =
+          PREDEFINED             = ARDUINO=300 \
+                                   __TASK_INLINE=inline \
+                                   _TASK_SLEEP_ON_IDLE_RUN \
+                                   _TASK_STATUS_REQUEST \
+                                   _TASK_WDT_IDS \
+                                   _TASK_LTS_POINTER \
+                                   _TASK_PRIORITY \
+                                   _TASK_WDT_IDS \
+                                   _TASK_TIMECRITICAL \
+                                   _TASK_SCHEDULING_OPTIONS \
+                                   _TASK_TIMEOUT \
+                                   _TASK_OO_CALLBACKS \
+                                   _TASK_DEBUG \
+                                   _TASK_SELF_DESTRUCT \
+                                   _TASK_STD_FUNCTION \
+                                   _TASK_THREAD_SAFE \
+                                   _TASK_EXPOSE_CHAIN
+          EXPAND_AS_DEFINED      =
+          SKIP_FUNCTION_MACROS   = YES
+
+          # External references
+          TAGFILES               =
+          GENERATE_TAGFILE       =
+          ALLEXTERNALS           = NO
+          EXTERNAL_GROUPS        = YES
+          EXTERNAL_PAGES         = YES
+
+          # Dot tool configuration
+          CLASS_DIAGRAMS         = YES
+          MSCGEN_PATH            =
+          DIA_PATH               =
+          HIDE_UNDOC_RELATIONS   = YES
+          HAVE_DOT               = YES
+          DOT_NUM_THREADS        = 0
+          DOT_FONTNAME           = Helvetica
+          DOT_FONTSIZE           = 10
+          DOT_FONTPATH           =
+          CLASS_GRAPH            = YES
+          COLLABORATION_GRAPH    = YES
+          GROUP_GRAPHS           = YES
+          UML_LOOK               = NO
+          UML_LIMIT_NUM_FIELDS   = 10
+          TEMPLATE_RELATIONS     = NO
+          INCLUDE_GRAPH          = YES
+          INCLUDED_BY_GRAPH      = YES
+          CALL_GRAPH             = NO
+          CALLER_GRAPH           = NO
+          GRAPHICAL_HIERARCHY    = YES
+          DIRECTORY_GRAPH        = YES
+          DOT_IMAGE_FORMAT       = png
+          INTERACTIVE_SVG        = NO
+          DOT_PATH               =
+          DOTFILE_DIRS           =
+          MSCFILE_DIRS           =
+          DIAFILE_DIRS           =
+          PLANTUML_JAR_PATH      =
+          PLANTUML_CFG_FILE      =
+          PLANTUML_INCLUDE_PATH  =
+          DOT_GRAPH_MAX_NODES    = 50
+          MAX_DOT_GRAPH_DEPTH    = 0
+          DOT_TRANSPARENT        = NO
+          DOT_MULTI_TARGETS      = NO
+          GENERATE_LEGEND        = YES
+          DOT_CLEANUP            = YES
+
+          # Configuration options related to warning and progress messages
+          QUIET                  = NO
+          WARNINGS               = YES
+          WARN_IF_UNDOCUMENTED   = YES
+          WARN_IF_DOC_ERROR      = YES
+          WARN_NO_PARAMDOC       = NO
+          WARN_AS_ERROR          = NO
+          WARN_FORMAT            = "$file:$line: $text"
+          WARN_LOGFILE           =
+          EOF
+
+      - name: Run Doxygen
+        run: |
+          echo "=== Running Doxygen Documentation Generation ==="
+          doxygen Doxyfile
+
+      - name: Verify documentation generation
+        run: |
+          echo "=== Verifying Generated Documentation ==="
+          if [ -d "./doc/html" ]; then
+            echo "✓ HTML documentation generated successfully"
+            echo "Documentation files:"
+            ls -la ./doc/html/ | head -10
+            echo "..."
+            echo "Total files: $(find ./doc/html -type f | wc -l)"
+
+            # Check for main files
+            if [ -f "./doc/html/index.html" ]; then
+              echo "✓ Main index.html found"
+            else
+              echo "✗ Main index.html not found"
+              exit 1
+            fi
+
+            if [ -f "./doc/html/annotated.html" ]; then
+              echo "✓ Class list found"
+            else
+              echo "✗ Class list not found"
+            fi
+
+            # Check documentation size
+            doc_size=$(du -sh ./doc/html | cut -f1)
+            echo "Documentation size: $doc_size"
+
+          else
+            echo "✗ Documentation generation failed - no output directory found"
+            exit 1
+          fi
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-documentation
+          path: ./doc/
+          retention-days: 30
+
+      - name: Create documentation summary
+        run: |
+          echo "=== Documentation Generation Summary ===" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Documentation successfully generated!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 Output directory: \`./doc/html/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 📄 Main entry point: \`./doc/html/index.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Total files: $(find ./doc/html -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- 💾 Documentation size: $(du -sh ./doc/html | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Key Documentation Pages:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 [Class Index](./doc/html/annotated.html)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 [File Index](./doc/html/files.html)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 [Search](./doc/html/search.html)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Documentation artifacts have been uploaded and are available for download.*" >> $GITHUB_STEP_SUMMARY

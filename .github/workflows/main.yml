@@ -5,9 +5,9 @@ name: TaskScheduler Examples Build
 on:
   # Triggers the workflow on push or pull request only for the main branch
   push:
-    branches: [ main ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
   workflow_dispatch:
 
 # This is the list of jobs that will be run concurrently.
