@@ -3,10 +3,10 @@
 // enabled by specific compile-time directives, using traditional function pointers
 //
 // =====================================================================================
-// ADVANCED FEATURES TEST PLAN AND COVERAGE MATRIX (NO LAMBDA VERSION)
+// ADVANCED FEATURES TEST PLAN AND COVERAGE MATRIX
 // =====================================================================================
 //
-// PURPOSE: Validate advanced TaskScheduler features without lambda functions
+// PURPOSE: Validate advanced TaskScheduler features
 // APPROACH: Traditional function pointers for maximum platform compatibility
 // SCOPE: Advanced features requiring specific compile-time directives
 //
@@ -550,10 +550,11 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForStatusRequest) {
     // Set up StatusRequest in pending state
     sr.setWaiting(1);
 
+    advanced_callback_counter = 0;
+
     // Create task that waits for status request
     Task waiter(100, 2, &consumer_callback, &ts);
     waiter.waitFor(&sr, 50, 2);
-
     // Task should be enabled but not execute while SR is pending
     EXPECT_TRUE(waiter.isEnabled());
 
@@ -584,44 +585,19 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForStatusRequest) {
  *
  * TESTS: waitForDelayed(StatusRequest*, interval, iterations)
  *
- * PURPOSE: Verify that waitForDelayed() enables tasks to wait for
- * StatusRequest completion with additional delay, providing fine-grained
- * timing control in event-driven scenarios.
- *
- * WAIT FOR DELAYED BEHAVIOR:
- * - waitForDelayed(): Like waitFor() but with initial delay before waiting
- * - Task waits for both delay period AND StatusRequest completion
- * - Useful for staggered startup and coordinated timing
- * - Provides additional timing flexibility in complex workflows
- * - Combines time-based and event-based triggering
- *
- * TEST SCENARIO:
- * 1. Create completed StatusRequest (no event waiting needed)
- * 2. Create task with waitForDelayed() including initial delay
- * 3. Verify task doesn't execute immediately despite completed StatusRequest
- * 4. Verify task executes after delay period
- * 5. Test timing behavior matches delay specification
- *
- * EXPECTATIONS:
- * - Task doesn't execute immediately even with completed StatusRequest
- * - Task executes after specified delay period
- * - Timing behavior respects delay parameter
- * - Normal task behavior after initial delayed execution
- *
- * IMPORTANCE: Delayed event waiting enables complex timing coordination
- * scenarios where both time and event conditions must be satisfied.
- * Essential for staggered startup and synchronized operation patterns.
+ * PURPOSE: Same as above only task is scheduled with a delay as a result
  */
 TEST_F(AdvancedSchedulerTest, TaskWaitForDelayedStatusRequest) {
     Scheduler ts;
     StatusRequest sr;
 
     // StatusRequest already complete
-    sr.signalComplete();
+    sr.setWaiting(1);
+    advanced_callback_counter = 0;
 
     // Create task with delayed wait (should wait for delay even though SR is complete)
-    Task delayed_waiter(100, 1, &consumer_callback, &ts);
-    delayed_waiter.waitForDelayed(&sr, 200, 1); // 200ms delay
+    Task delayed_waiter(500, 1, &consumer_callback, &ts);
+    delayed_waiter.waitForDelayed(&sr, 500, 1); // 500ms delay
 
     // Task should be enabled
     EXPECT_TRUE(delayed_waiter.isEnabled());
@@ -631,9 +607,15 @@ TEST_F(AdvancedSchedulerTest, TaskWaitForDelayedStatusRequest) {
     ts.execute();
     EXPECT_EQ(advanced_callback_counter, 0);
 
-    // Should execute after delay
-    delay(200);
-    bool success = runAdvancedSchedulerUntil(ts, []() {
+    sr.signalComplete(); // Complete SR
+
+    // The task will be scheduled to run after the delay
+    bool success = runAdvancedSchedulerUntil(ts, true, 200); // Wait up to 200ms
+    EXPECT_FALSE(success); 
+
+    delay(400);
+    // Task should complete after total 500ms delay
+    success = runAdvancedSchedulerUntil(ts, []() {
         return advanced_callback_counter >= 1;
     });
     EXPECT_TRUE(success);
@@ -933,6 +915,8 @@ TEST_F(AdvancedSchedulerTest, StatusRequestTimeout) {
  * IMPORTANCE: Scheduling options enable advanced task behavior control
  * essential for priority management, resource allocation, and
  * specialized execution patterns in complex applications.
+ *
+ * TODO: This needs to be completely redone - this AI generated test is absolutely wrong
  */
 TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     Scheduler ts;
@@ -942,19 +926,19 @@ TEST_F(AdvancedSchedulerTest, TaskSchedulingOptions) {
     unsigned int default_option = task.getSchedulingOption();
 
     // Set different scheduling options
-    task.setSchedulingOption(1);
-    EXPECT_EQ(task.getSchedulingOption(), 1);
+    task.setSchedulingOption(TASK_SCHEDULE);
+    EXPECT_EQ(task.getSchedulingOption(), TASK_SCHEDULE);
 
-    task.setSchedulingOption(42);
-    EXPECT_EQ(task.getSchedulingOption(), 42);
+    task.setSchedulingOption(TASK_SCHEDULE_NC);
+    EXPECT_EQ(task.getSchedulingOption(), TASK_SCHEDULE_NC);
 
-    task.setSchedulingOption(0);
-    EXPECT_EQ(task.getSchedulingOption(), 0);
+    task.setSchedulingOption(TASK_INTERVAL);
+    EXPECT_EQ(task.getSchedulingOption(), TASK_INTERVAL);
 
     // Verify option can be changed while task is enabled
     task.enable();
-    task.setSchedulingOption(99);
-    EXPECT_EQ(task.getSchedulingOption(), 99);
+    task.setSchedulingOption(TASK_SCHEDULE_NC);
+    EXPECT_EQ(task.getSchedulingOption(), TASK_SCHEDULE_NC);
     EXPECT_TRUE(task.isEnabled()); // Should remain enabled
 }
 
