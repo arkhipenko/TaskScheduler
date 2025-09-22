@@ -231,6 +231,9 @@ jobs:
           echo "=== Running Doxygen Documentation Generation ==="
           doxygen Doxyfile
 
+      - name: Add .nojekyll file
+        run: touch ./doc/html/.nojekyll
+  
       - name: Verify documentation generation
         run: |
           echo "=== Verifying Generated Documentation ==="
