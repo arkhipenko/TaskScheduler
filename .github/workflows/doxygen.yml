@@ -47,7 +47,7 @@ jobs:
 
           # Output configuration
           OUTPUT_DIRECTORY       = ./doc
-          CREATE_SUBDIRS         = NO
+          CREATE_SUBDIRS         = YES
           ALLOW_UNICODE_NAMES    = NO
 
           # Build configuration
