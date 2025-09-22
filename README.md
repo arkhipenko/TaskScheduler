@@ -4,6 +4,10 @@
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
 
+#### Support development of this library
+
+<iframe src="https://github.com/sponsors/arkhipenko/button" title="Sponsor TaskScheduler" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+
 #### Get expedited support or integration consultation for TaskScheduler [from xs:code](https://xscode.com/arkhipenko/TaskScheduler)
 
 [![github](https://github.com/arkhipenko/resources/blob/master/taskscheduler-banner.png)](https://github.com/arkhipenko/TaskScheduler)
