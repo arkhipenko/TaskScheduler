@@ -6,7 +6,7 @@
 
 #### Support development of this library
 
-<iframe src="https://github.com/sponsors/arkhipenko/button" title="Sponsor TaskScheduler" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+[![Support TaskScheduler](https://github.com/sponsors/arkhipenko/button)
 
 #### Get expedited support or integration consultation for TaskScheduler [from xs:code](https://xscode.com/arkhipenko/TaskScheduler)
 
