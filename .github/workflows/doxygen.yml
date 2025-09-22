@@ -271,6 +271,19 @@ jobs:
           path: ./doc/
           retention-days: 30
 
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          deploy_key: ${{ secrets.DEPLOY_KEY }}
+          external_repository: arkhipenko/arkhipenko.github.io
+          publish_dir: ./doc/html
+          destination_dir: TaskScheduler
+          publish_branch: master
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Update TaskScheduler documentation'
+
       - name: Create documentation summary
         run: |
           echo "=== Documentation Generation Summary ===" >> $GITHUB_STEP_SUMMARY
@@ -282,6 +295,10 @@ jobs:
           echo "- 📊 Total files: $(find ./doc/html -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
           echo "- 💾 Documentation size: $(du -sh ./doc/html | cut -f1)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            echo "- 🚀 **Deployed to:** https://arkhipenko.github.io/TaskScheduler/" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "**Key Documentation Pages:**" >> $GITHUB_STEP_SUMMARY
           echo "- 📋 [Class Index](./doc/html/annotated.html)" >> $GITHUB_STEP_SUMMARY
           echo "- 📁 [File Index](./doc/html/files.html)" >> $GITHUB_STEP_SUMMARY
