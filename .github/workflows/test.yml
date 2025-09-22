@@ -2,8 +2,16 @@ name: TaskScheduler Unit Tests
 on:
   push:
     branches: [ master, main ]
+    paths:
+      - 'examples/**'
+      - 'src/**'
+      - 'tests/**'
   pull_request:
     branches: [ master, main ]
+    paths:
+      - 'examples/**'
+      - 'src/**'
+      - 'tests/**'
   workflow_dispatch:
 
 jobs:
