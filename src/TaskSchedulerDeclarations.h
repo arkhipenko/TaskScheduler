@@ -40,7 +40,6 @@
  * @details Enables tracking when the current execution took place relative to when it was scheduled.
  * Provides getStartDelay() and getOverrun() methods for performance monitoring.
  */
-// #define _TASK_TIMECRITICAL
 
 /**
  * @def _TASK_SLEEP_ON_IDLE_RUN
@@ -48,7 +47,6 @@
  * @details When enabled, the scheduler will place the processor into IDLE sleep mode for approximately 1 ms
  * after what is determined to be an "idle" pass. AVR boards only.
  */
-// #define _TASK_SLEEP_ON_IDLE_RUN
 
 /**
  * @def _TASK_STATUS_REQUEST
@@ -56,7 +54,6 @@
  * @details Enables triggering tasks on status change events in addition to time-based scheduling.
  * Allows tasks to wait on an event and signal event completion to each other.
  */
-// #define _TASK_STATUS_REQUEST
 
 /**
  * @def _TASK_WDT_IDS
@@ -64,7 +61,6 @@
  * @details Each task can be assigned an ID and Control Points can be defined within tasks
  * for watchdog timer integration and error handling.
  */
-// #define _TASK_WDT_IDS
 
 /**
  * @def _TASK_LTS_POINTER
@@ -72,7 +68,6 @@
  * @details LTS is a generic (void*) pointer that can reference a variable or structure
  * specific to a particular task, allowing the same callback code for multiple tasks.
  */
-// #define _TASK_LTS_POINTER
 
 /**
  * @def _TASK_PRIORITY
@@ -80,7 +75,6 @@
  * @details Enables task prioritization by creating several schedulers and organizing them in priority layers.
  * Higher priority tasks are evaluated more frequently.
  */
-// #define _TASK_PRIORITY
 
 /**
  * @def _TASK_MICRO_RES
@@ -88,28 +82,24 @@
  * @details Enables microsecond scheduling resolution instead of default millisecond resolution.
  * All time-relevant parameters will be treated as microseconds.
  */
-// #define _TASK_MICRO_RES
 
 /**
  * @def _TASK_STD_FUNCTION
  * @brief Support for std::function (ESP8266/ESP32 ONLY)
  * @details Enables support for standard functions instead of function pointers for callbacks.
  */
-// #define _TASK_STD_FUNCTION
 
 /**
  * @def _TASK_DEBUG
  * @brief Make all methods and variables public for debug purposes
  * @details Should not be used in production. Exposes all private and protected members as public.
  */
-// #define _TASK_DEBUG
 
 /**
  * @def _TASK_INLINE
  * @brief Make all methods "inline"
  * @details Needed to support some multi-tab, multi-file implementations. Lets compiler optimize.
  */
-// #define _TASK_INLINE
 
 /**
  * @def _TASK_TIMEOUT
@@ -117,7 +107,6 @@
  * @details Any task can be set to time out after a certain period, and timeout can be reset.
  * Can be used as an individual Task's watchdog timer.
  */
-// #define _TASK_TIMEOUT
 
 /**
  * @def _TASK_OO_CALLBACKS
@@ -125,63 +114,54 @@
  * @details Useful for implementing Tasks as classes derived from the Task class.
  * Enables dynamic binding for object-oriented callback approach.
  */
-// #define _TASK_OO_CALLBACKS
 
 /**
  * @def _TASK_EXPOSE_CHAIN
  * @brief Methods to access tasks in the task chain
  * @details Provides access to scheduling chain methods and tasks on the chain.
  */
-// #define _TASK_EXPOSE_CHAIN
 
 /**
  * @def _TASK_SCHEDULING_OPTIONS
  * @brief Support for multiple scheduling options
  * @details Enables different task scheduling options like TASK_SCHEDULE, TASK_SCHEDULE_NC, and TASK_INTERVAL.
  */
-// #define _TASK_SCHEDULING_OPTIONS
 
 /**
  * @def _TASK_SELF_DESTRUCT
  * @brief Enable tasks to "self-destruct" after disable
  * @details Tasks can be set to automatically delete themselves when disabled.
  */
-// #define _TASK_SELF_DESTRUCT
 
 /**
  * @def _TASK_TICKLESS
  * @brief Enable support for tickless sleep on FreeRTOS
  * @details Enables support for tickless sleep mode on FreeRTOS systems.
  */
-// #define _TASK_TICKLESS
 
 /**
  * @def _TASK_DO_NOT_YIELD
  * @brief Disable yield() method in execute() for ESP chips
  * @details Disables automatic yielding in the execute loop for ESP-based systems.
  */
-// #define _TASK_DO_NOT_YIELD
 
 /**
  * @def _TASK_ISR_SUPPORT
  * @brief For ESP chips - place control methods in IRAM
  * @details Places critical control methods in IRAM for ESP8266/ESP32 interrupt support.
  */
-// #define _TASK_ISR_SUPPORT
 
 /**
  * @def _TASK_NON_ARDUINO
  * @brief For non-Arduino use
  * @details Enables compilation for non-Arduino environments.
  */
-// #define _TASK_NON_ARDUINO
 
 /**
  * @def _TASK_HEADER_AND_CPP
  * @brief Compile CPP file (non-Arduino IDE platforms)
  * @details For non-Arduino IDE platforms that require explicit CPP compilation.
  */
-// #define _TASK_HEADER_AND_CPP
 
 /**
  * @def _TASK_THREAD_SAFE
@@ -189,7 +169,6 @@
  * @details Uses an internal mutex to protect task scheduling methods from preemption.
  * Recommended for ESP32 and other MCUs running under preemptive schedulers like FreeRTOS.
  */
-// #define _TASK_THREAD_SAFE
 
 /** @} */ // End of CompileTimeOptions group
 
