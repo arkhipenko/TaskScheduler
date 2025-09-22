@@ -1,18 +1,18 @@
 name: Generate Documentation
 
 on:
-  push:
-    branches: [ master, main ]
-    paths:
-      - 'src/**'
-      - 'extras/**'
-      - '.github/workflows/doxygen.yml'
-  pull_request:
-    branches: [ master, main ]
-    paths:
-      - 'src/**'
-      - 'extras/**'
-      - '.github/workflows/doxygen.yml'
+#  push:
+#    branches: [ master, main ]
+#    paths:
+#      - 'src/**'
+#      - 'extras/**'
+#      - '.github/workflows/doxygen.yml'
+#  pull_request:
+#    branches: [ master, main ]
+#    paths:
+#      - 'src/**'
+#      - 'extras/**'
+#      - '.github/workflows/doxygen.yml'
   workflow_dispatch:
 
 jobs:
@@ -272,7 +272,7 @@ jobs:
           retention-days: 30
 
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.DEPLOY_KEY }}
