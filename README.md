@@ -6,7 +6,7 @@
 
 #### Support development of this library
 
-[![Support TaskScheduler](https://github.com/sponsors/arkhipenko/button)
+[![Support TaskScheduler](https://github.com/sponsors/arkhipenko/button)](https://github.com/sponsors/arkhipenko/button)
 
 #### Get expedited support or integration consultation for TaskScheduler [from xs:code](https://xscode.com/arkhipenko/TaskScheduler)
 
