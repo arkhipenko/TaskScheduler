@@ -51,6 +51,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * STM32 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 * MSP430 and MSP432 boards
 * Raspberry Pi (requires external `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
+* Any Linux (requires external `_TASK_NON_ARDUINO` and `_task_millis()` implementation - that's how Unit tests are done)
 
 
 ​**Don't just take my word for it - try it for yourself on [Wokwi](https://wokwi.com/playground/task-scheduler)**
