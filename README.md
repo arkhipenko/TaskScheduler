@@ -72,7 +72,7 @@ Changelog is located [here.](https://github.com/arkhipenko/TaskScheduler/wiki/Ch
 
 #### For detailed functionality overview 
 
-Please refer to TaskScheduler documentation in the 'extras' folder or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
+Please refer to TaskScheduler documentation on [GitHub Pages](https://arkhipenko.github.io/ts) or in the [Wiki page](https://github.com/arkhipenko/TaskScheduler/wiki).
 
 ### Contributing
 
