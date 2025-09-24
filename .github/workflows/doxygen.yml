@@ -281,7 +281,7 @@ jobs:
           deploy_key: ${{ secrets.DEPLOY_KEY }}
           external_repository: arkhipenko/arkhipenko.github.io
           publish_dir: ./doc/html
-          destination_dir: TaskScheduler
+          destination_dir: ts
           publish_branch: gh-pages
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
