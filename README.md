@@ -43,23 +43,17 @@ _“Everybody who learns concurrency and thinks they understand it, ends up find
 Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Arduino UNO rev 3 @ `16MHz` clock, single scheduler w/o prioritization)
 
 **TaskScheduler** was tested on the following platforms:
-* Arduino Uno R3
-* Arduino Nano
-* Arduino Micro
+* Arduino Uno R3, Nano, Micro
 * ATtiny85
-* ESP8266
-* ESP32
+* ESP8266, ESP32
 * Teensy (tested on Teensy 3.5)
-* nRF52 (tested on nRF52832)
-* nRF52 Adafruit Core (tested on nRF52840 with v3.6.2 workround)
+* nRF52832, nRF52 Adafruit Core (tested on nRF52840 with v3.6.2 workround)
 * STM32 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 * MSP430 and MSP432 boards
 * Raspberry Pi (requires external `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
 
 
-
 ​**Don't just take my word for it - try it for yourself on [Wokwi](https://wokwi.com/playground/task-scheduler)**
-
 
 
 ---
