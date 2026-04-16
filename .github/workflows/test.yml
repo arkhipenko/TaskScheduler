@@ -521,3 +521,78 @@ jobs:
         run: |
           echo "=== Running Thread-Safe Tests ==="
           ./test_thread_safe
+
+  test-uaf-regression:
+    name: UAF Regression (nextTask dangling pointer on task deletion in callback)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libgtest-dev pkg-config
+
+      - name: Build and install Google Test
+        run: |
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo cmake --build . --target all
+          sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
+
+      - name: Create CMakeLists.txt for UAF Regression Tests
+        run: |
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.10)
+          project(TaskSchedulerUafRegressionTests VERSION 1.0.0)
+
+          set(CMAKE_CXX_STANDARD 14)
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+          find_package(PkgConfig REQUIRED)
+          find_package(Threads REQUIRED)
+
+          include_directories(${CMAKE_SOURCE_DIR}/src)
+          include_directories(${CMAKE_SOURCE_DIR}/tests)
+
+          file(GLOB TASKSCHEDULER_SOURCES
+              "${CMAKE_SOURCE_DIR}/src/*.cpp"
+              "${CMAKE_SOURCE_DIR}/src/*.c"
+          )
+
+          add_executable(test_uaf_regression
+              tests/test-scheduler-uaf-regression.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+
+          target_link_libraries(test_uaf_regression
+              gtest
+              gtest_main
+              pthread
+          )
+
+          target_compile_definitions(test_uaf_regression PRIVATE
+              ARDUINO=300
+          )
+
+          target_compile_options(test_uaf_regression PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+
+          enable_testing()
+          add_test(NAME UafRegressionTests COMMAND test_uaf_regression)
+          EOF
+
+      - name: Build UAF regression tests
+        run: |
+          cmake .
+          make -j$(nproc)
+
+      - name: Run UAF regression tests
+        run: |
+          echo "=== Running UAF Regression Tests ==="
+          ./test_uaf_regression

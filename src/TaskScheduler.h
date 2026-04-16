@@ -1745,9 +1745,11 @@ bool Scheduler::execute() {
 
 #ifdef _TASK_OO_CALLBACKS
                 idleRun = !iCurrent->Callback();
+                nextTask = iCurrent->iNext;  // re-read: skips tasks deleted during callback
 #else
                 if ( iCurrent->iCallback ) {
                     iCurrent->iCallback();
+                    nextTask = iCurrent->iNext;  // re-read: skips tasks deleted during callback
                     idleRun = false;
                     iInvokedTasks++;
                 }
