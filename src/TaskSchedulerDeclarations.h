@@ -2,7 +2,7 @@
  * @file TaskSchedulerDeclarations.h
  * @brief Cooperative multitasking library for Arduino microcontrollers
  * @author Anatoli Arkhipenko
- * @version 4.0.5
+ * @version 4.0.6
  * @date 2015-2026
  * @copyright Copyright (c) 2015-2026 Anatoli Arkhipenko
  *
@@ -620,6 +620,9 @@ typedef enum {
  * @endcode
  *
  * @note Only available when compiled with _TASK_THREAD_SAFE support.
+ * @note Parameter fields are unsigned long. On platforms where sizeof(void*) >
+ *       sizeof(unsigned long), pointer values passed via thread-safe requests
+ *       will be truncated. Use _TASK_THREAD_SAFE only on 32-bit targets.
  *
  * @see Scheduler::requestAction(), _task_request_type_t
  */

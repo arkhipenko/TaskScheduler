@@ -314,6 +314,24 @@ v4.0.5:
           the next task in the chain (e.g. painlessMesh BufferedConnection teardown).
           Promoted nextTask to scheduler member iNextExecute so deleteTask() can
           advance it before the memory is freed.
+
+v4.0.6:
+    2026-04-17:
+        - bug fix: thread-safe setSelfDestruct request called wrong function
+          (setSchedulingOption instead of setSelfDestruct)
+        - bug fix: NULL pointer dereference in disable() when iScheduler is NULL
+          (triggered when a still-enabled task is removed via deleteTask then destroyed)
+        - bug fix: dangling pointer in disableAll() and enableAll() -- applied the
+          same iNextExecute pattern used in execute() to protect against callbacks
+          that destroy the next task in the chain
+        - bug fix: missing NULL check on iStatusRequest in execute() status request
+          handling -- could crash if waiting flag was set but no StatusRequest assigned
+        - added NULL safety to currentLts() and isOverrun() public API methods
+        - initialized iActiveTasks/iTotalTasks/iInvokedTasks in Scheduler::init()
+        - clarified assignment-in-condition in StatusRequest::signal()
+        - added documentation comments for known limitations: thread-safe request
+          pointer lifetime, millis() rollover in tickless mode, signed overflow in
+          overrun calculations, execute() re-entrancy, pointer truncation on >32-bit
 */
 
 #include "TaskSchedulerDeclarations.h"
@@ -527,7 +545,8 @@ StatusRequest* Task::getInternalStatusRequest() { return &iMyStatusRequest; }
 bool __TASK_IRAM StatusRequest::signal(int aStatus) {
     if ( iCount) {  // do not update the status request if it was already completed
         if (iCount > 0)  --iCount;
-        if ( (iStatus = aStatus) < 0 ) iCount = 0;   // if an error is reported, the status is requested to be completed immediately
+        iStatus = aStatus;
+        if ( iStatus < 0 ) iCount = 0;   // if an error is reported, the status is requested to be completed immediately
     }
     return (iCount == 0);
 }
@@ -900,6 +919,7 @@ bool __TASK_IRAM Task::disable() {
     iStatus.enabled = false;
     iStatus.inonenable = false;
 
+  if (iScheduler) {
 #ifdef _TASK_OO_CALLBACKS
     if (previousEnabled) {
 #else
@@ -916,6 +936,7 @@ bool __TASK_IRAM Task::disable() {
 
         iScheduler->iCurrent = current;
     }
+  }
 #ifdef _TASK_STATUS_REQUEST
     iMyStatusRequest.signalComplete();
 #endif
@@ -1033,6 +1054,9 @@ void Scheduler::init() {
     iNextExecute = NULL;
 
     iPaused = false;
+    iActiveTasks = 0;
+    iTotalTasks = 0;
+    iInvokedTasks = 0;
 
 #ifdef _TASK_PRIORITY
     iHighPriority = NULL;
@@ -1139,16 +1163,15 @@ void Scheduler::disableAll() {
 #endif
 
     iEnabled = false;
-    
+
     Task*    current = iFirst;
-    Task*    next;
     while (current) {
-        next = current->iNext;
+        iNextExecute = current->iNext;
         current->disable();
 #ifdef _TASK_SELF_DESTRUCT
         if ( current->iStatus.sd_request ) delete current;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
-        current = next;
+        current = iNextExecute;
     }
 
 #ifdef _TASK_PRIORITY
@@ -1169,11 +1192,12 @@ void Scheduler::enableAll() {
 #endif    
 
     iEnabled = false;
-    
+
     Task    *current = iFirst;
     while (current) {
+        iNextExecute = current->iNext;
         current->enable();
-        current = current->iNext;
+        current = iNextExecute;
     }
 
 #ifdef _TASK_PRIORITY
@@ -1252,15 +1276,17 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
 }
 
 
-Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRICATED. Use the next one instead
+// WARNING: dereferences iCurrent without NULL check. Unsafe outside task callbacks.
+// Use getCurrentTask() instead, which returns a pointer (NULL-safe).
+Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRECATED
 Task* Scheduler::getCurrentTask() { return iCurrent; }
 
 #ifdef _TASK_LTS_POINTER
-void* Scheduler::currentLts() { return iCurrent->iLTS; }
+void* Scheduler::currentLts() { return iCurrent ? iCurrent->iLTS : NULL; }
 #endif  // _TASK_LTS_POINTER
 
 #ifdef _TASK_TIMECRITICAL
-bool Scheduler::isOverrun() { return (iCurrent->iOverrun < 0); }
+bool Scheduler::isOverrun() { return iCurrent ? (iCurrent->iOverrun < 0) : false; }
 
 void Scheduler::cpuLoadReset() {
     iCPUStart = _task_micros();
@@ -1307,6 +1333,10 @@ bool Scheduler::requestAction(void* aObject, _task_request_type_t aType, unsigne
 void Scheduler::processRequests() {
     _task_request_t req;
 
+// NOTE: Thread-safe requests carry raw pointers. If the target object is
+// destroyed between enqueue and dequeue, the pointer is dangling.
+// Callers must ensure object lifetime spans request processing.
+// A future version may add generation counters to detect stale requests.
     while ( _task_dequeue_request(&req) ) {
 
         if ( req.object_ptr == NULL ) continue;
@@ -1359,7 +1389,7 @@ void Scheduler::processRequests() {
 #ifdef _TASK_SELF_DESTRUCT
         case TASK_REQUEST_SETSELFDESTRUCT_1: {
             Task* t = (Task*) req.object_ptr;
-            t->setSchedulingOption((bool)req.param1);
+            t->setSelfDestruct((bool)req.param1);
         }
         break;
 #endif
@@ -1543,8 +1573,12 @@ void Scheduler::processRequests() {
  * by running task more frequently
  */
 
+// NOTE: In _TASK_PRIORITY mode, this method is called recursively on the
+// high-priority scheduler. Do not call execute() on the same scheduler
+// instance from within a task callback -- this will corrupt iCurrent and
+// iNextExecute.
 bool Scheduler::execute() {
-  
+
     bool     idleRun = true;
     unsigned long m, i;  // millis, interval;
 
@@ -1662,16 +1696,22 @@ bool Scheduler::execute() {
                     nrd |= _TASK_NEXTRUN_IMMEDIATE; // immediate
 #endif
 
-#ifdef _TASK_TIMEOUT
                     StatusRequest *sr = iCurrent->iStatusRequest;
-                    if ( sr->iTimeout && (m - sr->iStarttime > sr->iTimeout) ) {
-                      sr->signalComplete(TASK_SR_TIMEOUT);
-                    }
+                    if ( sr ) {
+#ifdef _TASK_TIMEOUT
+                        if ( sr->iTimeout && (m - sr->iStarttime > sr->iTimeout) ) {
+                          sr->signalComplete(TASK_SR_TIMEOUT);
+                        }
 #endif // _TASK_TIMEOUT
-                    if ( (iCurrent->iStatusRequest)->pending() ) break;
-                    if ( (iCurrent->iStatusRequest)->iStatus == TASK_SR_ABORT ) {
-                      iCurrent->abort();
-                      break;
+                        if ( sr->pending() ) break;
+                        if ( sr->iStatus == TASK_SR_ABORT ) {
+                          iCurrent->abort();
+                          break;
+                        }
+                    }
+                    else {
+                        iCurrent->iStatus.waiting = 0;  // clear broken waiting state
+                        break;
                     }
                     if (iCurrent->iStatus.waiting == _TASK_SR_NODELAY) {
                         iCurrent->iDelay = i;
@@ -1690,8 +1730,9 @@ bool Scheduler::execute() {
                 if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) {
 #ifdef _TASK_TICKLESS
                 // catch the reamining time until invocation as next time this should run
-                // this does not handle millis rollover well - so for the rollover situation (once every 47 days)
-                // we will require immediate execution
+                // WARNING: nextrun calculation does not survive millis() rollover (~49.7 days).
+                // For the rollover case we fall back to immediate execution, which is safe
+                // but suboptimal (one extra wakeup per rollover event).
                     unsigned long nextrun = iCurrent->iDelay + iCurrent->iPreviousMillis;
                     // nextrun should be after current millis() (except rollover)
                     // nextrun should be sooner than previously determined
@@ -1724,8 +1765,10 @@ bool Scheduler::execute() {
                     break;
                     
                   case TASK_SCHEDULE_NC:
-                    iCurrent->iPreviousMillis = iCurrent->iPreviousMillis + iCurrent->iDelay; 
+                    iCurrent->iPreviousMillis = iCurrent->iPreviousMillis + iCurrent->iDelay;
                     {
+                        // NOTE: cast to long is valid only when (p + i - m) fits in LONG_MAX (~24.8 days).
+                        // Tasks with intervals exceeding ~24 days may report incorrect overrun values.
                         long ov = (long) ( iCurrent->iPreviousMillis + i - m );
                         if ( ov < 0 ) {
                             long ii = (i == 0) ? 1 : i; // avoid division by zero
@@ -1744,6 +1787,7 @@ bool Scheduler::execute() {
 #ifdef _TASK_TIMECRITICAL
     // Updated_previous+current interval should put us into the future, so iOverrun should be positive or zero.
     // If negative - the task is behind (next execution time is already in the past)
+    // NOTE: cast to long is valid only when (p + i - m) fits in LONG_MAX (~24.8 days).
                 unsigned long p = iCurrent->iPreviousMillis;
                 iCurrent->iOverrun = (long) ( p + i - m );
                 iCurrent->iStartDelay = (long) ( m - p );
