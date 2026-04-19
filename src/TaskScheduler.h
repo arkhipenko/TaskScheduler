@@ -1352,7 +1352,14 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
 // DEPRECATED: Unsafe outside task callbacks (iCurrent may be NULL).
 // Use getCurrentTask() instead, which returns a pointer (NULL-safe).
 Task& Scheduler::currentTask() {
+#ifdef _TASK_OO_CALLBACKS
+    // Task is abstract under _TASK_OO_CALLBACKS (pure virtual Callback()).
+    // Use a minimal concrete subclass so the sentinel can be instantiated.
+    struct _NullTask : public Task { bool Callback() { return false; } };
+    static _NullTask sDummy;
+#else
     static Task sDummy;
+#endif
     return iCurrent ? *iCurrent : sDummy;
 }
 Task* Scheduler::getCurrentTask() { return iCurrent; }
