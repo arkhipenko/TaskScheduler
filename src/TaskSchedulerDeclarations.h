@@ -2,7 +2,7 @@
  * @file TaskSchedulerDeclarations.h
  * @brief Cooperative multitasking library for Arduino microcontrollers
  * @author Anatoli Arkhipenko
- * @version 4.0.7
+ * @version 4.1.0
  * @date 2015-2026
  * @copyright Copyright (c) 2015-2026 Anatoli Arkhipenko
  *
@@ -615,6 +615,7 @@ typedef enum {
  * _task_request_t request;
  * request.req_type = TASK_REQUEST_ENABLE;
  * request.object_ptr = &myTask;
+ * request.generation = 0;   // filled in automatically by requestAction()
  * // param1-param5 not needed for enable()
  * scheduler.requestAction(&request);
  * @endcode
@@ -623,6 +624,12 @@ typedef enum {
  * @note Parameter fields are unsigned long. On platforms where sizeof(void*) >
  *       sizeof(unsigned long), pointer values passed via thread-safe requests
  *       will be truncated. Use _TASK_THREAD_SAFE only on 32-bit targets.
+ * @note Since v4.1.0 the structure carries a 16-bit generation counter that
+ *       Scheduler::requestAction() stamps from the target object. If the object
+ *       is destroyed before the request is processed, processRequests() will
+ *       detect the mismatch and skip the request instead of dereferencing a
+ *       freed pointer. This is a best-effort safeguard: it relies on the
+ *       underlying memory still being readable at dequeue time.
  *
  * @see Scheduler::requestAction(), _task_request_type_t
  */
@@ -634,7 +641,13 @@ typedef struct {
     unsigned long   param3;            ///< Third parameter for the target method (if needed)
     unsigned long   param4;            ///< Fourth parameter for the target method (if needed)
     unsigned long   param5;            ///< Fifth parameter for the target method (if needed)
+    uint16_t        generation;        ///< Stamped generation of object_ptr at enqueue time; processRequests() skips if it no longer matches (v4.1.0+)
 } _task_request_t;
+
+// Forward-declared so Task and StatusRequest can friend it. Definition lives
+// in TaskScheduler.h; it reads iGeneration off the target object to stamp
+// thread-safe requests.
+uint16_t __task_generation_for(void* aObject, _task_request_type_t aType);
 
 #endif  //_TASK_THREAD_SAFE
 
@@ -726,6 +739,9 @@ typedef struct {
  */
 class StatusRequest {
   friend class Scheduler;
+#ifdef _TASK_THREAD_SAFE
+  friend uint16_t __task_generation_for(void* aObject, _task_request_type_t aType);
+#endif
   public:
     /**
      * @brief Default constructor
@@ -836,6 +852,17 @@ class StatusRequest {
     __TASK_INLINE long untilTimeout();
 #endif
 
+#ifdef _TASK_THREAD_SAFE
+    /**
+     * @brief Destructor
+     * @details Marks this StatusRequest as destroyed by zeroing its generation
+     * counter. Any thread-safe request still sitting in the queue at time of
+     * destruction is detected as stale and skipped by processRequests().
+     * @since Version 4.1.0
+     */
+    __TASK_INLINE ~StatusRequest();
+#endif  // _TASK_THREAD_SAFE
+
   _TASK_SCOPE:
     unsigned int  iCount;          // number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
     int           iStatus;         // status of the last completed request. negative = error;  zero = OK; positive = OK with a specific status (see TASK_SR_ constants)
@@ -844,6 +871,10 @@ class StatusRequest {
     unsigned long            iTimeout;               // Task overall timeout
     unsigned long            iStarttime;             // millis at task start time
 #endif // _TASK_TIMEOUT
+
+#ifdef _TASK_THREAD_SAFE
+    volatile uint16_t         iGeneration;            // monotonically-increasing stamp used by thread-safe requests to detect stale pointers; 0 == destroyed
+#endif  // _TASK_THREAD_SAFE
 };
 #endif  // _TASK_STATUS_REQUEST
 
@@ -982,6 +1013,9 @@ typedef struct  {
  */
 class Task {
   friend class Scheduler;
+#ifdef _TASK_THREAD_SAFE
+  friend uint16_t __task_generation_for(void* aObject, _task_request_type_t aType);
+#endif
   public:
 
     /**
@@ -2244,6 +2278,37 @@ class Task {
     unsigned long            iTimeout;               // Task overall timeout
     unsigned long            iStarttime;             // millis at task start time
 #endif // _TASK_TIMEOUT
+
+#ifdef _TASK_THREAD_SAFE
+    volatile uint16_t         iGeneration;            // monotonically-increasing stamp used by thread-safe requests to detect stale pointers; 0 == destroyed
+#endif  // _TASK_THREAD_SAFE
+};
+
+/**
+ * @enum _task_scheduler_state_t
+ * @brief Internal scheduler state machine values
+ *
+ * @details Replaces the v4.0.x boolean "iEnabled" critical-section flag with a
+ * three-valued state used to mark the scheduler's current internal activity.
+ * User-facing enable/disable (via Scheduler::enable() / disable()) is tracked
+ * separately via `iUserDisabled` so the two concerns do not alias.
+ *
+ * - TASK_SCHED_IDLE: not inside execute(), no structural change in progress
+ * - TASK_SCHED_RUNNING: currently inside execute()
+ * - TASK_SCHED_MODIFYING: addTask / deleteTask / enableAll / disableAll /
+ *   startNow is making a structural change to the chain
+ *
+ * @note The TASK_ prefix avoids a collision with POSIX `<sched.h>` which
+ *       defines SCHED_IDLE / SCHED_RR / SCHED_FIFO as scheduling policy
+ *       constants.
+ *
+ * @since Version 4.1.0
+ * @see Scheduler::getState()
+ */
+enum _task_scheduler_state_t : uint8_t {
+    TASK_SCHED_IDLE      = 0,
+    TASK_SCHED_RUNNING   = 1,
+    TASK_SCHED_MODIFYING = 2
 };
 
 /**
@@ -2328,13 +2393,32 @@ class Scheduler {
      * @brief Enable the scheduler
      * @details Enables the scheduler for task execution.
      */
-    __TASK_INLINE void enable() { iEnabled = true; };
+    __TASK_INLINE void enable() { iUserDisabled = false; };
 
     /**
      * @brief Disable the scheduler
      * @details Disables the scheduler, preventing any task execution.
      */
-    __TASK_INLINE void disable() { iEnabled = false; };
+    __TASK_INLINE void disable() { iUserDisabled = true; };
+
+    /**
+     * @brief Check if the scheduler is enabled
+     * @return true if enabled (execute() will run tasks), false if disabled
+     * @details User-facing flag only. Independent from the internal state
+     * returned by getState().
+     * @since Version 4.1.0
+     */
+    __TASK_INLINE bool isEnabled() { return !iUserDisabled; };
+
+    /**
+     * @brief Get the scheduler's current internal state
+     * @return Current state: TASK_SCHED_IDLE, TASK_SCHED_RUNNING, or TASK_SCHED_MODIFYING
+     * @details Useful for diagnostic and thread-safety tooling. Replaces
+     * introspection of the former private `iEnabled` boolean which combined
+     * user-disable with structural-modification semantics.
+     * @since Version 4.1.0
+     */
+    __TASK_INLINE _task_scheduler_state_t getState() { return iState; };
 #ifdef _TASK_PRIORITY
     /**
      * @brief Disable all tasks (with priority support)
@@ -3080,7 +3164,9 @@ class Scheduler {
 #endif
     Task          *iFirst, *iLast, *iCurrent, *iNextExecute;  // pointers to first, last, current and next-to-execute tasks in the chain
 
-    volatile bool iPaused, iEnabled;
+    volatile bool                    iPaused;                 // user-toggled pause flag (execute() short-circuits while true)
+    volatile bool                    iUserDisabled;           // user-toggled disable flag (set via disable()/enable())
+    volatile _task_scheduler_state_t iState;                  // internal state: TASK_SCHED_IDLE / TASK_SCHED_RUNNING / TASK_SCHED_MODIFYING
     unsigned long iActiveTasks;
     unsigned long iTotalTasks;
     unsigned long iInvokedTasks;

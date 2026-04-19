@@ -340,6 +340,28 @@ v4.0.7:
         - feature: added getChainLength() method to Scheduler -- returns the number
           of tasks in the chain at any time, without requiring an execute() pass.
           Maintained via O(1) counter in addTask/deleteTask.
+
+v4.1.0:
+    2026-04-18:
+        - breaking: Scheduler's private `iEnabled` boolean lock is replaced by a
+          three-valued state enum `_task_scheduler_state_t` (TASK_SCHED_IDLE /
+          TASK_SCHED_RUNNING / TASK_SCHED_MODIFYING) plus a separate
+          `iUserDisabled` flag.
+          Code that read `scheduler.iEnabled` directly (only possible under
+          _TASK_DEBUG) must switch to the new public `isEnabled()` accessor or
+          `getState()` for internal state.
+        - feature: added public Scheduler::isEnabled() and Scheduler::getState()
+          introspection methods.
+        - feature (_TASK_THREAD_SAFE): Task and StatusRequest now carry a 16-bit
+          `iGeneration` counter stamped into each queued `_task_request_t`.
+          Scheduler::processRequests() compares the stamp against the live
+          counter before dereferencing and skips requests whose target was
+          destroyed between enqueue and dequeue. Closes the C4 dangling-pointer
+          gap documented in the v4.0.6 code review. Best-effort guard: still
+          requires the underlying memory to be readable at dequeue time.
+        - breaking (_TASK_THREAD_SAFE): `_task_request_t` gains a `generation`
+          field. User-supplied queue implementations that serialize the struct
+          (e.g., byte-copy into a FIFO) must be recompiled.
 */
 
 #include "TaskSchedulerDeclarations.h"
@@ -404,6 +426,19 @@ v4.0.7:
 #ifdef _TASK_WDT_IDS
     static unsigned int  __task_id_counter = 0; // global task ID counter for assiging task IDs automatically.
 #endif  // _TASK_WDT_IDS
+
+#ifdef _TASK_THREAD_SAFE
+// Returns a fresh non-zero 16-bit generation value. Used to stamp Task and
+// StatusRequest instances so that thread-safe requests queued from another
+// thread can detect a destroyed target before dereferencing it. The value 0
+// is reserved for "destroyed" and is skipped on wraparound.
+static inline uint16_t __task_next_generation() {
+    static uint16_t __gen_counter = 0;
+    __gen_counter++;
+    if (__gen_counter == 0) __gen_counter = 1;
+    return __gen_counter;
+}
+#endif  // _TASK_THREAD_SAFE
 
 #ifdef _TASK_PRIORITY
     Scheduler* iCurrentScheduler;
@@ -492,6 +527,12 @@ Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, S
 Task::~Task() {
     if ( this->isEnabled() ) disable();
     if (iScheduler) iScheduler->deleteTask(*this);
+#ifdef _TASK_THREAD_SAFE
+    // Mark as destroyed so processRequests() can detect stale queued requests.
+    // Any request stamped with a non-zero generation will no longer match and
+    // will be skipped instead of dereferenced. See v4.1.0 changelog.
+    iGeneration = 0;
+#endif  // _TASK_THREAD_SAFE
 }
 
 
@@ -528,7 +569,17 @@ StatusRequest::StatusRequest()
     iTimeout = 0;
     iStarttime = 0;
 #endif  //  #ifdef _TASK_TIMEOUT
+#ifdef _TASK_THREAD_SAFE
+    iGeneration = __task_next_generation();
+#endif  // _TASK_THREAD_SAFE
 }
+
+#ifdef _TASK_THREAD_SAFE
+StatusRequest::~StatusRequest() {
+    // See Task::~Task() for rationale.
+    iGeneration = 0;
+}
+#endif  // _TASK_THREAD_SAFE
 
 void StatusRequest::setWaiting(unsigned int aCount) { 
   iCount = aCount; 
@@ -679,6 +730,9 @@ void Task::reset() {
     iStatus.sd_request = false;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
 
+#ifdef _TASK_THREAD_SAFE
+    iGeneration = __task_next_generation();
+#endif  // _TASK_THREAD_SAFE
 }
 
 /** Explicitly set Task execution parameters
@@ -1054,8 +1108,9 @@ Scheduler::~Scheduler() {
 /** Initializes all internal varaibles
  */
 void Scheduler::init() {
-    iEnabled = false;
-    
+    iState = TASK_SCHED_MODIFYING;
+    iUserDisabled = false;
+
     iFirst = NULL;
     iLast = NULL;
     iCurrent = NULL;
@@ -1079,7 +1134,7 @@ void Scheduler::init() {
     cpuLoadReset();
 #endif  // _TASK_TIMECRITICAL
 
-    iEnabled = true;  
+    iState = TASK_SCHED_IDLE;
 }
 
 /** Appends task aTask to the tail of the execution chain.
@@ -1088,11 +1143,14 @@ void Scheduler::init() {
  */
  void Scheduler::addTask(Task& aTask) {
 // If task already belongs to a scheduler, we should not be adding
-// it to this scheduler. It should be deleted from the other scheduler first. 
+// it to this scheduler. It should be deleted from the other scheduler first.
     if (aTask.iScheduler != NULL)
         return;
 
-    iEnabled = false;
+    // Save-and-restore so a callback that calls addTask() while execute() is
+    // running does not lose the TASK_SCHED_RUNNING marker.
+    _task_scheduler_state_t prev = iState;
+    iState = TASK_SCHED_MODIFYING;
 
     aTask.iScheduler = this;
 // First task situation:
@@ -1110,7 +1168,7 @@ void Scheduler::init() {
     iLast = &aTask;
     iChainLength++;
 
-    iEnabled = true;
+    iState = prev;
 }
 
 /** Deletes specific Task from the execution chain
@@ -1121,7 +1179,8 @@ void Scheduler::deleteTask(Task& aTask) {
     if (aTask.iScheduler != this)
         return;
 
-    iEnabled = false;
+    _task_scheduler_state_t prev = iState;
+    iState = TASK_SCHED_MODIFYING;
     iChainLength--;
 
     // If execute() is mid-iteration and this task is next in line,
@@ -1134,14 +1193,14 @@ void Scheduler::deleteTask(Task& aTask) {
         if (aTask.iNext == NULL) {
             iFirst = NULL;
             iLast = NULL;
-            iEnabled = true;
+            iState = prev;
             return;
         }
         else {
             aTask.iNext->iPrev = NULL;
             iFirst = aTask.iNext;
             aTask.iNext = NULL;
-            iEnabled = true;
+            iState = prev;
             return;
         }
     }
@@ -1150,7 +1209,7 @@ void Scheduler::deleteTask(Task& aTask) {
         aTask.iPrev->iNext = NULL;
         iLast = aTask.iPrev;
         aTask.iPrev = NULL;
-        iEnabled = true;
+        iState = prev;
         return;
     }
 
@@ -1158,8 +1217,8 @@ void Scheduler::deleteTask(Task& aTask) {
     aTask.iNext->iPrev = aTask.iPrev;
     aTask.iPrev = NULL;
     aTask.iNext = NULL;
-    
-    iEnabled = true;
+
+    iState = prev;
 }
 
 /** Disables all tasks in the execution chain
@@ -1173,7 +1232,8 @@ void Scheduler::disableAll(bool aRecursive) {
 void Scheduler::disableAll() {
 #endif
 
-    iEnabled = false;
+    _task_scheduler_state_t prev = iState;
+    iState = TASK_SCHED_MODIFYING;
 
     Task*    current = iFirst;
     while (current) {
@@ -1189,7 +1249,7 @@ void Scheduler::disableAll() {
     if (aRecursive && iHighPriority) iHighPriority->disableAll(true);
 #endif  // _TASK_PRIORITY
 
-    iEnabled = true;
+    iState = prev;
 }
 
 
@@ -1200,9 +1260,10 @@ void Scheduler::disableAll() {
 void Scheduler::enableAll(bool aRecursive) {
 #else
 void Scheduler::enableAll() {
-#endif    
+#endif
 
-    iEnabled = false;
+    _task_scheduler_state_t prev = iState;
+    iState = TASK_SCHED_MODIFYING;
 
     Task    *current = iFirst;
     while (current) {
@@ -1215,7 +1276,7 @@ void Scheduler::enableAll() {
     if (aRecursive && iHighPriority) iHighPriority->enableAll(true);
 #endif  // _TASK_PRIORITY
 
-    iEnabled = true;
+    iState = prev;
 }
 
 /** Sets scheduler for the higher priority tasks (support for layered task priority)
@@ -1249,8 +1310,9 @@ void Scheduler::startNow() {
 #endif
     unsigned long t = __TASK_TIME_FUNCTION();
 
-    iEnabled = false;
-    
+    _task_scheduler_state_t prev = iState;
+    iState = TASK_SCHED_MODIFYING;
+
     iCurrent = iFirst;
     while (iCurrent) {
         if ( iCurrent->iStatus.enabled ) iCurrent->iPreviousMillis = t - iCurrent->iDelay;
@@ -1261,7 +1323,7 @@ void Scheduler::startNow() {
     if (aRecursive && iHighPriority) iHighPriority->startNow( true );
 #endif  // _TASK_PRIORITY
 
-    iEnabled = true;
+    iState = prev;
 }
 
 /** Returns number millis or micros until next scheduled iteration of a given task
@@ -1325,13 +1387,45 @@ void  Scheduler::setSleepMethod( SleepCallback aCallback ) {
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
 #ifdef  _TASK_THREAD_SAFE
+// Returns the live 16-bit generation counter for an object referenced by a
+// thread-safe request. Dispatches by request type: TASK_SR_REQUEST_* targets
+// a StatusRequest, every other request type targets a Task. The value 0 means
+// "destroyed" and will never match a stamp, so a stale dereference becomes a
+// silent skip rather than a crash. Declared (non-static) inline so it matches
+// the friend declaration on Task and StatusRequest.
+inline uint16_t __task_generation_for(void* aObject, _task_request_type_t aType) {
+    if (aObject == NULL) return 0;
+#ifdef _TASK_STATUS_REQUEST
+    switch (aType) {
+        case TASK_SR_REQUEST_SETWAITING:
+        case TASK_SR_REQUEST_SIGNAL:
+        case TASK_SR_REQUEST_SIGNALCOMPLETE:
+#ifdef _TASK_TIMEOUT
+        case TASK_SR_REQUEST_SETTIMEOUT:
+        case TASK_SR_REQUEST_RESETTIMEOUT:
+#endif  // _TASK_TIMEOUT
+            return ((StatusRequest*)aObject)->iGeneration;
+        default:
+            break;
+    }
+#endif  // _TASK_STATUS_REQUEST
+    return ((Task*)aObject)->iGeneration;
+}
+
 bool Scheduler::requestAction(_task_request_t* aRequest) {
-    if ( aRequest == NULL ) return false; 
+    if ( aRequest == NULL ) return false;
+    // Stamp the caller-supplied struct if they did not fill in the generation
+    // themselves. We trust a non-zero value they provided (they may have read
+    // the target's iGeneration on their side for their own reasons) but
+    // overwrite 0 (the default) with a fresh reading.
+    if (aRequest->generation == 0) {
+        aRequest->generation = __task_generation_for(aRequest->object_ptr, aRequest->req_type);
+    }
     return _task_enqueue_request(aRequest);
 }
 
 bool Scheduler::requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5) {
-    if ( aObject == NULL ) return false; 
+    if ( aObject == NULL ) return false;
     _task_request_t r = {
         .req_type = aType,
         .object_ptr = aObject,
@@ -1339,7 +1433,8 @@ bool Scheduler::requestAction(void* aObject, _task_request_type_t aType, unsigne
         .param2 = aParam2,
         .param3 = aParam3,
         .param4 = aParam4,
-        .param5 = aParam5
+        .param5 = aParam5,
+        .generation = __task_generation_for(aObject, aType)
     };
     return _task_enqueue_request(&r);
 }
@@ -1348,12 +1443,24 @@ void Scheduler::processRequests() {
     _task_request_t req;
 
 // NOTE: Thread-safe requests carry raw pointers. If the target object is
-// destroyed between enqueue and dequeue, the pointer is dangling.
-// Callers must ensure object lifetime spans request processing.
-// A future version may add generation counters to detect stale requests.
+// destroyed between enqueue and dequeue, the pointer is dangling. The
+// generation counter below catches the common case where the object was
+// destructed but its memory remains readable (the destructor zeroes
+// iGeneration). It does not protect against memory that was freed and
+// reallocated to a non-Task/StatusRequest type -- callers must still ensure
+// the backing memory outlives the request.
     while ( _task_dequeue_request(&req) ) {
 
         if ( req.object_ptr == NULL ) continue;
+
+        // Stale-request filter: compare the stamp taken at enqueue time with
+        // the live counter on the target. A non-matching value indicates the
+        // target was destroyed (iGeneration == 0) or replaced (different gen
+        // on reconstruction). Either way, skip the request.
+        {
+            uint16_t live_gen = __task_generation_for(req.object_ptr, req.req_type);
+            if (req.generation != 0 && live_gen != req.generation) continue;
+        }
 
         switch (req.req_type ) {
 
@@ -1623,9 +1730,17 @@ bool Scheduler::execute() {
         iCurrentScheduler = this;
 #endif  // _TASK_PRIORITY
 
-    //  each scheduled is enabled/disabled individually, so check iEnabled only
+    //  each scheduled is enabled/disabled individually, so check the user-disable flag
     //  after the higher priority scheduler has been invoked.
-    if ( !iEnabled ) return true; //  consider this to be an idle run
+    if ( iUserDisabled ) return true; //  consider this to be an idle run
+
+    //  mark the scheduler as running so that concurrent observers (thread-safe
+    //  requesters, user code inspecting getState()) can tell execute() is in
+    //  progress. Save the prior state for clean restoration on exit; when
+    //  _TASK_PRIORITY is active, a higher-priority scheduler recurses into
+    //  its own execute() where `prev` on each stack frame is its own state.
+    _task_scheduler_state_t prevSchedState = iState;
+    iState = TASK_SCHED_RUNNING;
 
 #ifdef _TASK_THREAD_SAFE
     // Process external requests for task updates 
@@ -1887,6 +2002,7 @@ bool Scheduler::execute() {
 
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 
+    iState = prevSchedState;
     return (idleRun);
 }
 
