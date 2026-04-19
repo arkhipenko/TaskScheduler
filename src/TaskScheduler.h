@@ -332,6 +332,14 @@ v4.0.6:
         - added documentation comments for known limitations: thread-safe request
           pointer lifetime, millis() rollover in tickless mode, signed overflow in
           overrun calculations, execute() re-entrancy, pointer truncation on >32-bit
+
+v4.0.7:
+    2026-04-17:
+        - feature: deprecated currentTask() now returns a safe sentinel instead of
+          crashing when called outside a task callback (iCurrent == NULL)
+        - feature: added getChainLength() method to Scheduler -- returns the number
+          of tasks in the chain at any time, without requiring an execute() pass.
+          Maintained via O(1) counter in addTask/deleteTask.
 */
 
 #include "TaskSchedulerDeclarations.h"
@@ -1057,6 +1065,7 @@ void Scheduler::init() {
     iActiveTasks = 0;
     iTotalTasks = 0;
     iInvokedTasks = 0;
+    iChainLength = 0;
 
 #ifdef _TASK_PRIORITY
     iHighPriority = NULL;
@@ -1099,6 +1108,7 @@ void Scheduler::init() {
 // "Previous" last task gets linked to this one - as this one becomes the last one
     aTask.iNext = NULL;
     iLast = &aTask;
+    iChainLength++;
 
     iEnabled = true;
 }
@@ -1112,6 +1122,7 @@ void Scheduler::deleteTask(Task& aTask) {
         return;
 
     iEnabled = false;
+    iChainLength--;
 
     // If execute() is mid-iteration and this task is next in line,
     // advance the pointer before we unlink and the memory is freed.
@@ -1276,9 +1287,12 @@ long Scheduler::timeUntilNextIteration(Task& aTask) {
 }
 
 
-// WARNING: dereferences iCurrent without NULL check. Unsafe outside task callbacks.
+// DEPRECATED: Unsafe outside task callbacks (iCurrent may be NULL).
 // Use getCurrentTask() instead, which returns a pointer (NULL-safe).
-Task& Scheduler::currentTask() { return *iCurrent; }      // DEPRECATED
+Task& Scheduler::currentTask() {
+    static Task sDummy;
+    return iCurrent ? *iCurrent : sDummy;
+}
 Task* Scheduler::getCurrentTask() { return iCurrent; }
 
 #ifdef _TASK_LTS_POINTER

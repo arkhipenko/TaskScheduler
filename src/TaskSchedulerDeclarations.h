@@ -2,7 +2,7 @@
  * @file TaskSchedulerDeclarations.h
  * @brief Cooperative multitasking library for Arduino microcontrollers
  * @author Anatoli Arkhipenko
- * @version 4.0.6
+ * @version 4.0.7
  * @date 2015-2026
  * @copyright Copyright (c) 2015-2026 Anatoli Arkhipenko
  *
@@ -2452,6 +2452,15 @@ class Scheduler {
      */
     __TASK_INLINE unsigned long getInvokedTasks() { return iInvokedTasks; }
 
+    /**
+     * @brief Get the number of tasks currently in the scheduler chain
+     * @return Number of tasks added to this scheduler (enabled and disabled)
+     * @details Unlike getTotalTasks() which is only updated during execute(),
+     *          this method returns an accurate count at any time, including
+     *          before the first execute() call.
+     */
+    __TASK_INLINE unsigned long getChainLength() { return iChainLength; }
+
 #ifdef _TASK_TICKLESS
     /**
      * @brief Get next run time (tickless mode)
@@ -3075,6 +3084,7 @@ class Scheduler {
     unsigned long iActiveTasks;
     unsigned long iTotalTasks;
     unsigned long iInvokedTasks;
+    unsigned long iChainLength;
 
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     bool          iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
