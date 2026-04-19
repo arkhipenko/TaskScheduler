@@ -490,13 +490,16 @@ jobs:
               pthread
           )
 
-          # Compiler definitions for Arduino compatibility and thread safety
+          # Compiler definitions for Arduino compatibility and thread safety.
+          # _TASK_DEBUG exposes Task::iGeneration and StatusRequest::iGeneration
+          # so the v4.1.0 generation-counter tests can assert on them directly.
           target_compile_definitions(test_thread_safe PRIVATE
               ARDUINO=300
               _TASK_HEADER_AND_CPP
               _TASK_THREAD_SAFE
               _TASK_STATUS_REQUEST
               _TASK_TIMEOUT
+              _TASK_DEBUG
           )
 
           # Compiler flags

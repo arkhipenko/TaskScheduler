@@ -474,6 +474,110 @@ TEST_F(ThreadSafeTest, RealWorldScenario) {
 }
 
 // ============================================
+// Generation Counter Tests (v4.1.0)
+// ============================================
+// These tests require _TASK_DEBUG on the compile target so the iGeneration
+// private members on Task and StatusRequest are reachable. The thread-safe
+// CI job already does white-box inspection; _TASK_DEBUG is added alongside
+// _TASK_THREAD_SAFE in the workflow.
+
+// Scheduler::requestAction() stamps this value from the target object.
+// processRequests() compares it with the live counter before dereferencing
+// and skips mismatches. Destructors zero the counter (sentinel for
+// "destroyed"). See TaskScheduler.h v4.1.0 changelog.
+
+TEST_F(ThreadSafeTest, TaskGenerationNonZeroAfterConstruction) {
+    Scheduler ts;
+    Task t(100, TASK_ONCE, &thread_safe_task_callback, &ts, false);
+    // Fresh Task must carry a non-zero generation stamp.
+    EXPECT_NE(t.iGeneration, 0);
+}
+
+TEST_F(ThreadSafeTest, StatusRequestGenerationNonZeroAfterConstruction) {
+    StatusRequest sr;
+    EXPECT_NE(sr.iGeneration, 0);
+}
+
+// Core defence against the v4.0.6 C4 dangling-pointer gap: an ENABLE request
+// stamped against a heap Task, then issued after the Task is deleted, must
+// be skipped by processRequests() rather than dereferencing the freed
+// pointer.
+//
+// Note: the generation counter is a best-effort safeguard -- it relies on
+// the backing memory still being readable at dequeue time. Under
+// AddressSanitizer (heap poisoning), that read itself is flagged as a
+// use-after-free, so this test is disabled on ASan builds. On normal
+// allocators the destructor's `iGeneration = 0` write lingers long enough
+// for the gate to reject the request.
+#if !defined(__SANITIZE_ADDRESS__) && !defined(ADDRESS_SANITIZER_BUILD)
+TEST_F(ThreadSafeTest, StaleRequestSkippedAfterTaskDestruction) {
+    Scheduler ts;
+    task_execution_count = 0;
+
+    Task* heapTask = new Task(0, TASK_FOREVER,
+                              &thread_safe_task_callback, &ts, false);
+    // Queue the ENABLE request targeting the heap task.
+    ts.requestAction(heapTask, TASK_REQUEST_ENABLE, 0, 0, 0, 0, 0);
+
+    // Destroy the task before the scheduler drains the queue.
+    delete heapTask;
+
+    // Drive the scheduler a handful of times. The callback must never fire
+    // because processRequests() should detect the zeroed generation and
+    // skip the stale entry instead of calling enable() on freed memory.
+    for (int i = 0; i < 5; ++i) ts.execute();
+
+    EXPECT_EQ(task_execution_count.load(), 0)
+        << "Stale request must not activate a freed Task";
+}
+#endif  // !defined(__SANITIZE_ADDRESS__)
+
+// Mirror of the stale test with a live target: the callback must fire.
+TEST_F(ThreadSafeTest, LiveRequestHonoredWhenGenerationMatches) {
+    Scheduler ts;
+    task_execution_count = 0;
+
+    Task t(0, TASK_FOREVER, &thread_safe_task_callback, &ts, false);
+    ts.requestAction(&t, TASK_REQUEST_ENABLE, 0, 0, 0, 0, 0);
+
+    // First pass processes queue and enables the task; subsequent passes
+    // run it. Two passes are enough to invoke the callback at least once.
+    ts.execute();
+    ts.execute();
+
+    EXPECT_GE(task_execution_count.load(), 1)
+        << "Live request with matching generation must be honored";
+}
+
+// Simulate "same address reused for a new object": enqueue a request with
+// the live stamp, then bump the target's counter before the scheduler
+// processes the queue. The stamp no longer matches, so the request must
+// be skipped.
+TEST_F(ThreadSafeTest, MismatchedGenerationSkipsRequest) {
+    Scheduler ts;
+    task_execution_count = 0;
+
+    Task t(0, TASK_FOREVER, &thread_safe_task_callback, &ts, false);
+
+    uint16_t stamp = t.iGeneration;
+    _task_request_t req;
+    req.req_type   = TASK_REQUEST_ENABLE;
+    req.object_ptr = &t;
+    req.param1 = req.param2 = req.param3 = req.param4 = req.param5 = 0;
+    req.generation = stamp;
+    ASSERT_TRUE(_task_enqueue_request(&req));
+
+    // Simulate reconstruction at the same address: bump the live counter
+    // so it no longer matches the stamped request.
+    t.iGeneration = static_cast<uint16_t>(stamp + 1);
+
+    for (int i = 0; i < 5; ++i) ts.execute();
+
+    EXPECT_EQ(task_execution_count.load(), 0)
+        << "Request with stale generation stamp must be dropped by processRequests()";
+}
+
+// ============================================
 // Main
 // ============================================
 

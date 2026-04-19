@@ -48,6 +48,12 @@ static int   s_d_count = 0;
 static Task* s_victim1 = nullptr;   // task(s) to be destroyed mid-callback
 static Task* s_victim2 = nullptr;
 
+// State-restoration tests (v4.1.0): a callback performs a structural
+// modification; afterwards the scheduler must not be stuck in
+// TASK_SCHED_MODIFYING.
+static Scheduler* s_state_ts      = nullptr;
+static Task*      s_state_spare   = nullptr;  // pre-allocated, added from callback
+
 // A's callback destroys victim1
 static void cbA_delete_one() {
     s_a_count++;
@@ -76,6 +82,16 @@ static void cbB() { s_b_count++; }
 static void cbC() { s_c_count++; }
 static void cbD() { s_d_count++; }
 
+// Callback that adds a pre-allocated task to the scheduler mid-pass.
+// Exercises the SCHED_MODIFYING -> SCHED_RUNNING save/restore path in
+// Scheduler::addTask().
+static void cbA_add_task() {
+    s_a_count++;
+    if (s_state_ts && s_state_spare) {
+        s_state_ts->addTask(*s_state_spare);
+    }
+}
+
 // ---------------------------------------------------------------------------
 
 class UafRegressionTest : public ::testing::Test {
@@ -84,6 +100,8 @@ protected:
         s_a_count = s_b_count = s_c_count = s_d_count = 0;
         s_victim1 = nullptr;
         s_victim2 = nullptr;
+        s_state_ts = nullptr;
+        s_state_spare = nullptr;
         test_output.clear();
     }
     void TearDown() override {
@@ -91,6 +109,9 @@ protected:
         s_victim1 = nullptr;
         delete s_victim2;
         s_victim2 = nullptr;
+        delete s_state_spare;
+        s_state_spare = nullptr;
+        s_state_ts = nullptr;
         test_output.clear();
     }
 };
@@ -188,6 +209,53 @@ TEST_F(UafRegressionTest, TaskDeletesItselfDuringCallback) {
     EXPECT_EQ(s_a_count, 1) << "A ran normally";
     EXPECT_EQ(s_b_count, 1) << "B ran and then deleted itself";
     EXPECT_EQ(s_c_count, 1) << "C must run after B's self-deletion";
+}
+
+// ---------------------------------------------------------------------------
+// 6. (v4.1.0) After a callback deletes a peer task, the scheduler must be
+//    back in TASK_SCHED_IDLE, not stuck at TASK_SCHED_MODIFYING. This is the
+//    assertion that existing UAF tests never made.
+// ---------------------------------------------------------------------------
+TEST_F(UafRegressionTest, StateRestoredAfterCallbackDeletesTask) {
+    Scheduler ts;
+
+    Task taskA(TASK_IMMEDIATE, TASK_ONCE, cbA_delete_one, &ts, true);
+    s_victim1 = new Task(TASK_IMMEDIATE, TASK_ONCE, cbB, &ts, true);
+    Task taskC(TASK_IMMEDIATE, TASK_ONCE, cbC, &ts, true);
+
+    ts.execute();
+
+    EXPECT_EQ(s_a_count, 1);
+    EXPECT_EQ(s_c_count, 1);
+    EXPECT_EQ(ts.getState(), TASK_SCHED_IDLE)
+        << "Scheduler must return to TASK_SCHED_IDLE after nested deleteTask()";
+}
+
+// ---------------------------------------------------------------------------
+// 7. (v4.1.0) Same invariant when the callback adds a new task via
+//    addTask() instead of removing one.
+// ---------------------------------------------------------------------------
+TEST_F(UafRegressionTest, StateRestoredAfterCallbackAddsTask) {
+    Scheduler ts;
+
+    s_state_ts = &ts;
+    s_state_spare = new Task(TASK_IMMEDIATE, TASK_ONCE, cbD, nullptr, false);
+
+    Task taskA(TASK_IMMEDIATE, TASK_ONCE, cbA_add_task, &ts, true);
+
+    ts.execute();
+
+    EXPECT_EQ(s_a_count, 1);
+    EXPECT_EQ(ts.getState(), TASK_SCHED_IDLE)
+        << "Scheduler must return to TASK_SCHED_IDLE after nested addTask()";
+    EXPECT_EQ(ts.getChainLength(), 2UL)
+        << "Chain must reflect the task added during execute()";
+
+    // Spare task is owned by the scheduler now. Detach before TearDown
+    // frees it so we do not double-delete.
+    ts.deleteTask(*s_state_spare);
+    delete s_state_spare;
+    s_state_spare = nullptr;
 }
 
 // ---------------------------------------------------------------------------

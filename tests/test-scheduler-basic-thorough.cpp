@@ -2001,6 +2001,113 @@ TEST_F(SchedulerThoroughTest, TaskNullCallback) {
     // Task should still run through its lifecycle
 }
 
+// ================== V4.0.7 / V4.1.0 API TESTS ==================
+
+// v4.0.7: currentTask() must no longer crash when iCurrent is NULL. Prior to
+// v4.0.7, calling currentTask() outside any callback dereferenced a null
+// pointer. The fix returns a static sentinel Task.
+TEST_F(SchedulerThoroughTest, CurrentTaskOutsideCallback) {
+    Scheduler ts;
+    // Called before any execute(). Must not crash.
+    Task& t = ts.currentTask();
+    // Sentinel is a default-constructed Task, which is disabled.
+    EXPECT_FALSE(t.isEnabled());
+}
+
+// v4.0.7: currentTask() must remain safe after a task is added and removed.
+TEST_F(SchedulerThoroughTest, CurrentTaskAfterDeleteTask) {
+    Scheduler ts;
+    Task task(100, 1, basic_callback, &ts, false);
+    ts.deleteTask(task);
+    // Must not crash; returns the static sentinel.
+    Task& t = ts.currentTask();
+    EXPECT_FALSE(t.isEnabled());
+}
+
+// v4.0.7: getChainLength() must be 0 on a fresh scheduler.
+TEST_F(SchedulerThoroughTest, GetChainLengthInitialZero) {
+    Scheduler ts;
+    EXPECT_EQ(ts.getChainLength(), 0UL);
+}
+
+// v4.0.7: getChainLength() increments with each addTask (via Task constructor).
+TEST_F(SchedulerThoroughTest, GetChainLengthAfterAdd) {
+    Scheduler ts;
+    Task t1(100, 1, basic_callback, &ts, false);
+    Task t2(100, 1, basic_callback, &ts, false);
+    Task t3(100, 1, basic_callback, &ts, false);
+    EXPECT_EQ(ts.getChainLength(), 3UL);
+}
+
+// v4.0.7: getChainLength() decrements on deleteTask and hits zero when
+// everything is removed.
+TEST_F(SchedulerThoroughTest, GetChainLengthAfterDelete) {
+    Scheduler ts;
+    Task t1(100, 1, basic_callback, &ts, false);
+    Task t2(100, 1, basic_callback, &ts, false);
+    Task t3(100, 1, basic_callback, &ts, false);
+    ASSERT_EQ(ts.getChainLength(), 3UL);
+
+    ts.deleteTask(t2);
+    EXPECT_EQ(ts.getChainLength(), 2UL);
+
+    ts.deleteTask(t1);
+    ts.deleteTask(t3);
+    EXPECT_EQ(ts.getChainLength(), 0UL);
+}
+
+// v4.0.7: getChainLength() is accurate before any execute() pass
+// (getTotalTasks() is only populated during execute()).
+TEST_F(SchedulerThoroughTest, GetChainLengthBeforeExecute) {
+    Scheduler ts;
+    Task t1(100, 1, basic_callback, &ts, false);
+    Task t2(100, 1, basic_callback, &ts, false);
+    // Without calling execute() at all:
+    EXPECT_EQ(ts.getChainLength(), 2UL);
+    EXPECT_EQ(ts.getTotalTasks(), 0UL);   // proves the contrast
+}
+
+// v4.1.0: isEnabled() on the Scheduler returns true by default.
+TEST_F(SchedulerThoroughTest, SchedulerIsEnabledDefaultTrue) {
+    Scheduler ts;
+    EXPECT_TRUE(ts.isEnabled());
+}
+
+// v4.1.0: disable() / enable() round-trip reflects via isEnabled().
+TEST_F(SchedulerThoroughTest, SchedulerDisableEnableRoundTrip) {
+    Scheduler ts;
+    ts.disable();
+    EXPECT_FALSE(ts.isEnabled());
+    ts.enable();
+    EXPECT_TRUE(ts.isEnabled());
+}
+
+// v4.1.0: a disabled Scheduler must skip all callbacks during execute().
+TEST_F(SchedulerThoroughTest, SchedulerDisabledExecuteIsNoOp) {
+    Scheduler ts;
+    Task task(0, TASK_FOREVER, basic_callback, &ts, true);  // enabled, 0-interval
+    ts.disable();
+    for (int i = 0; i < 5; ++i) ts.execute();
+    EXPECT_EQ(callback_counter, 0);
+}
+
+// v4.1.0: getState() reports TASK_SCHED_IDLE on a freshly-constructed Scheduler.
+TEST_F(SchedulerThoroughTest, SchedulerGetStateIdleInitially) {
+    Scheduler ts;
+    EXPECT_EQ(ts.getState(), TASK_SCHED_IDLE);
+}
+
+// v4.1.0: after each execute() pass, state returns to TASK_SCHED_IDLE --
+// it is not stuck in TASK_SCHED_RUNNING or TASK_SCHED_MODIFYING.
+TEST_F(SchedulerThoroughTest, SchedulerGetStateIdleAfterExecute) {
+    Scheduler ts;
+    Task task(10, TASK_FOREVER, basic_callback, &ts, true);
+    for (int i = 0; i < 5; ++i) {
+        ts.execute();
+        EXPECT_EQ(ts.getState(), TASK_SCHED_IDLE);
+    }
+}
+
 /**
  * @brief Main test runner function
  *
