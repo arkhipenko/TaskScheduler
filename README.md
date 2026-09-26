@@ -6,7 +6,7 @@
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
 [![Unit Tests](https://github.com/arkhipenko/TaskScheduler/actions/workflows/test.yml/badge.svg)](https://github.com/arkhipenko/TaskScheduler/actions/workflows/test.yml)
 
-[Latest updates](https://github.com/arkhipenko/TaskScheduler/wiki/Latest-Updates) | [Full documentation](https://arkhipenko.github.io/ts) | [Wiki](https://github.com/arkhipenko/TaskScheduler/wiki) | [Changelog](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog)
+[Changelog](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog) | [Full documentation](https://arkhipenko.github.io/ts) | [Wiki](https://github.com/arkhipenko/TaskScheduler/wiki)
 
 #### Delivering robust embedded systems and firmware that perform flawlessly in real-world conditions. [smart solutions for smart devices](https://smart4smart.com/)
 

@@ -25,7 +25,7 @@ long SuperSensor::trigger() {
 }
 
 bool SuperSensor::measurementReady() {
-  if ( millis() - iStart > iDelay ) {
+  if ( millis() - iStart > (unsigned long) iDelay ) {
     iValue = random(501);
     return true;
   }

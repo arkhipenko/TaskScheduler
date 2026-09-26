@@ -31,3 +31,12 @@ desktop.ini
 .idea/
 *.iml
 .wip/
+
+# Claude and Design Central
+CLAUDE.md
+claude-start
+.mcp.json
+.dc/
+
+# Folders starting with underscore
+_*/

@@ -229,21 +229,25 @@ class Scheduler;
 /**
  * @def TASK_INTERVAL_KEEP
  * @brief Keep current execution timing
- * @details Maintains the current execution schedule when changing interval.
+ * @details Maintains the current execution schedule when changing interval: the already
+ * scheduled next run is kept, and the new interval applies from the run after that.
  */
 #define TASK_INTERVAL_KEEP      0
 
 /**
  * @def TASK_INTERVAL_RECALC
  * @brief Recalculate execution timing
- * @details Recalculates the next execution time based on the new interval.
+ * @details Recalculates the next execution time based on the new interval: the pending
+ * delay changes by the difference between the new and the old interval. If the reduction
+ * exceeds the pending delay, the task becomes due immediately.
  */
 #define TASK_INTERVAL_RECALC    1
 
 /**
  * @def TASK_INTERVAL_RESET
  * @brief Reset execution timing
- * @details Resets the execution schedule to start from the current time.
+ * @details Resets the execution schedule to start from the current time: the next run is
+ * one new interval from now.
  */
 #define TASK_INTERVAL_RESET     2
 
@@ -977,6 +981,22 @@ typedef struct  {
 #endif  //  _TASK_TIMEOUT
 } _task_status;
 
+class Task;
+
+/**
+ * @struct _task_disable_guard_t
+ * @brief Internal record that lets disable() detect a task deleted inside its own OnDisable
+ * @details disable() pushes one record on a stack before it calls OnDisable. The Task
+ * destructor marks every record that names the task being destroyed. After OnDisable
+ * returns, the task is no longer touched if its record was marked.
+ * @since Version 4.1.0
+ */
+typedef struct _task_disable_guard {
+    Task*                        task;       ///< Task whose OnDisable is running
+    struct _task_disable_guard*  prev;       ///< Next outer record (nested disable() calls)
+    bool                         destroyed;  ///< Set by ~Task() when the task is deleted
+} _task_disable_guard_t;
+
 
 /**
  * @class Task
@@ -1242,7 +1262,8 @@ class Task {
     /**
      * @brief Cancel the task
      * @details Marks the task as cancelled, indicating it was stopped before normal completion.
-     * OnDisable method is invoked if task was in enabled state.
+     * OnDisable method is invoked if task was in enabled state. The internal StatusRequest
+     * completes with TASK_SR_CANCEL (since v4.1.0; earlier versions used TASK_SR_ABORT).
      */
     __TASK_INLINE void  cancel();
 
@@ -1345,8 +1366,8 @@ class Task {
      * @param aInterval New interval in milliseconds (or microseconds)
      * @param aOption How to handle the interval change (default = TASK_INTERVAL_KEEP)
      * TASK_INTERVAL_KEEP - keep the current delay, new interval will be used after current delay expires
-     * TASK_INTERVAL_RECALC - recalculate next execution time based on new interval
-     * TASK_INTERVAL_RESET - reset schedule, next execution time and new interval are updated
+     * TASK_INTERVAL_RECALC - shift the pending next run by the difference between the new and the old interval
+     * TASK_INTERVAL_RESET - reset schedule: next run is one new interval from now
      * @details Sets new interval and provides options for how to handle the timing change.
      */
     __TASK_INLINE void setIntervalNodelay(unsigned long aInterval, unsigned int aOption = TASK_INTERVAL_KEEP);
@@ -2232,6 +2253,7 @@ class Task {
 
   _TASK_SCOPE:
     __TASK_INLINE void reset();
+    __TASK_INLINE bool disableInternal(bool& aDestroyed);   // disable(); aDestroyed = task was deleted inside its own OnDisable
 
     volatile _task_status     iStatus;
     volatile unsigned long    iInterval;             // execution interval in milliseconds (or microseconds). 0 - immediate
@@ -2343,6 +2365,24 @@ class Scheduler {
      * @details Creates task scheduler with default parameters and an empty task queue.
      */
     __TASK_INLINE Scheduler();
+
+    /**
+     * @brief Destructor
+     * @details Detaches every task still in the chain, exactly as deleteTask() would,
+     * so tasks that outlive the scheduler never reference it. Tasks are not disabled
+     * and their OnDisable methods are not called.
+     * @since Version 4.1.0
+     */
+    __TASK_INLINE ~Scheduler();
+
+    /**
+     * @brief Schedulers are not copyable
+     * @details A copy would share the original's task chain, and destroying the copy
+     * would detach the original's tasks.
+     * @since Version 4.1.0
+     */
+    Scheduler(const Scheduler&) = delete;
+    Scheduler& operator=(const Scheduler&) = delete;
 
     /**
      * @brief Initialize the scheduler

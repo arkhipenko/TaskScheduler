@@ -607,3 +607,169 @@ jobs:
         run: |
           echo "=== Running UAF Regression Tests ==="
           ./test_uaf_regression
+
+  test-defect-fixes:
+    name: Defect Fix Regression Tests (v4.1.0)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libgtest-dev pkg-config
+
+      - name: Build and install Google Test
+        run: |
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo cmake --build . --target all
+          sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
+
+      - name: Create CMakeLists.txt for defect fix regression tests
+        run: |
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.10)
+          project(TaskSchedulerDefectFixTests VERSION 1.0.0)
+
+          set(CMAKE_CXX_STANDARD 14)
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+          # Find required packages
+          find_package(PkgConfig REQUIRED)
+          find_package(Threads REQUIRED)
+
+          # Include directories
+          include_directories(${CMAKE_SOURCE_DIR}/src)
+          include_directories(${CMAKE_SOURCE_DIR}/tests)
+
+          # Gather source files
+          file(GLOB TASKSCHEDULER_SOURCES
+              "${CMAKE_SOURCE_DIR}/src/*.cpp"
+              "${CMAKE_SOURCE_DIR}/src/*.c"
+          )
+
+          # Create the defect fix regression tests executable
+          add_executable(test_defect_fixes
+              tests/test-scheduler-defect-fixes.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+
+          # Link libraries
+          target_link_libraries(test_defect_fixes
+              gtest
+              gtest_main
+              pthread
+          )
+
+          # Compiler definitions for Arduino compatibility
+          target_compile_definitions(test_defect_fixes PRIVATE
+              ARDUINO=300
+          )
+
+          # Compiler flags
+          target_compile_options(test_defect_fixes PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+
+          # Enable testing
+          enable_testing()
+          add_test(NAME DefectFixTests COMMAND test_defect_fixes)
+          EOF
+
+      - name: Build defect fix regression tests
+        run: |
+          cmake .
+          make -j$(nproc)
+
+      - name: Run defect fix regression tests
+        run: |
+          echo "=== Running defect fix regression tests ==="
+          ./test_defect_fixes
+
+  test-defect-fixes-oo:
+    name: Defect Fix Regression Tests, OO callbacks (v4.1.0)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libgtest-dev pkg-config
+
+      - name: Build and install Google Test
+        run: |
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo cmake --build . --target all
+          sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
+
+      - name: Create CMakeLists.txt for OO defect fix regression tests
+        run: |
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.10)
+          project(TaskSchedulerDefectFixOOTests VERSION 1.0.0)
+
+          set(CMAKE_CXX_STANDARD 14)
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+          # Find required packages
+          find_package(PkgConfig REQUIRED)
+          find_package(Threads REQUIRED)
+
+          # Include directories
+          include_directories(${CMAKE_SOURCE_DIR}/src)
+          include_directories(${CMAKE_SOURCE_DIR}/tests)
+
+          # Gather source files
+          file(GLOB TASKSCHEDULER_SOURCES
+              "${CMAKE_SOURCE_DIR}/src/*.cpp"
+              "${CMAKE_SOURCE_DIR}/src/*.c"
+          )
+
+          # Create the OO defect fix regression tests executable
+          add_executable(test_defect_fixes_oo
+              tests/test-scheduler-defect-fixes-oo.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+
+          # Link libraries
+          target_link_libraries(test_defect_fixes_oo
+              gtest
+              gtest_main
+              pthread
+          )
+
+          # Compiler definitions for Arduino compatibility
+          target_compile_definitions(test_defect_fixes_oo PRIVATE
+              ARDUINO=300
+          )
+
+          # Compiler flags
+          target_compile_options(test_defect_fixes_oo PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+
+          # Enable testing
+          enable_testing()
+          add_test(NAME DefectFixOOTests COMMAND test_defect_fixes_oo)
+          EOF
+
+      - name: Build OO defect fix regression tests
+        run: |
+          cmake .
+          make -j$(nproc)
+
+      - name: Run OO defect fix regression tests
+        run: |
+          echo "=== Running OO defect fix regression tests ==="
+          ./test_defect_fixes_oo

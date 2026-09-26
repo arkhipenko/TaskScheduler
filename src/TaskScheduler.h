@@ -341,6 +341,17 @@ v4.0.7:
           of tasks in the chain at any time, without requiring an execute() pass.
           Maintained via O(1) counter in addTask/deleteTask.
 
+v4.0.8:
+    2026-04-20:
+        - bug fix: Scheduler::currentTask() failed to compile under _TASK_OO_CALLBACKS
+          because the static Task sDummy sentinel introduced in v4.0.7 cannot be
+          instantiated (Task is abstract when OO callbacks are enabled -- Callback()
+          is pure virtual). Replaced with a local concrete subclass that stubs out
+          Callback() in OO mode; function-pointer mode path is unchanged.
+        - example: Scheduler_example21_OO_Callbacks -- silenced signed/unsigned
+          compare warning in SuperSensor::measurementReady() by casting iDelay to
+          unsigned long.
+
 v4.1.0:
     2026-04-18:
         - breaking: Scheduler's private `iEnabled` boolean lock is replaced by a
@@ -362,6 +373,35 @@ v4.1.0:
         - breaking (_TASK_THREAD_SAFE): `_task_request_t` gains a `generation`
           field. User-supplied queue implementations that serialize the struct
           (e.g., byte-copy into a FIFO) must be recompiled.
+
+    2026-09-26:
+        - bug fix (_TASK_OO_CALLBACKS): a pass is idle only if no Callback() returned
+          true (previously the last invoked task decided). getInvokedTasks() now
+          counts OO callbacks (it always returned 0).
+        - bug fix (_TASK_STATUS_REQUEST): cancel() completes the internal StatusRequest
+          with TASK_SR_CANCEL, as documented (was TASK_SR_ABORT). Tasks waiting on a
+          canceled task now run instead of being aborted.
+        - bug fix (_TASK_SELF_DESTRUCT): the StatusRequest-only Task constructor left
+          the self-destruct flag uninitialized.
+        - bug fix: setIntervalNodelay(..., TASK_INTERVAL_RECALC) could wrap the pending
+          delay and stall the task for ~49.7 days. The delay is now clamped at 0, which
+          makes the task due immediately.
+        - bug fix (_TASK_TICKLESS + _TASK_TIMEOUT): a task without a timeout made
+          getNextRun() return 0. The timeout-aware estimate is corrected and the
+          next-run comparison is now rollover safe.
+        - bug fix (_TASK_SLEEP_ON_IDLE_RUN + _TASK_PRIORITY): no scheduler slept when a
+          higher priority layer was constructed after the base scheduler. The base
+          scheduler now takes over the sleep role from its higher layers.
+        - bug fix: deleting a task inside its own OnDisable caused a use-after-free in
+          disable(), execute() and disableAll().
+        - bug fix: added a Scheduler destructor. It detaches the remaining tasks so that
+          their destructors do not use a destroyed scheduler. Scheduler is no longer
+          copyable.
+        - bug fix: setIntervalNodelay() options now behave as documented.
+          TASK_INTERVAL_KEEP keeps the already scheduled next run; the new interval
+          applies from the run after that (it used to move the next run as well).
+          TASK_INTERVAL_RESET restarts the schedule from now (it used to keep the
+          previous run as the reference point).
 */
 
 #include "TaskSchedulerDeclarations.h"
@@ -444,6 +484,13 @@ static inline uint16_t __task_next_generation() {
     Scheduler* iCurrentScheduler;
 #endif // _TASK_PRIORITY
 
+// Head of the stack of disable() guard records (see _task_disable_guard_t).
+// A non-static inline function keeps exactly one instance across translation units.
+inline _task_disable_guard_t*& __task_disable_guards() {
+    static _task_disable_guard_t* sHead = NULL;
+    return sHead;
+}
+
 
 #ifdef _TASK_THREAD_SAFE
 __attribute__((weak)) bool _task_enqueue_request(_task_request_t* req) {return false; }; 
@@ -525,6 +572,11 @@ Task::Task( unsigned long aInterval, long aIterations, TaskCallback aCallback, S
  *  prior to being deleted.
  */
 Task::~Task() {
+    // If this task is being deleted inside its own OnDisable, tell the disable()
+    // call in progress so it does not touch the freed object afterwards.
+    for ( _task_disable_guard_t* g = __task_disable_guards(); g; g = g->prev ) {
+        if ( g->task == this ) g->destroyed = true;
+    }
     if ( this->isEnabled() ) disable();
     if (iScheduler) iScheduler->deleteTask(*this);
 #ifdef _TASK_THREAD_SAFE
@@ -727,6 +779,7 @@ void Task::reset() {
 #endif  // _TASK_TIMEOUT
 
 #ifdef _TASK_SELF_DESTRUCT
+    iStatus.selfdestruct = false;
     iStatus.sd_request = false;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
 
@@ -947,26 +1000,30 @@ void Task::setIntervalNodelay (unsigned long aInterval, unsigned int aOption) {
     switch (aOption) {
       case TASK_INTERVAL_RECALC:
       {
-          int32_t d = aInterval - iInterval;
-          // change the delay proportionally
-          iDelay = iDelay + d;
-          iInterval = aInterval;
-          break;
-      } 
-      case TASK_INTERVAL_RESET:
-          iInterval = aInterval;
-          iDelay = aInterval;
-          break;
-          
-      default:
-//      case TASK_INTERVAL_KEEP:
-          if ( iInterval == iDelay ) {
-              iInterval = aInterval;
-              iDelay = aInterval;
+          // change the pending delay by the interval difference (unsigned math, no wrap).
+          // if the reduction exceeds the pending delay, the task becomes due immediately.
+          if ( aInterval >= iInterval ) {
+              iDelay = iDelay + (aInterval - iInterval);
           }
           else {
-              iInterval = aInterval;
+              unsigned long d = iInterval - aInterval;
+              iDelay = ( iDelay > d ) ? iDelay - d : 0;
           }
+          iInterval = aInterval;
+          break;
+      }
+      case TASK_INTERVAL_RESET:
+          // restart the schedule from now: next run is one new interval from now
+          iInterval = aInterval;
+          iDelay = aInterval;
+          iPreviousMillis = __TASK_TIME_FUNCTION();
+          break;
+
+      default:
+//      case TASK_INTERVAL_KEEP:
+          // keep the already scheduled next run (the pending delay);
+          // the new interval applies from the run after that
+          iInterval = aInterval;
           break;
     }
 }
@@ -977,26 +1034,50 @@ void Task::setIntervalNodelay (unsigned long aInterval, unsigned int aOption) {
  */
 
 bool __TASK_IRAM Task::disable() {
+    bool destroyed;
+    return disableInternal(destroyed);
+}
+
+/** Disables task (implementation of disable())
+ * aDestroyed is set to true if the task was deleted inside its own OnDisable method.
+ * In that case the task object is not touched after OnDisable returns.
+ */
+bool __TASK_IRAM Task::disableInternal(bool& aDestroyed) {
     bool previousEnabled = iStatus.enabled;
     iStatus.enabled = false;
     iStatus.inonenable = false;
+    aDestroyed = false;
 
-  if (iScheduler) {
+    Scheduler* s = iScheduler;  // local copy: OnDisable may unlink or delete this task
+  if (s) {
 #ifdef _TASK_OO_CALLBACKS
     if (previousEnabled) {
 #else
     if (previousEnabled && iOnDisable) {
 #endif // _TASK_OO_CALLBACKS
 
-        Task *current = iScheduler->iCurrent;
-        iScheduler->iCurrent = this;
+        _task_disable_guard_t guard;
+        guard.task = this;
+        guard.destroyed = false;
+        guard.prev = __task_disable_guards();
+        __task_disable_guards() = &guard;
+
+        Task *current = s->iCurrent;
+        s->iCurrent = this;
 #ifdef _TASK_OO_CALLBACKS
         OnDisable();
 #else
         iOnDisable();
 #endif // _TASK_OO_CALLBACKS
 
-        iScheduler->iCurrent = current;
+        __task_disable_guards() = guard.prev;
+        if ( guard.destroyed ) {
+            // the task was deleted inside its own OnDisable: do not touch it again
+            s->iCurrent = ( current == this ) ? NULL : current;
+            aDestroyed = true;
+            return (previousEnabled);
+        }
+        s->iCurrent = current;
     }
   }
 #ifdef _TASK_STATUS_REQUEST
@@ -1032,7 +1113,7 @@ void __TASK_IRAM Task::abort() {
 void __TASK_IRAM Task::cancel() {
     iStatus.canceled = true;
 #ifdef _TASK_STATUS_REQUEST
-    iMyStatusRequest.signalComplete(TASK_SR_ABORT);
+    iMyStatusRequest.signalComplete(TASK_SR_CANCEL);
 #endif
     disable();
 }
@@ -1098,12 +1179,36 @@ Scheduler::Scheduler() {
 #endif // _TASK_SLEEP_ON_IDLE_RUN
 }
 
-/*
+/** Destructor.
+ * Detaches every task still in the chain (as deleteTask() would), so tasks
+ * that outlive the scheduler do not reference it. Tasks keep their enabled
+ * state and their OnDisable methods are not called.
+ */
 Scheduler::~Scheduler() {
+    iState = TASK_SCHED_MODIFYING;
+
+    Task* t = iFirst;
+    while (t) {
+        Task* next = t->iNext;
+        t->iScheduler = NULL;
+        t->iPrev = NULL;
+        t->iNext = NULL;
+        t = next;
+    }
+    iFirst = NULL;
+    iLast = NULL;
+    iCurrent = NULL;
+    iNextExecute = NULL;
+    iChainLength = 0;
+
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
+    if ( iSleepScheduler == this ) iSleepScheduler = NULL;
 #endif // _TASK_SLEEP_ON_IDLE_RUN
+
+#ifdef _TASK_PRIORITY
+    if ( iCurrentScheduler == this ) iCurrentScheduler = NULL;
+#endif // _TASK_PRIORITY
 }
-*/
 
 /** Initializes all internal varaibles
  */
@@ -1238,9 +1343,10 @@ void Scheduler::disableAll() {
     Task*    current = iFirst;
     while (current) {
         iNextExecute = current->iNext;
-        current->disable();
+        bool destroyed;
+        current->disableInternal(destroyed);
 #ifdef _TASK_SELF_DESTRUCT
-        if ( current->iStatus.sd_request ) delete current;
+        if ( !destroyed && current->iStatus.sd_request ) delete current;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
         current = iNextExecute;
     }
@@ -1799,9 +1905,10 @@ bool Scheduler::execute() {
 
     // Disable task on last iteration:
                 if (iCurrent->iIterations == 0) {
-                    iCurrent->disable();
+                    bool destroyed;
+                    iCurrent->disableInternal(destroyed);
 #ifdef _TASK_SELF_DESTRUCT
-                    if ( iCurrent->iStatus.sd_request ) delete iCurrent;
+                    if ( !destroyed && iCurrent->iStatus.sd_request ) delete iCurrent;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
                     break;
                 }
@@ -1812,9 +1919,10 @@ bool Scheduler::execute() {
     // Disable task on a timeout
                 if ( iCurrent->iTimeout && (m - iCurrent->iStarttime > iCurrent->iTimeout) ) {
                     iCurrent->iStatus.timeout = true;
-                    iCurrent->disable();
+                    bool destroyed;
+                    iCurrent->disableInternal(destroyed);
 #ifdef _TASK_SELF_DESTRUCT
-                    if ( iCurrent->iStatus.sd_request ) delete iCurrent;
+                    if ( !destroyed && iCurrent->iStatus.sd_request ) delete iCurrent;
 #endif  //  #ifdef _TASK_SELF_DESTRUCT
                     break;
                 }
@@ -1865,19 +1973,20 @@ bool Scheduler::execute() {
                 // this is millis-rollover-safe way of scheduling
                 if ( m - iCurrent->iPreviousMillis < iCurrent->iDelay ) {
 #ifdef _TASK_TICKLESS
-                // catch the reamining time until invocation as next time this should run
-                // WARNING: nextrun calculation does not survive millis() rollover (~49.7 days).
-                // For the rollover case we fall back to immediate execution, which is safe
-                // but suboptimal (one extra wakeup per rollover event).
-                    unsigned long nextrun = iCurrent->iDelay + iCurrent->iPreviousMillis;
-                    // nextrun should be after current millis() (except rollover)
-                    // nextrun should be sooner than previously determined
+                // catch the remaining time until invocation as next time this should run.
+                // Times are compared by signed difference, so the estimate survives a
+                // millis()/micros() rollover (valid while intervals stay below 2^31 units).
+                    unsigned long nextrun = iCurrent->iDelay - ( m - iCurrent->iPreviousMillis );  // > 0: task is not due yet
 #ifdef _TASK_TIMEOUT
-                    // in case timeout is set - we have to consider it as well
-                    unsigned long untilto = iCurrent->untilTimeout() + iCurrent->iPreviousMillis;
-                    if ( untilto < nextrun ) nextrun = untilto;
+                    // a timeout, if set, fires once the elapsed time exceeds iTimeout - possibly sooner
+                    if ( iCurrent->iTimeout ) {
+                        unsigned long untilto = iCurrent->iTimeout - ( m - iCurrent->iStarttime ) + 1;  // >= 1: not timed out yet
+                        if ( untilto < nextrun ) nextrun = untilto;
+                    }
 #endif  // _TASK_TIMEOUT
-                    if ( nextrun > m && nextrun < nr ) { 
+                    nextrun = nextrun + m;  // time of the next required scheduling pass
+                    // keep the earliest next run of all tasks
+                    if ( !(nrd & _TASK_NEXTRUN_TIMED) || (long) (nextrun - nr) < 0 ) {
                         nr = nextrun;
                         nrd |= _TASK_NEXTRUN_TIMED; // next run timed
                     }
@@ -1936,7 +2045,10 @@ bool Scheduler::execute() {
 #endif  // _TASK_TIMECRITICAL
 
 #ifdef _TASK_OO_CALLBACKS
-                idleRun = !iCurrent->Callback();
+                // a pass is idle only if no callback reported productive work.
+                // iCurrent is not touched after Callback() returns (it may delete its task).
+                if ( iCurrent->Callback() ) idleRun = false;
+                iInvokedTasks++;
 #else
                 if ( iCurrent->iCallback ) {
                     iCurrent->iCallback();
@@ -1981,7 +2093,7 @@ bool Scheduler::execute() {
         if ( (nrd & _TASK_NEXTRUN_IMMEDIATE) ) break;
         if ( nrd == _TASK_NEXTRUN_UNDEFINED ) break;
         m = __TASK_TIME_FUNCTION();
-        if ( nr <= m) break;
+        if ( (long) (nr - m) <= 0 ) break;  // already due
         iNextRun = ( nr - m );
     } while (0);
 #endif 
@@ -1989,7 +2101,20 @@ bool Scheduler::execute() {
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
 
     if (idleRun && iAllowSleep) {
-        if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep. 
+#ifdef _TASK_PRIORITY
+        // Higher priority layers never sleep (setHighPriorityScheduler() turns their sleep off).
+        // If one of this scheduler's higher layers holds the sleep role (e.g., because it was
+        // constructed last), this scheduler takes the role over.
+        if ( iSleepScheduler != this ) {
+            for ( Scheduler* s = iHighPriority; s; s = s->iHighPriority ) {
+                if ( s == iSleepScheduler ) {
+                    iSleepScheduler = this;
+                    break;
+                }
+            }
+        }
+#endif  // _TASK_PRIORITY
+        if ( iSleepScheduler == this ) { // only one scheduler should make the MC go to sleep.
             if ( iSleepMethod != NULL ) {
                 
 #ifdef _TASK_TIMECRITICAL
