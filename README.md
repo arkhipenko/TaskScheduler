@@ -1,7 +1,7 @@
 # TaskScheduler
 
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 4.1.0: 2026-04-18
+#### Version 4.1.0: 2026-09-26
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
 [![Unit Tests](https://github.com/arkhipenko/TaskScheduler/actions/workflows/test.yml/badge.svg)](https://github.com/arkhipenko/TaskScheduler/actions/workflows/test.yml)
@@ -77,6 +77,29 @@ lib_deps = arkhipenko/TaskScheduler
 
 ---
 
+### What's new in 4.1.0
+
+**New:** `Scheduler::isEnabled()` and `Scheduler::getState()`, a `Scheduler` destructor, and protection against stale requests in `_TASK_THREAD_SAFE` queues.
+
+**Behavior changes to check when upgrading:**
+* `Task::cancel()` completes the task's internal StatusRequest with `TASK_SR_CANCEL` (it used `TASK_SR_ABORT`). Tasks waiting on a canceled task now run instead of being aborted.
+* `setIntervalNodelay()` options now work as documented: `TASK_INTERVAL_KEEP` (the default) keeps the already scheduled next run, and `TASK_INTERVAL_RESET` restarts the schedule from now. A task that changes its own interval with the default option now runs once more at the old interval; use `TASK_INTERVAL_RECALC` to apply the new interval right away.
+* `Scheduler` objects can no longer be copied. Pass them by reference or pointer.
+* `_TASK_OO_CALLBACKS`: a scheduling pass counts as idle only if no `Callback()` returned `true`, and `getInvokedTasks()` now counts OO callbacks.
+* `_TASK_THREAD_SAFE`: `_task_request_t` has a new `generation` field. Recompile any queue code that copies the structure.
+
+**Fixes:**
+* A task can delete itself inside its own `OnDisable()` method.
+* Destroying a scheduler before its tasks no longer leaves the tasks pointing to freed memory.
+* With layered priority and `_TASK_SLEEP_ON_IDLE_RUN`, the base scheduler now sleeps (examples 11 and 12 never did).
+* Tickless `getNextRun()` works with `_TASK_TIMEOUT` and across a `millis()` rollover.
+* `setIntervalNodelay(..., TASK_INTERVAL_RECALC)` no longer stalls a task for about 49.7 days when the interval shrinks.
+* The event-only Task constructor initializes the self-destruct flag.
+
+See the [Changelog](https://github.com/arkhipenko/TaskScheduler/wiki/Changelog) for details.
+
+---
+
 ### Features
 
 **Core scheduling:**
@@ -118,7 +141,9 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * STM32 (tested on Mini USB STM32F103RCBT6 ARM Cortex-M3 leaflabs Leaf maple mini module F)
 * MSP430 and MSP432 boards
 * Raspberry Pi (requires `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
-* Any Linux (requires `_TASK_NON_ARDUINO` and `_task_millis()` implementation -- that's how unit tests are done)
+* Any Linux (requires `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
+
+**Note:** with `_TASK_NON_ARDUINO`, define `_task_millis()` (and `_task_micros()` / `_task_yield()` where your options need them) in the same source file that includes `TaskScheduler.h`. The unit test `tests/test-scheduler-defect-fixes.cpp` shows a working setup.
 
 ---
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)
