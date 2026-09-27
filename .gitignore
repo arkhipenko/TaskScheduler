@@ -30,7 +30,7 @@ desktop.ini
 *~
 .idea/
 *.iml
-.wip/
+_wip/
 
 # Claude and Design Central
 CLAUDE.md
