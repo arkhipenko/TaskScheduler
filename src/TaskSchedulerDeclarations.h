@@ -3113,15 +3113,21 @@ class Scheduler {
      * execution contexts.
      *
      * @param aRequest Pointer to a _task_request_t structure containing the operation details.
-     *                 The structure should be properly initialized with the target object,
-     *                 operation type, and parameters.
+     *                 Every field must be set: req_type, object_ptr, param1 to param5, and
+     *                 generation. A generation of 0 is replaced with the target's current
+     *                 generation. A non-zero generation is kept as given, so an
+     *                 uninitialized one can make processRequests() skip the request.
      *
-     * @return true if the request was successfully queued, false if the queue is full
+     * @return true if _task_enqueue_request() accepted the request. false if aRequest is NULL
+     *         or _task_enqueue_request() returned false (queue full, or no user queue: the
+     *         built-in weak version always returns false).
      *
      * @note This method is only available when _TASK_THREAD_SAFE compilation option is enabled.
-     * @note The request structure must remain valid until the request is processed.
-     * @note Requests are processed in FIFO order during scheduler execution.
-     * @note The maximum number of queued requests is limited by the request queue size.
+     * @note _task_enqueue_request() copies the structure, so it may go out of scope after the
+     *       call. The target Task or StatusRequest must stay allocated until the request is
+     *       processed.
+     * @note Requests are processed in the order _task_dequeue_request() returns them.
+     * @note The maximum number of queued requests is set by the user-supplied queue.
      *
      * @warning The aRequest pointer must point to a valid _task_request_t structure.
      *          Invalid pointers will cause undefined behavior.
@@ -3134,18 +3140,19 @@ class Scheduler {
      * Example usage:
      * @code
      * _task_request_t request;
-     * request.object = &myTask;
-     * request.type = TASK_REQUEST_ENABLE;
+     * request.req_type = TASK_REQUEST_ENABLE;
+     * request.object_ptr = &myTask;
      * request.param1 = 0;
      * request.param2 = 0;
      * request.param3 = 0;
      * request.param4 = 0;
      * request.param5 = 0;
+     * request.generation = 0;   // 0: requestAction() stamps the target's generation
      *
      * if (ts.requestAction(&request)) {
      *     Serial.println("Request queued successfully");
      * } else {
-     *     Serial.println("Request queue full");
+     *     Serial.println("Request not queued");
      * }
      * @endcode
      */
@@ -3158,7 +3165,7 @@ class Scheduler {
      * It provides a convenient interface for thread-safe task operations without requiring
      * manual construction of the request structure.
      *
-     * @param aObject Pointer to the target object (Task or Scheduler) for the operation
+     * @param aObject Pointer to the target object (Task or StatusRequest) for the operation
      * @param aType Type of operation to perform (from _task_request_type_t enum)
      * @param aParam1 First parameter for the operation (interpretation depends on aType)
      * @param aParam2 Second parameter for the operation (interpretation depends on aType)
@@ -3166,15 +3173,20 @@ class Scheduler {
      * @param aParam4 Fourth parameter for the operation (interpretation depends on aType)
      * @param aParam5 Fifth parameter for the operation (interpretation depends on aType)
      *
-     * @return true if the request was successfully queued, false if the queue is full
+     * @return true if _task_enqueue_request() accepted the request. false if aObject is NULL
+     *         or _task_enqueue_request() returned false (queue full, or no user queue: the
+     *         built-in weak version always returns false).
      *
      * @note This method is only available when _TASK_THREAD_SAFE compilation option is enabled.
      * @note Parameter interpretation varies by operation type - see _task_request_type_t documentation.
-     * @note Unused parameters should be set to 0.
-     * @note Requests are processed in FIFO order during scheduler execution.
+     * @note The queue applies no method defaults: pass every parameter the method takes
+     *       (the <TYPE>_<n>_DEFAULT macros hold them). Unused parameters should be set to 0.
+     * @note Requests are processed in the order _task_dequeue_request() returns them.
+     * @note This method is not placed in IRAM, also with _TASK_ISR_SUPPORT. On ESP32 an
+     *       interrupt registered with ESP_INTR_FLAG_IRAM must not call it.
      *
-     * @warning The aObject pointer must point to a valid Task or Scheduler instance.
-     *          Invalid pointers will cause undefined behavior when the request is processed.
+     * @warning The aObject pointer must point to a valid Task or StatusRequest instance, and
+     *          the object must stay allocated until the request is processed.
      *
      * @see requestAction(_task_request_t*)
      * @see processRequests()
@@ -3184,15 +3196,15 @@ class Scheduler {
      * Example usage:
      * @code
      * // Request to enable a task from an ISR
-     * void IRAM_ATTR sensorISR() {
+     * void sensorISR() {
      *     ts.requestAction(&sensorTask, TASK_REQUEST_ENABLE, 0, 0, 0, 0, 0);
      * }
      *
-     * // Request to restart a task with new interval
-     * ts.requestAction(&myTask, TASK_REQUEST_RESTART, 5000, 0, 0, 0, 0); // 5 second interval
+     * // Request to restart a task after a 5 second delay
+     * ts.requestAction(&myTask, TASK_REQUEST_RESTARTDELAYED, 5000, 0, 0, 0, 0);
      *
      * // Request to set task iterations
-     * ts.requestAction(&myTask, TASK_REQUEST_SET_ITERATIONS, 10, 0, 0, 0, 0); // 10 iterations
+     * ts.requestAction(&myTask, TASK_REQUEST_SETITERATIONS, 10, 0, 0, 0, 0); // 10 iterations
      * @endcode
      */
     __TASK_INLINE bool   requestAction(void* aObject, _task_request_type_t aType, unsigned long aParam1, unsigned long aParam2, unsigned long aParam3, unsigned long aParam4, unsigned long aParam5);
