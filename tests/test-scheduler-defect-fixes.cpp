@@ -22,6 +22,12 @@
 // D21: destroying a Scheduler detaches its tasks; Scheduler is not copyable.
 // D27: setIntervalNodelay() options behave as documented: KEEP keeps the
 //      scheduled next run, RESET restarts the schedule from now.
+//
+// Also covered (not a defect)
+// ---------------------------
+// Startup catch-up (GitHub issue 214): a task enabled when it is created
+//      catches up on the iterations missed during a long setup() unless
+//      startNow() is called at the end of setup(), as the examples do.
 
 #define _TASK_NON_ARDUINO
 #define _TASK_STATUS_REQUEST
@@ -495,6 +501,47 @@ TEST(DefectFixes, D21_SchedulerDestroyedBeforeItsTasks) {
 TEST(DefectFixes, D21_SchedulerIsNotCopyable) {
     EXPECT_FALSE(std::is_copy_constructible<Scheduler>::value);
     EXPECT_FALSE(std::is_copy_assignable<Scheduler>::value);
+}
+
+// ---------------------------------------------------------------------------
+// Startup catch-up (GitHub issue 214). A task enabled when it is created is
+// scheduled from that moment. With TASK_SCHEDULE the iterations missed during
+// a long setup() run back-to-back; startNow() moves the starting point.
+// ---------------------------------------------------------------------------
+TEST(StartupCatchUp, LongSetupWithoutStartNowCatchesUp) {
+    resetCounters();
+    Scheduler ts;
+    Task t(500, 20, &cbCount, &ts, true);                 // enabled at creation, time T
+    g_ms += 3000;                                         // setup() spends 3 s in delay()
+
+    for (int i = 0; i < 10; i++) ts.execute();            // no time passes
+    EXPECT_EQ(7, s_runs);                                 // T, T+500 ... T+3000 in a row
+}
+
+TEST(StartupCatchUp, StartNowAtEndOfSetupPreventsCatchUp) {
+    resetCounters();
+    Scheduler ts;
+    Task t(500, 20, &cbCount, &ts, true);
+    g_ms += 3000;
+    ts.startNow();
+
+    for (int i = 0; i < 10; i++) ts.execute();
+    EXPECT_EQ(1, s_runs);                                 // first run right away
+    g_ms += 499; ts.execute();
+    EXPECT_EQ(1, s_runs);
+    g_ms += 1;   ts.execute();
+    EXPECT_EQ(2, s_runs);                                 // then every 500
+}
+
+TEST(StartupCatchUp, StartNowDiscardsPendingDelay) {
+    Scheduler ts;
+    Task t(500, TASK_FOREVER, &cbNop, &ts, false);
+    t.enableDelayed(2000);
+    ts.startNow();
+    EXPECT_EQ(0, ts.timeUntilNextIteration(t));           // the delay is gone
+
+    t.delay(2000);                                        // so delay after startNow()
+    EXPECT_EQ(2000, ts.timeUntilNextIteration(t));
 }
 
 int main(int argc, char **argv) {

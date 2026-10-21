@@ -87,7 +87,9 @@ TsTask tBlink4Off ( PERIOD4 * TASK_MILLISECOND, TASK_ONCE, blink42, &ts, false, 
 
 
 /*
-   Approach 5: Two interleaving tasks
+   Approach 5: Time-Offset Autonomous Tasks
+   Two independent tasks with the same interval. The OFF task starts half
+   a period after the ON task, so their runs alternate.
 */
 #define PERIOD5 600
 bool blink51OE();
@@ -117,6 +119,12 @@ void setup() {
   delay(2 * TASK_SECOND);
 #endif
   pinMode(LED_BUILTIN, OUTPUT);
+
+  // tBlink1 was enabled when it was created, before the delays above.
+  // Without this call it would "catch up" on the iterations missed during
+  // setup() and run several times in a row. startNow() makes all enabled
+  // tasks start from this point instead.
+  ts.startNow();
 }
 
 void loop() {
@@ -252,7 +260,7 @@ void blink42OD() {
 // === 5 ==========================================
 bool blink51OE() {
   _PP(millis());
-  _PL(": Blink5 - Two interleaving tasks");
+  _PL(": Blink5 - Time-Offset Autonomous Tasks");
   tBlink5On.setOnEnable( NULL );
   return true;
 }

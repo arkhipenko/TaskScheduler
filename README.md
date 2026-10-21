@@ -1,7 +1,7 @@
 # TaskScheduler
 
 ### Cooperative multitasking for Arduino, ESPx, STM32 and other microcontrollers
-#### Version 4.1.0: 2026-09-26
+#### Version 4.1.1: 2026-10-21
 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/TaskScheduler.svg?)](https://www.ardu-badge.com/TaskScheduler)
 [![Unit Tests](https://github.com/arkhipenko/TaskScheduler/actions/workflows/test.yml/badge.svg)](https://github.com/arkhipenko/TaskScheduler/actions/workflows/test.yml)
@@ -74,6 +74,12 @@ lib_deps = arkhipenko/TaskScheduler
 ```
 
 **Manual:** Download or clone this repository into your Arduino `libraries/` folder.
+
+---
+
+### What's new in 4.1.1
+
+No library code changes. The `requestAction()` documentation is corrected, and the examples that enable tasks when they are created now call `startNow()` at the end of `setup()`, so the tasks do not "catch up" on the time `setup()` took ([#214](https://github.com/arkhipenko/TaskScheduler/issues/214)). If your sketch enables tasks when they are created and has a long `setup()`, do the same: see [startNow()](https://github.com/arkhipenko/TaskScheduler/wiki/API-Task-Scheduler#void-startnow-bool-arecursive-true).
 
 ---
 

@@ -298,6 +298,10 @@ void setup() {
   Serial.println("5. All operations are thread-safe!\n");
 
   delay(1000);
+
+  // tBlink and tStats were enabled when they were created. Start them now
+  // instead of letting them "catch up" on the time spent in setup().
+  ts.startNow();
 }
 
 void loop() {

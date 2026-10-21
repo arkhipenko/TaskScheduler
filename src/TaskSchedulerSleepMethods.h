@@ -16,7 +16,7 @@
  *
  * @author Anatoli Arkhipenko
  * @copyright Copyright (c) 2015-2022 Anatoli Arkhipenko
- * @version 4.0.0
+ * @version 4.1.1
  *
  * Supported platforms:
  * - Arduino AVR (ATmega328P, ATmega32U4, etc.)

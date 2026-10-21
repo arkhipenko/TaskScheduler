@@ -402,6 +402,18 @@ v4.1.0:
           applies from the run after that (it used to move the next run as well).
           TASK_INTERVAL_RESET restarts the schedule from now (it used to keep the
           previous run as the reference point).
+
+v4.1.1:
+    2026-10-21:
+        - documentation: corrected the doxygen of both requestAction() overloads
+          (field and constant names, initialization of the generation field,
+          return values, request lifetime). Comments only, no code change.
+        - examples: tasks enabled when they are created no longer "catch up" on
+          the time spent in a long setup(). Examples 00, 07, 27, 29, 30 and the
+          template call startNow() at the end of setup() (issue #214).
+        - examples: Blink "Approach 5" renamed "Time-Offset Autonomous Tasks"
+          (issue #215).
+        - tests: startup catch-up regression tests.
 */
 
 #include "TaskSchedulerDeclarations.h"

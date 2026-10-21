@@ -120,6 +120,11 @@ void setup() {
   delay(2000);
   _PL("Scheduler Template: setup()");
 #endif
+
+  // Tasks enabled when they are created are scheduled from that moment.
+  // Call startNow() at the end of setup() so that a long setup() does not
+  // make them "catch up" on missed iterations with several runs in a row.
+  ts.startNow();
 }
 
 

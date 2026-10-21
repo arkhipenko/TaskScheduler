@@ -122,6 +122,10 @@ void setup() {
   
   delay(2000);
 
+  // tTask1-3 were enabled when they were created. Start them now instead of
+  // letting them "catch up" on the time spent in setup(). Call startNow()
+  // before enableDelayed(), because startNow() would cancel that delay.
+  ts.startNow();
   tHB.enableDelayed();
 }
 

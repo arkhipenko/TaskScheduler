@@ -41,7 +41,7 @@ jobs:
 
           # Project information
           PROJECT_NAME           = "TaskScheduler"
-          PROJECT_NUMBER         = "v4.0.0"
+          PROJECT_NUMBER         = "v4.1.1"
           PROJECT_BRIEF          = "Cooperative multitasking for Arduino and ESP platforms"
           PROJECT_LOGO           =
 
