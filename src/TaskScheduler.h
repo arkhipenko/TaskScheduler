@@ -405,6 +405,12 @@ v4.1.0:
 
 v4.1.1:
     2026-10-21:
+        - bug fix: _TASK_NON_ARDUINO in a split build (_TASK_HEADER_AND_CPP).
+          The time and yield hooks were declared static, so TaskScheduler.cpp
+          could not use the user's definitions, and newer compilers (GCC 14,
+          PlatformIO espressif32 8.0.0) fail to link example 29. In a split
+          build the hooks now have external linkage: define them (not static)
+          in any one source file. Header-only builds are unchanged.
         - documentation: corrected the doxygen of both requestAction() overloads
           (field and constant names, initialization of the generation field,
           return values, request lifetime). Comments only, no code change.
@@ -413,7 +419,10 @@ v4.1.1:
           template call startNow() at the end of setup() (issue #214).
         - examples: Blink "Approach 5" renamed "Time-Offset Autonomous Tasks"
           (issue #215).
-        - tests: startup catch-up regression tests.
+        - examples: example 30 builds with Arduino-ESP32 core 3.x (new hardware
+          timer API) as well as core 2.x.
+        - tests: startup catch-up regression tests, and a non-Arduino split
+          build test.
 */
 
 #include "TaskSchedulerDeclarations.h"
@@ -529,18 +538,32 @@ static void _task_yield() { yield(); };
 
 #else
 
-#ifdef _TASK_MICRO_RES
-static unsigned long _task_micros();
+// The user defines the hooks below.
+// Header-only build: the hooks are static. Define them in the source file
+// that includes TaskScheduler.h.
+// Split build (_TASK_HEADER_AND_CPP): this file is compiled in TaskScheduler.cpp,
+// so the hooks have external linkage. Define them (not static) in any one
+// source file of the project.
+#ifdef _TASK_HEADER_AND_CPP
+#define _TASK_HOOK_LINKAGE
 #else
-static unsigned long _task_millis();
+#define _TASK_HOOK_LINKAGE static
+#endif
+
+#ifdef _TASK_MICRO_RES
+_TASK_HOOK_LINKAGE unsigned long _task_micros();
+#else
+_TASK_HOOK_LINKAGE unsigned long _task_millis();
 #if defined(_TASK_SLEEP_ON_IDLE_RUN) || defined(_TASK_TIMECRITICAL)
-static unsigned long _task_micros();
+_TASK_HOOK_LINKAGE unsigned long _task_micros();
 #endif  // _TASK_SLEEP_ON_IDLE_RUN
 #endif  //  _TASK_MICRO_RES
 
 #if !defined(_TASK_DO_NOT_YIELD)
-static void _task_yield();
+_TASK_HOOK_LINKAGE void _task_yield();
 #endif
+
+#undef _TASK_HOOK_LINKAGE
 #endif  // #ifndef _TASK_NON_ARDUINO
 
 /** Constructor, uses default values for the parameters

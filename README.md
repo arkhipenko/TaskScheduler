@@ -79,7 +79,9 @@ lib_deps = arkhipenko/TaskScheduler
 
 ### What's new in 4.1.1
 
-No library code changes. The `requestAction()` documentation is corrected, and the examples that enable tasks when they are created now call `startNow()` at the end of `setup()`, so the tasks do not "catch up" on the time `setup()` took ([#214](https://github.com/arkhipenko/TaskScheduler/issues/214)). If your sketch enables tasks when they are created and has a long `setup()`, do the same: see [startNow()](https://github.com/arkhipenko/TaskScheduler/wiki/API-Task-Scheduler#void-startnow-bool-arecursive-true).
+One library fix: with `_TASK_NON_ARDUINO` in a split build (`_TASK_HEADER_AND_CPP`), the time and yield hooks were declared `static`, so `TaskScheduler.cpp` could not use the definitions in your source files. Newer compilers (for example GCC 14 in PlatformIO `espressif32` 8.0.0) fail to link such a project. In a split build the hooks now have external linkage: define them (not `static`) in any one source file, as example 29 does. Header-only builds are unchanged.
+
+The `requestAction()` documentation is corrected, and the examples that enable tasks when they are created now call `startNow()` at the end of `setup()`, so the tasks do not "catch up" on the time `setup()` took ([#214](https://github.com/arkhipenko/TaskScheduler/issues/214)). If your sketch enables tasks when they are created and has a long `setup()`, do the same: see [startNow()](https://github.com/arkhipenko/TaskScheduler/wiki/API-Task-Scheduler#void-startnow-bool-arecursive-true).
 
 ---
 
@@ -149,7 +151,7 @@ Scheduling overhead: between `15` and `18` microseconds per scheduling pass (Ard
 * Raspberry Pi (requires `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
 * Any Linux (requires `_TASK_NON_ARDUINO` and `_task_millis()` implementation)
 
-**Note:** with `_TASK_NON_ARDUINO`, define `_task_millis()` (and `_task_micros()` / `_task_yield()` where your options need them) in the same source file that includes `TaskScheduler.h`. The unit test `tests/test-scheduler-defect-fixes.cpp` shows a working setup.
+**Note:** with `_TASK_NON_ARDUINO`, define `_task_millis()` (and `_task_micros()` / `_task_yield()` where your options need them) yourself. In a header-only build, define them in the same source file that includes `TaskScheduler.h` (the unit test `tests/test-scheduler-defect-fixes.cpp` shows this). In a split build (`_TASK_HEADER_AND_CPP`, version 4.1.1 or later), define them, not `static`, in any one source file (example 29 and the unit test `tests/test-scheduler-non-arduino-split.cpp` show this).
 
 ---
 ![TaskScheduler process diagram](https://github.com/arkhipenko/TaskScheduler/raw/master/extras/TaskScheduler_html.png)

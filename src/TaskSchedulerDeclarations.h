@@ -118,7 +118,11 @@
  * 
  * @par _TASK_NON_ARDUINO
  * For non-Arduino use.
- * Enables compilation for non-Arduino environments.
+ * Enables compilation for non-Arduino environments. Arduino.h is not included,
+ * and the user defines unsigned long _task_millis(), unsigned long _task_micros()
+ * and void _task_yield() where the options need them. Header-only build: define
+ * them in the source file that includes TaskScheduler.h. Split build
+ * (_TASK_HEADER_AND_CPP): define them, not static, in any one source file.
  * 
  * @par _TASK_HEADER_AND_CPP
  * Compile CPP file (non-Arduino IDE platforms).

@@ -28,7 +28,7 @@ This example demonstrates the use of the `_TASK_THREAD_SAFE` compile option for 
 
 ## Hardware Requirements
 
-- **ESP32** development board (recommended)
+- **ESP32** development board (recommended), Arduino-ESP32 core 2.x or 3.x (the hardware timer code selects the API for the installed core)
 - Built-in LED (LED_BUILTIN)
 - Boot button (GPIO 0 on most boards)
 

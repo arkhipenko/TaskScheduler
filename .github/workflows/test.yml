@@ -773,3 +773,113 @@ jobs:
         run: |
           echo "=== Running OO defect fix regression tests ==="
           ./test_defect_fixes_oo
+
+  test-non-arduino-split:
+    name: Non-Arduino Split Build Tests (v4.1.1)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libgtest-dev pkg-config
+
+      - name: Build and install Google Test
+        run: |
+          cd /usr/src/gtest
+          sudo cmake .
+          sudo cmake --build . --target all
+          sudo cp lib/*.a /usr/lib || sudo cp *.a /usr/lib
+
+      - name: Create CMakeLists.txt for non-Arduino split build tests
+        run: |
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.10)
+          project(TaskSchedulerNonArduinoSplitTests VERSION 1.0.0)
+
+          set(CMAKE_CXX_STANDARD 14)
+          set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+          # Find required packages
+          find_package(PkgConfig REQUIRED)
+          find_package(Threads REQUIRED)
+
+          # Include directories
+          include_directories(${CMAKE_SOURCE_DIR}/src)
+          include_directories(${CMAKE_SOURCE_DIR}/tests)
+
+          # Gather source files
+          file(GLOB TASKSCHEDULER_SOURCES
+              "${CMAKE_SOURCE_DIR}/src/*.cpp"
+              "${CMAKE_SOURCE_DIR}/src/*.c"
+          )
+
+          # The library is compiled in TaskScheduler.cpp; the test file defines
+          # the non-Arduino hooks with external linkage (example 29 pattern).
+          # Two builds: the example 29 options, and microsecond resolution.
+          add_executable(test_non_arduino_split
+              tests/test-scheduler-non-arduino-split.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+          add_executable(test_non_arduino_split_micro
+              tests/test-scheduler-non-arduino-split.cpp
+              ${TASKSCHEDULER_SOURCES}
+          )
+
+          # Link libraries
+          target_link_libraries(test_non_arduino_split
+              gtest
+              gtest_main
+              pthread
+          )
+          target_link_libraries(test_non_arduino_split_micro
+              gtest
+              gtest_main
+              pthread
+          )
+
+          # Compiler definitions: split build without Arduino.h
+          target_compile_definitions(test_non_arduino_split PRIVATE
+              _TASK_HEADER_AND_CPP
+              _TASK_NON_ARDUINO
+              _TASK_SLEEP_ON_IDLE_RUN
+              _TASK_STATUS_REQUEST
+          )
+          target_compile_definitions(test_non_arduino_split_micro PRIVATE
+              _TASK_HEADER_AND_CPP
+              _TASK_NON_ARDUINO
+              _TASK_MICRO_RES
+          )
+
+          # Compiler flags
+          target_compile_options(test_non_arduino_split PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+          target_compile_options(test_non_arduino_split_micro PRIVATE
+              -Wall
+              -Wextra
+              -O2
+          )
+
+          # Enable testing
+          enable_testing()
+          add_test(NAME NonArduinoSplitTests COMMAND test_non_arduino_split)
+          add_test(NAME NonArduinoSplitMicroTests COMMAND test_non_arduino_split_micro)
+          EOF
+
+      - name: Build non-Arduino split build tests
+        run: |
+          cmake .
+          make -j$(nproc)
+
+      - name: Run non-Arduino split build tests
+        run: |
+          echo "=== Running non-Arduino split build tests ==="
+          ./test_non_arduino_split
+          echo "=== Running non-Arduino split build tests, _TASK_MICRO_RES ==="
+          ./test_non_arduino_split_micro

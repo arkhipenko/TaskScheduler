@@ -272,10 +272,17 @@ void setup() {
   Serial.println("Button interrupt attached (press boot button)");
 
   // Create timer for periodic ISR (every 7 seconds)
+  // The hardware timer API changed in Arduino-ESP32 core 3.x
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+  hw_timer_t* timer = timerBegin(1000000);      // 1 MHz tick
+  timerAttachInterrupt(timer, &timerISR);
+  timerAlarm(timer, 7000000, true, 0);          // 7 seconds in microseconds, auto-reload, no repeat limit
+#else
   hw_timer_t* timer = timerBegin(0, 80, true);  // Timer 0, prescaler 80 (1MHz), count up
   timerAttachInterrupt(timer, &timerISR, true);
   timerAlarmWrite(timer, 7000000, true);  // 7 seconds in microseconds, auto-reload
   timerAlarmEnable(timer);
+#endif
   Serial.println("Hardware timer started (triggers every 7 seconds)");
 
   // Create worker thread

@@ -18,6 +18,9 @@
 Scheduler ts;
 
 
+// Time and yield hooks required by _TASK_NON_ARDUINO.
+// This is a split build (_TASK_HEADER_AND_CPP): TaskScheduler.cpp calls the
+// hooks from another source file, so they must not be static.
 // Comment the following 3 functions out to observe errors due to missing Arduino.h
 unsigned long _task_millis() {
   return xTaskGetTickCount();
